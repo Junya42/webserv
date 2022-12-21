@@ -15,8 +15,7 @@
 #include <sstream>
 #include <stdio.h>
 
-const int PORT = 8080;
-const int MAX_EVENTS = 10;
+const int port = 8080;
 
 void	parse_request(const std::string& request, std::string& method, std::string& path, std::unordered_map<std::string, std::string>& headers) {
   std::istringstream stream(request);
@@ -87,9 +86,6 @@ int main(void) {
 	int	client;
 	char buffer[1024];
 	int	bytes;
-	int	epoll_fd;
-	int num_events;
-	struct epoll_event event;
 	struct sockaddr_in server_addr;
 
 	std::cout << "initating socket" << std::endl;
@@ -112,7 +108,7 @@ int main(void) {
 
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(PORT);
+	server_addr.sin_port = htons(port);
 
 	std::cout << "binding socket" << std::endl;
 	if (bind(server, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr)) == -1) {
@@ -130,66 +126,23 @@ int main(void) {
 		exit(errno);
 	}
 
-	std::cout << "Epoll create(5)" << std::endl;
-	epoll_fd = epoll_create(MAX_EVENTS);
-	if (epoll_fd == -1) {
-		std::cout << "Error : EPOLL_CREATE" << std::endl;
-		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
-	}
-	event.events = EPOLLIN;
-	event.data.fd = server;
-	std::cout << "Epoll_ctl" << std::endl;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server, &event) == -1) {
-		std::cout << "Error : EPOLL_CTL" << std::endl;
-		std::cout << std::strerror(errno) << std::endl;
-		close(epoll_fd);
-		close(server);
-		exit(errno);
-	}
-
 	std::cout << "While loop" << std::endl;
 	while (1) {
-		struct epoll_event events[MAX_EVENTS];
-
-		std::cout << "Epoll_wait" << std::endl;
-		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		std::cout << "num_events: " << num_events << std::endl;
-		if (num_events == -1) {
-			std::cout << "Error : EPOLL_WAIT" << std::endl;
+		client = accept(server, NULL, NULL);
+		if (client == -1) {
+			std::cout << "Error : ACCEPT" << std::endl;
 			std::cout << std::strerror(errno) << std::endl;
-			close(epoll_fd);
 			close(server);
 			exit(errno);
 		}
-		for (int i = 0; i < num_events; i++) {
-			if (events[i].data.fd == server) {
-				std::cout << "Accepting client" << std::endl;
-				client = accept(server, NULL, NULL);
-				if (client == -1) {
-					std::cout << "Error : ACCEPT" << std::endl;
-					std::cout << std::strerror(errno) << std::endl;
-					close(server);
-					exit(errno);
-				}
-				event.events = EPOLLIN;
-				event.data.fd = client;
-				std::cout << "Epoll_ctl" << std::endl;
-				epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &event);
-			}
-			else {
-				bytes = read(client, buffer, sizeof(buffer));
-				if (bytes > 0) {
-					std::cout << "Successfully read from data" << std::endl;
-					std::string request(buffer, bytes);
-					std::string response = handle_request(request);
-					write(client, response.c_str(), response.size());
-				}
-				close(client);
-			}
-			close (events[i].data.fd);
+		bytes = read(client, buffer, sizeof(buffer));
+		if (bytes > 0) {
+			std::cout << "Successfully read from data" << std::endl;
+			std::string request(buffer, bytes);
+			std::string response = handle_request(request);
+			write(client, response.c_str(), response.size());
 		}
+		close (client);
 	}
 	close(server);
 	return 0;
