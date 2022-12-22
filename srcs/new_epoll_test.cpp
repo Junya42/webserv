@@ -57,14 +57,14 @@ std::string handle_request(std::string &request) {
 		int fd;
 		int pos = 0;
 
-		p_file = fopen("../index.html", "rb");
+		p_file = fopen("../default/index.html", "rb");
 		pos = ftell(p_file);
 		fseek(p_file, 0, SEEK_END);
 		size = ftell(p_file);
 		fseek(p_file, pos, SEEK_SET);
 		fclose(p_file);
 
-		fd = open("../index.html", O_RDONLY);
+		fd = open("../default/index.html", O_RDONLY);
 		read(fd, buffer, size);
 		close(fd);
 		s << size;

@@ -1,0 +1,55 @@
+server
+{
+	listen: 6677
+
+	index: default/index.html
+	method_accept: GET
+}
+
+server
+{
+	listen: 6677
+
+	server_name: localhost
+	method_accept: POST GET DELETE
+	index: www/html/index.html
+	cgi:	.php	/usr/bin/php-cgi
+
+	location: /
+	{
+		root: www/
+	}
+
+	location: html/
+	{
+		client_max_body_size: 20000000
+		set_upload: www
+		root: www/html/
+		method_accept: POST GET
+		autoindex: on
+	}
+
+	location: php/
+	{
+		root: www/php/
+		method_accept: POST GET
+	}
+
+	location: html/download/
+	{
+		client_max_body_size: 200000000
+		method_accept: POST GET DELETE
+		set_upload: /tmp
+	}
+
+	location: /tmp/
+	{
+		method_accept: POST GET
+	}
+
+	location: redirect/
+	{
+		return: 301 https://youtube.com;
+		method_accept: POST GET;
+	}
+}
