@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include "../includes/config.hpp"
+#include "../includes/header.hpp"
 
 std::string	get_config(char *str) {
 	std::string config_file;
@@ -57,5 +58,6 @@ int main(int ac, char **av) {
 	std::cout << "add config" << std::endl;
 	config.add_config(config_buff);
 	std::cout << config << std::endl;
+	server_handler(config);
 	return 0;
 }

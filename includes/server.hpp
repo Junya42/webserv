@@ -13,7 +13,8 @@ class Server {
     Server(void);
     Server(std::string &config);
     ~Server(void);
-    void  setup_server(std::string & config);
+    //void  setup_server(std::string & config);
+    void  setup_server(std::vector<std::string> &vec);
     std::string   &get_name(void);
     std::string   &get_index(void);
     bool          method_get(void);
@@ -23,7 +24,9 @@ class Server {
     int           get_port(void);
     std::vector<Location> &get_locations(void);
 
+    std::string _host;
     std::string _name;
+    std::string _sport;
     std::string _index;
     std::string _methods;
     bool        _get;

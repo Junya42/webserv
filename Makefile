@@ -1,11 +1,12 @@
-NAME = Config
+NAME = webserv
 CC = c++
 SRCS = srcs/main.cpp \
 	   srcs/config.cpp \
 	   srcs/server.cpp \
 	   srcs/location.cpp \
+	   srcs/socket.cpp \
 
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -g3
 OBJS = $(SRCS:.cpp=.o)
 
 .cpp.o:

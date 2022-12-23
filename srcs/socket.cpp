@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <stdio.h>
+#include "../includes/config.hpp"
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
@@ -35,10 +36,11 @@ void	parse_request(const std::string& request, std::string& method, std::string&
   }
 }
 
-std::string handle_request(std::string &request) {
+std::string handle_request(std::string &request, std::vector<Server> &serv) {
 	std::string answer;
 	std::string method;
 	std::string path;
+	std::string host;
 	std::ostringstream s;
 	std::unordered_map<std::string, std::string> header;
 	int size = 0;
@@ -51,20 +53,53 @@ std::string handle_request(std::string &request) {
 	std::cout << "Header:" << std::endl;
 	for (std::unordered_map<std::string, std::string>::iterator it = header.begin(); it != header.end(); it++) {
 		std::cout << "  " << it->first << ": " << it->second << std::endl;
+		if (it->first == "Host") {
+			//for (std::string::iterator iter = it->second.begin(); iter != it->second.end(); iter++) {
+		//		if (*iter == ' ')
+		//			it->second.erase(iter);
+		//	}
+			//std::cout << "Found host in request" << std::endl;
+			host = it->second;
+			//std::cout << "Host:" << host << std::endl;
+			//break;
+		}
 	}
+	(void)serv;
+	if (!host.size())
+		std::cout << "HOST PROBLEM" << std::endl;
+	std::cout << "HEADER[HOST]:" << header["Host"] << std::endl;
+	std::cout << "Parsing through all host in vector" << std::endl;
+	for (unsigned long int i = 0; i < serv.size(); i++) {
+		std::cout << "serv["<<i<<"]._host:"<<serv[i]._host << "| : " << serv[i]._host.size() <<std::endl;
+		if (host.find(serv[i]._host) != std::string::npos) {
+			std::cout << "Found matching host" << std::endl;
+			host = serv[i]._index;
+			while (host[0] == ' ' || host[0] == '\t')
+				host.erase(host.begin());
+			break ;
+		}
+	}
+	std::cout << "new host value:" << host << std::endl;
 	if (path.compare("/") == 0) {
 		FILE *p_file = NULL;
 		int fd;
 		int pos = 0;
 
-		p_file = fopen("../default/index.html", "rb");
+		std::cout << "index path:" << host << std::endl;
+		//p_file = fopen("default/index.html", "rb");
+		p_file = fopen(host.c_str(), "rb");
+		if (!p_file) {
+			std::cerr << "Invalid index" << std::endl;
+			exit (1);
+		}
 		pos = ftell(p_file);
 		fseek(p_file, 0, SEEK_END);
 		size = ftell(p_file);
 		fseek(p_file, pos, SEEK_SET);
 		fclose(p_file);
 
-		fd = open("../default/index.html", O_RDONLY);
+		//fd = open("default/index.html", O_RDONLY);
+		fd = open(host.c_str(), O_RDONLY);
 		read(fd, buffer, size);
 		close(fd);
 		s << size;
@@ -80,7 +115,7 @@ std::string handle_request(std::string &request) {
 	return answer;
 }
 
-int main(void) {
+void	server_handler(Config &config) {
 
 	int my_bool = 1;
 	int server; //server socket fd
@@ -244,7 +279,7 @@ int main(void) {
 				if (bytes > 0) {
 					std::cout << "Successfully read from data" << std::endl;
 					std::string request(buffer, bytes);
-					std::string response = handle_request(request);
+					std::string response = handle_request(request, config._serv);
 					write(client, response.c_str(), response.size());
 				}
 				else {
@@ -262,5 +297,4 @@ int main(void) {
 		}
 	}
 	close(server);
-	return 0;
 }
