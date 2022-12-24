@@ -32,6 +32,8 @@ void  Server::setup_server(std::vector<std::string> &vec) {
   std::string location_conf;
   std::string line;
   Location loc;
+  int location_push = 0;
+  int location_find = 0;
   bool  location = false;
 
   std::cout << "Testing vector for server" << std::endl;
@@ -55,7 +57,9 @@ void  Server::setup_server(std::vector<std::string> &vec) {
       trim(value);
     //value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
     if (key == "location") {
+      location_find++;
       if (location == true) {
+        location_push++;
         loc.create_map(location_conf);
         _loc.push_back(loc);
         // std::cout << std::endl << "LOCATION CONF" << std::endl << location_conf << "END OF LOCATION CONF" <<std::endl;
@@ -84,7 +88,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
     }
     i++;
   }
-  std::cout << "END OF WHILE" << std::endl;
+  std::cout << "                  END OF WHILE" << std::endl;
   if (_port == -1 || !_name.size() || !_index.size()) {
     std::cerr << "Error: Missing server informations" << std::endl;
     std::cerr << "Port: " << _port << std::endl
@@ -94,6 +98,10 @@ void  Server::setup_server(std::vector<std::string> &vec) {
   }
   _host = _name + ':' + _sport;
   _host.erase(std::remove(_host.begin(), _host.end(), ' '), _host.end());
+  if (location_find != location_push) {
+        loc.create_map(location_conf);
+        _loc.push_back(loc);
+  }
   //if (location_conf.size())
   //std::cout << "Hanging location_cong: " << std::endl << location_conf << std::endl << "000000000000000" << std::endl;
   /* if (location && location_conf.size()) {

@@ -15,6 +15,8 @@ class Location {
     void  create_map(std::string &config);
     
     std::unordered_map<std::string, std::string> _data;
+    std::string _path;
+    std::string _root;
 };
 
 std::ostream &operator<<(std::ostream &nstream, Location &loc);

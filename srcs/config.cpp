@@ -51,6 +51,7 @@ void  Config::add_config(std::string &config) {
     for (unsigned long int j = 0; j < vec.size(); j++)
       vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
     //serv.setup_server(conf);
+    std::cout << "_________BEFORE PUSHBACK SERV___________" << std::endl;
     serv.setup_server(vec);
     std::cout << "______________________ AFTER PUSH_BACK SERV __________________" << std::endl;
     _serv.push_back(serv);

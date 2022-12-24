@@ -37,13 +37,16 @@ void	parse_request(const std::string& request, std::string& method, std::string&
 }
 
 std::string handle_request(std::string &request, std::vector<Server> &serv) {
-	std::string answer;
 	std::string method;
 	std::string path;
 	std::string host;
+	std::string host_save;
+	std::string index;
+	std::string s_buffer;
+	std::string	type = "text/html\n";
 	std::ostringstream s;
 	std::unordered_map<std::string, std::string> header;
-	int size = 0;
+	size_t size = 0;
 	char buffer[1024];
 
 	parse_request(request, method, path, header);
@@ -54,17 +57,11 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 	for (std::unordered_map<std::string, std::string>::iterator it = header.begin(); it != header.end(); it++) {
 		std::cout << "  " << it->first << ": " << it->second << std::endl;
 		if (it->first == "Host") {
-			//for (std::string::iterator iter = it->second.begin(); iter != it->second.end(); iter++) {
-		//		if (*iter == ' ')
-		//			it->second.erase(iter);
-		//	}
-			//std::cout << "Found host in request" << std::endl;
 			host = it->second;
-			//std::cout << "Host:" << host << std::endl;
-			//break;
+			host_save = host;
 		}
 	}
-	(void)serv;
+	std::cout << "________END OF HEADER__________" << std::endl;
 	if (!host.size())
 		std::cout << "HOST PROBLEM" << std::endl;
 	std::cout << "HEADER[HOST]:" << header["Host"] << std::endl;
@@ -73,45 +70,84 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		std::cout << "serv["<<i<<"]._host:"<<serv[i]._host << "| : " << serv[i]._host.size() <<std::endl;
 		if (host.find(serv[i]._host) != std::string::npos) {
 			std::cout << "Found matching host" << std::endl;
-			host = serv[i]._index;
-			while (host[0] == ' ' || host[0] == '\t')
-				host.erase(host.begin());
+			if (path.compare("/") == 0) {
+				std::cout << "Using server index" << std::endl;
+				host = serv[i]._index;
+			}
+			else if (path.find(".ico") != std::string::npos) {
+				std::cout << "Favicon request" << std::endl;
+				host = "./favicon.ico";
+				type = "image/x-icon\n";
+				//type = "application/octet-stream\n";
+			}
+			else {
+				std::cout << "Trying location index with serv[" << i << "] : size: " << serv[i]._loc.size() << std::endl;
+				for (unsigned long int j = 0; j < serv[i]._loc.size(); j++) {
+					std::cout << "Loc :" << serv[i]._loc[j]._path << " # Path :" << path << std::endl;
+					if (serv[i]._loc[j]._path.find(path) != std::string::npos) {
+						host = serv[i]._loc[j]._root + "index.html";
+						std::cout << "Found location index" << std::endl;
+						break ;
+					}
+				}
+				if (host_save.compare(host) == 0) {
+					std::cout << "Couldn't find location index" << std::endl;
+					exit(1);
+				}
+			}
 			break ;
 		}
 	}
+	while (host[0] == ' ' || host[0] == '\t')
+		host.erase(host.begin());
 	std::cout << "new host value:" << host << std::endl;
-	if (path.compare("/") == 0) {
-		FILE *p_file = NULL;
-		int fd;
-		int pos = 0;
+	FILE *p_file = NULL;
+	//int fd;
+	int pos = 0;
 
-		std::cout << "index path:" << host << std::endl;
-		//p_file = fopen("default/index.html", "rb");
-		p_file = fopen(host.c_str(), "rb");
-		if (!p_file) {
-			std::cerr << "Invalid index" << std::endl;
-			exit (1);
-		}
-		pos = ftell(p_file);
-		fseek(p_file, 0, SEEK_END);
-		size = ftell(p_file);
-		fseek(p_file, pos, SEEK_SET);
-		fclose(p_file);
-
-		//fd = open("default/index.html", O_RDONLY);
-		fd = open(host.c_str(), O_RDONLY);
-		read(fd, buffer, size);
-		close(fd);
-		s << size;
+	std::cout << "index path:" << host << std::endl;
+	p_file = fopen(host.c_str(), "rb");
+	if (!p_file) {
+		std::cerr << "Invalid fopen index" << std::endl;
+		exit (1);
 	}
-	answer = "HTTP/1.1 200 OK\n";
-	answer += "Content-Type: text/html\n";
-	answer += "Content-Length: ";
-	answer += s.str();
-	answer += "\n\n";
-	answer += buffer;
+	pos = ftell(p_file);
+	fseek(p_file, 0, SEEK_END);
+	size = ftell(p_file);
+	fseek(p_file, pos, SEEK_SET);
+	size_t bytes = 0;
+	size_t read_bytes = 0;
+	while (bytes < size) {
+		read_bytes = fread(buffer, 1, sizeof(buffer), p_file);
+		bytes += read_bytes;
+		s_buffer += buffer;
+		if (read_bytes < sizeof(buffer)) {
+			break ;
+		}
+	}
+	fclose(p_file);
+	s << size;
 
-	std::cout << std::endl << "Answer: " << answer << std::endl;
+	std::string answer;
+	//std::cout << "Creating answer" << std::endl;
+	answer = "HTTP/1.1 200 OK\n";
+	//std::cout << "Http status" << std::endl;
+	answer += "Content-Type: ";
+	answer += type;
+	//std::cout << "Content type" << std::endl;
+	answer += "Content-Length: ";
+	//std::cout << "Content Lenght" << std::endl;
+	//std::cout << "Before adding str size to answer" << std::endl;
+	answer += s.str();
+	//std::cout << "After adding str size to answer" << std::endl;
+	answer += "\r\n\r\n";
+	//std::cout << "Before adding buffer to answer" << std::endl;
+	//std::cout << "s_buffer: " << s_buffer << std::endl;
+	answer += s_buffer;
+	//std::cout << "After adding buffer to answer" << std::endl;
+
+	std::cout << std::endl << "Answer: " << std::endl << answer << std::endl
+		<< "__________________________________________" << std::endl;
 	return answer;
 }
 

@@ -1,5 +1,6 @@
 #include "../includes/location.hpp"
 #include <sstream>
+#include <iostream>
 #include <unordered_map>
 
 Location::Location(void) {
@@ -33,7 +34,8 @@ void  Location::create_map(std::string & config) {
   std::istringstream stream(config);
   std::string line;
 
-  while (std::getline(stream, line) && line != "\r") {
+  std::cout << "      CREATE MAP:" << std::endl << config << std::endl << "XXXXXXXXXXXXXXXXXXX" << std::endl;
+  while (std::getline(stream, line)) {
     std::istringstream line_stream(line);
     std::string key;
     std::string value;
@@ -41,6 +43,15 @@ void  Location::create_map(std::string & config) {
     std::getline(line_stream, value);
     if (value.size())
       _data[key] = value;
+    std::cout << "KEY :" << key << " : VALUE :" << value << std::endl;
+    if (key.find("root") != std::string::npos) {
+      _root = value;
+      std::cout << "FOUND _root:" << _root << std::endl;
+    }
+    else if (key.find("location") != std::string::npos) {
+      _path = value;
+      std::cout << "FOUND _path" << _path << std::endl;
+    }
   }
 }
 
