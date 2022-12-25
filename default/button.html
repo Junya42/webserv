@@ -1,6 +1,7 @@
 <html>
 	<head>
 		<title>Webserv</title>
+		<link rel="icon" type="image/x-icon" href="../favicon.ico">
 		<style>
 .glass-panel {
 	color: #fff;
@@ -27,10 +28,12 @@
 	letter-spacing: 2px;
 	cursor: pointer;
 	text-transform: uppercase;
+	transition: 1s;
 }
 
 .glass-button:hover {
-	background-color: rgba(255,255,255,0.2);
+	transform: scale(1.1);
+	background-color: rgba(255,255,255,0.3);
 }
 
 		body {
@@ -56,7 +59,7 @@
 		}
 
 		.glass-button {
-			margin: 15px;
+			margin: 200px;
 			margin-top: 40px;
 		}
 
@@ -89,9 +92,10 @@
 			<div class="glass-toolbar">
 				<!--
 				<button class="glass-button">Glass Button</button>
-				-->
+				
 				<a href="http://webserv.42.com:8080/html" target="_blank" class="glass-button">Button 1</a>
-				<a href="http://webserv.42.com:8080/html" target="_blank" class="glass-button">Button 2</a>
+				-->
+				<a href="http://webserv.42.com:8080/html" target="_self" class="glass-button">Get started</a>
 			</div>
 		</div>
 	</body>
