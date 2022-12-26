@@ -1,6 +1,7 @@
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 
+#include "client.hpp"
 #include "server.hpp"
 #include <ostream>
 

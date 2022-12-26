@@ -107,13 +107,15 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 			else {
 				std::cout << "Trying location index with serv[" << i << "] : size: " << serv[i]._loc.size() << std::endl;
 				path.insert(0, 1, ' ');
+				int found = 0;
 				for (unsigned long int j = 0; j < serv[i]._loc.size(); j++) {
 					std::cout << "Loc :" << serv[i]._loc[j]._path << " # Path :" << path << std::endl;
 					//if (serv[i]._loc[j]._path.find(path) != std::string::npos) {
-					if (path.find(serv[i]._loc[j]._path) != std::string::npos) {
+					if (path.find(serv[i]._loc[j]._path) != std::string::npos && found == 0) {
+						found++;
 						host = serv[i]._loc[j]._root + "index.html";
 						std::cout << "Found location index" << std::endl;
-						break ;
+					//	break ;
 					}
 				}
 				if (host_save.compare(host) == 0) {
@@ -201,7 +203,10 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		int num_events; //number of events occuring in epoll wait
 		struct epoll_event event; //epoll event specifier
 		struct sockaddr_in server_addr; //socket informations
+		std::vector<Client> vec_clients;
+		Client	clientinfo;
 
+		clientinfo.reset();
 		std::cout << "initating socket" << std::endl;
 		/* creating socket for IPV4 using SOCK_STREAM connection based protocol between two parties */
 		server = socket(AF_INET, SOCK_STREAM, 0); 
@@ -334,6 +339,7 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 					client_info.push_back(client_addr);
 					char buffer_addr[INET_ADDRSTRLEN];
 					std::cout << "Client: " << inet_ntop(AF_INET, &client_addr.sin_addr, buffer_addr, sizeof(buffer_addr)) << " | " << client_addr.sin_port << std::endl;
+					std::cout << "Test buffer: " << buffer_addr;
 					struct epoll_event client_event;
 
 					client_event.events = EPOLLIN; //set client available for read operations
@@ -348,6 +354,8 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 						close(server);
 						exit(errno);
 					}
+					clientinfo._port = client_addr.sin_port;
+					clientinfo._
 					curr_fd++;
 				}
 				else {

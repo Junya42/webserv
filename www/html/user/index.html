@@ -13,7 +13,7 @@
 	backdrop-filter: blur(10px);
 }
 
-.glass-button-login {
+.glass-button-user {
 	display: inline-block;
 	padding: 24px 32px;
 	border: 0;
@@ -32,11 +32,17 @@
 	transition: 1s;
 }
 
-.glass-button-login:hover {
+.glass-button-user:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
 
+@media (max-width: 800px) {
+	.glass-button-user {
+		transition: 0s;
+		margin: 20%;
+	}
+}
 .glass-button {
 	display: inline-block;
 	padding: 24px 32px;
@@ -114,7 +120,7 @@
 	</head>
 	<body>
 		<h1>WEBSERV</h1>
-		<a href="http://localhost:8080/html/login" target="_self" class="glass-button-login">Log in</a>
+		<div class="glass-button-user">fname lname</div>
 		<div class="glass-panel">
 			<h1><a href="https://www.youtube.com/" target="_blank">Currently in development</a></h1>
 			<p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."</p>
@@ -122,7 +128,9 @@
 				<!--
 		<button class="glass-button">Glass Button</button>
 				-->	
-				<a href="http://localhost:8080/html" target="_self" class="glass-button">Get started</a>
+				<a href="http://localhost:8080/html" target="_self" class="glass-button">Upload file</a>
+				<a href="http://localhost:8080/html" target="_self" class="glass-button">Download file</a>
+				<a href="http://localhost:8080/html" target="_self" class="glass-button">Delete file</a>
 			</div>
 		</div>
 	</body>
