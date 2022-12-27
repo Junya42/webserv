@@ -1,6 +1,7 @@
 #include <asm-generic/socket.h>
 #include <iostream>
 #include <netinet/in.h>
+#include <ostream>
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
@@ -19,11 +20,12 @@
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
 
-void	parse_request(const std::string& request, std::string& method, std::string& path, std::unordered_map<std::string, std::string>& headers, std::unordered_map<std::string, std::string>& body) {
+void	parse_request(const std::string& request, std::string& method, std::string& path, std::unordered_map<std::string, std::string>& headers, std::unordered_map<std::string, std::string>& body, int client) {
   std::istringstream stream(request);
 
   stream >> method >> path;
   std::string line;
+  size_t len = 0;
 
   while (std::getline(stream, line) && line != "\r") {
     std::istringstream line_stream(line);
@@ -31,7 +33,10 @@ void	parse_request(const std::string& request, std::string& method, std::string&
     std::string value;
     std::getline(line_stream, key, ':');
     std::getline(line_stream, value);
-
+	if (key.find("Content-Length") != std::string::npos){
+		len = atoi(value.c_str());
+		std::cout << "CONTENT LENGHT FOUND : " << len << std::endl;
+	}
     headers[key] = value;
   }
   if (method.find("POST") != std::string::npos) {
@@ -48,9 +53,30 @@ void	parse_request(const std::string& request, std::string& method, std::string&
 	  // std::cout << stream.str() << std::endl;
 	  //std::cout << "_______________END OF STREAM_______________________" << std::endl;
   }
+  if (!body.size() && method.find("POST") != std::string::npos) {
+	  std::cout << "bytes left = " << len << std::endl;
+	  std::stringstream sbody;
+	  char buffer[1024];
+	  int bytes_read;
+	  std::size_t bytes_left = len;
+
+	  // Read from the socket until we have read the entire body
+	  while (bytes_left > 0 && (bytes_read = recv(client, buffer, sizeof(buffer), 0)) > 0) {
+		  sbody << std::string(buffer, bytes_read);
+		  bytes_left -= bytes_read;
+	  }
+	  std::cout << "Maybe body: " << std::endl << std::endl
+		  << sbody.str() << std::endl
+		  << ">>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+  }
+  if (!body.size() && method.find("POST") != std::string::npos) {
+	  std::cout << "Couldn't get body from POST REQUEST" << std::endl << std::endl << std::endl;
+	  //std::cout << request << std::endl;
+	  //exit (0);
+  }
 }
 
-std::string handle_request(std::string &request, std::vector<Server> &serv) {
+std::string handle_request(std::string &request, std::vector<Server> &serv, Client &client, int socket) {
 	std::string method;
 	std::string path;
 	std::string host;
@@ -62,10 +88,13 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 	std::unordered_map<std::string, std::string> header;
 	std::unordered_map<std::string, std::string> body;
 	size_t size = 0;
-	char buffer[1024];
+	char buffer[4096];
 
-	parse_request(request, method, path, header, body);
-
+	parse_request(request, method, path, header, body, socket);
+	std::string::iterator pathit = path.end() - 1;
+	if (*pathit == '/' && path.size() > 1) {
+		path.pop_back();
+	}
 	std::cout << "Method: " << method << std::endl;
 	std::cout << "Path: " << path << std::endl;
 	std::cout << "_____Header_____" << std::endl;
@@ -81,51 +110,70 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		std::cout << "_____Body______" << std::endl;
 		for (std::unordered_map<std::string, std::string>::iterator it = body.begin(); it != body.end(); it++) {
 			std::cout << "  " << it->first << ": " << it->second << std::endl;
+			if (it->first.find("fname") != std::string::npos)
+				client._name = it->second;
+			else if (it->first.find("lname") != std::string::npos)
+				client._lastname = it->second;
 		}
 		std::cout << "________END OF BODY__________" << std::endl;
+		if (client._name.size() && client._lastname.size())
+			client._log = true;
 	}
 	if (!host.size())
 		std::cout << "HOST PROBLEM" << std::endl;
 	std::cout << "HEADER[HOST]:" << header["Host"] << std::endl;
 	std::cout << "Parsing through all host in vector" << std::endl;
-	for (unsigned long int i = 0; i < serv.size(); i++) {
+	for (unsigned long int i = 0; i < serv.size(); i++)
+	{
 		std::cout << "serv["<<i<<"]._host:"<<serv[i]._host << "| : " << serv[i]._host.size() <<std::endl;
-		if (host.find(serv[i]._host) != std::string::npos) {
+		if (host.find(serv[i]._host) != std::string::npos)
+		{
 			std::cout << "Found matching host" << std::endl;
-			if (path.compare("/") == 0) {
+			if (path.compare("/") == 0)
+			{
 				std::cout << "Using server index" << std::endl;
 				host = serv[i]._index;
 			}
-			else if (path.find(".ico") != std::string::npos) {
+			else if (path.find(".ico") != std::string::npos)
+			{
 				std::cout << "Favicon request" << std::endl;
 				host = "./favicon.ico";
 				type = "image/x-icon\nContent-Transfer-Encoding: binary\n";
 				//type = "HTTP/1.1 200 OK\n";
 				//return type;
+
 				//type = "application/octet-stream\n";
 			}
-			else {
-				std::cout << "Trying location index with serv[" << i << "] : size: " << serv[i]._loc.size() << std::endl;
+			else
+			{
+				std::cout << "Trying location index with serv[" << i << "] : size: "
+					<< serv[i]._loc.size() << std::endl;
 				path.insert(0, 1, ' ');
 				int found = 0;
-				for (unsigned long int j = 0; j < serv[i]._loc.size(); j++) {
-					std::cout << "Loc :" << serv[i]._loc[j]._path << " # Path :" << path << std::endl;
+				for (unsigned long int j = 0; j < serv[i]._loc.size(); j++)
+				{
+					std::cout << "Loc :" << serv[i]._loc[j]._path << " : Size: "
+						<< serv[i]._loc[j]._path.size() << " # Path :" << path
+						<< " : Size: " << path.size() << std::endl;
 					//if (serv[i]._loc[j]._path.find(path) != std::string::npos) {
-					if (path.find(serv[i]._loc[j]._path) != std::string::npos && found == 0) {
+					//if (path.find(serv[i]._loc[j]._path) != std::string::npos && found == 0)
+					if (path.compare(serv[i]._loc[j]._path) == 0 && found == 0)
+					{
 						found++;
 						host = serv[i]._loc[j]._root + "index.html";
 						std::cout << "Found location index" << std::endl;
-					//	break ;
+						break ;
 					}
 				}
-				if (host_save.compare(host) == 0) {
+				if (host_save.compare(host) == 0)
+				{
 					std::cout << "Couldn't find location index" << std::endl;
 					exit(1);
 				}
 				}
 				break ;
 			}
-		}
+		} 
 		while (host[0] == ' ' || host[0] == '\t')
 			host.erase(host.begin());
 		std::cout << "new host value:" << host << std::endl;
@@ -155,12 +203,27 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		  }*/
 		(void)buffer;
 		char *buf = (char *)malloc(sizeof(char) * size);
+		int check = 0;
 		if (buf != NULL) {
 			(void)read_bytes;
 			bytes = fread(buf, 1, size, p_file);
 			std::stringstream out;
-			for (size_t i = 0; i < size; i++)
+			for (size_t i = 0; i < size; i++) {
+				if (buf[i] == '$' && client._log == true) {
+					check = 1;
+					if (buf[i + 1] == 'f') {
+						for (size_t j = 0; j < client._name.size(); j++)
+							out << client._name[j];
+					}
+					else if (buf[i + 1] == 'l') {
+						for (size_t j = 0; j < client._lastname.size(); j++)
+							out << client._lastname[j];
+					}
+					while (buf[i] != ' ')
+						i++;
+				}
 				out << buf[i];
+			}
 			std::string copy = out.str();
 			s_buffer = copy;
 			free(buf);
@@ -187,8 +250,10 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		answer += s_buffer;
 		//std::cout << "After adding buffer to answer" << std::endl;
 
-		std::cout << std::endl << "Answer: " << std::endl << answer << std::endl
-			<< "__________________________________________" << std::endl;
+		if (check) {
+			std::cout << std::endl << "Answer: " << std::endl << answer << std::endl
+				<< "__________________________________________" << std::endl;
+		}
 		return answer;
 	}
 
@@ -306,6 +371,7 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 		std::cout << "While loop" << std::endl;
 		/* Server loop, it will keep running until receiving a signal or an error happens */
 		std::vector<sockaddr_in> client_info;
+		int numclient = 0;
 		while (1) {
 
 			std::cout << "Epoll_wait" << std::endl;
@@ -326,7 +392,8 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 					sockaddr_in client_addr; //creating client address buffer
 					socklen_t client_addr_len = sizeof(client_addr); //size of client address buffer
 
-					std::cout << "Accepting client" << std::endl;
+					numclient++;
+					std::cout << "Accepting client: " << numclient << std::endl;
 					/* Extract the first connection request on pending connections for the listening socket server
 					 * and creates a new fd related to the socket server */
 					client = accept(server, reinterpret_cast<sockaddr*>(&client_addr), &client_addr_len);
@@ -355,15 +422,49 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 						exit(errno);
 					}
 					clientinfo._port = client_addr.sin_port;
-					clientinfo._
+					clientinfo._id = i;
+					clientinfo._sock = client;
+					vec_clients.push_back(clientinfo);
+					clientinfo.reset();
+
+					for (std::vector<Client>::iterator it = vec_clients.begin(); it != vec_clients.end(); it++) {
+						std::cout << *it << std::endl;
+					}
 					curr_fd++;
 				}
 				else {
 					client = events[i].data.fd;
+					if (vec_clients[i]._sock == client) {
+						std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
+						std::cout << "Find client in vector" << std::endl;
+						std::cout << vec_clients[i] << std::endl;
+						std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
+					}
+					else {
+						std::cout << "......................................." << std::endl;
+						std::cout << "Couldnt find client in vec_clients" << std::endl;
+						std::cout << "......................................." << std::endl;
+					}
 					char buffer_addr[INET_ADDRSTRLEN];
-					bytes = read(client, buffer, sizeof(buffer));
+					//bytes = read(client, buffer, sizeof(buffer));
+					size_t current_bytes = 0;
+					bytes = 0;
+					std::stringstream readbuff;
+					while ((current_bytes = recv(client, buffer, sizeof(buffer), 0)) > 0) {
+						bytes += current_bytes;
+						readbuff << std::string(buffer, current_bytes);
+						if (readbuff.str().find("\r\n\r\n") != std::string::npos) {
+							break;
+						}
+					}
+					std::cout << "READBUFFER size: " << bytes << std::endl << std::endl;
+					std::cout << readbuff.str() << std::endl
+						<< "oooooooooooooooooooooooooooooooooooooooooooooo" << std::endl;
+					std::cout << std::endl << std::endl << "BUFFER = " << std::endl << std::endl;
+					std::cout << readbuff.str() << std::endl
+						<< "oooooooooooooooooooooooooooooooooooooooooooooo" << std::endl;
 					if (bytes > 0) {
-						std::cout << "Successfully read from data" << std::endl;
+						std::cout << "Successfully read " << bytes << " bytes from data" << std::endl;
 						std::cout << "Number of client: " << client_info.size() << std::endl;
 						for (size_t x = 0; x < client_info.size(); x++) {
 							std::cout << "Retrieving client [" << x << "] from vector :" << std::endl;
@@ -371,7 +472,7 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 						}
 						std::cout << "Current Client " << i << ": "<< inet_ntop(AF_INET, &client_info[i].sin_addr, buffer_addr, sizeof(buffer_addr)) << " | " << client_info[i].sin_port << std::endl;
 						std::string request(buffer, bytes);
-						std::string response = handle_request(request, config._serv);
+						std::string response = handle_request(request, config._serv, vec_clients[i], client);
 						write(client, response.c_str(), response.size());
 					}
 					else {
@@ -381,6 +482,9 @@ std::string handle_request(std::string &request, std::vector<Server> &serv) {
 							std::cout << "Error removing client socket from epoll instance" << std::endl;
 						}
 						curr_fd--;
+						numclient--;
+						vec_clients.erase(vec_clients.begin() + i);
+						client_info.erase(client_info.begin() + i);
 						close(events[i].data.fd);
 					}
 					//close(client);

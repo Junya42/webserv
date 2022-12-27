@@ -13,6 +13,7 @@ class Client {
     void  reset(void);
 
     bool  _log;
+    int _id;
     int _sock;
     unsigned short  _port;
     std::string _addr;
@@ -20,5 +21,7 @@ class Client {
     std::string _lastname;
     std::unordered_map<std::string, std::string> _info;
 };
+
+std::ostream &operator<<(std::ostream &nstream, Client &client);
 
 #endif
