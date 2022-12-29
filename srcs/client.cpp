@@ -8,6 +8,7 @@ Client::Client(void) {
   _sock = -1;
   _port = -1;
   _id = -1;
+  addr_len = sizeof(addr);
 };
 
 Client::~Client(void) {
@@ -21,6 +22,7 @@ void  Client::reset(void) {
   _name.clear();
   _lastname.clear();
   _info.clear();
+  std::memset(&addr, 0, sizeof(addr));
 }
 
 std::ostream &operator<<(std::ostream &nstream, Client &client) {
