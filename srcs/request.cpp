@@ -6,6 +6,8 @@ void  Request::get_header(std::string &request) {
   std::istringstream stream(request);
   std::string line;
 
+  std::cout << "REQUEST: " << std::endl
+    << request << std::endl << "_____________________________" << std::endl;
   stream >> method >> path >> version;
   while (std::getline(stream, line)) {
     if (line == "\r\n\r\n") {
@@ -19,6 +21,7 @@ void  Request::get_header(std::string &request) {
     header[key] = value;
     if (key.find("Content-Length") != std::string::npos) {
       content_lenght = atoi(value.c_str());
+      body_size = content_lenght;
       has_body = true;
     }
     else if (key.find("Host") != std::string::npos) {
@@ -167,6 +170,7 @@ Request::Request(void) {
   parsed_header = false;
   bytes = 0;
   current_bytes = 0;
+  body_size = 0;
 }
 
 Request::~Request(void) {
@@ -174,4 +178,39 @@ Request::~Request(void) {
 
 Request::Request(std::string &request) {
   (void)request;
+}
+
+std::ostream &operator<<(std::ostream &n, Request &req) {
+  n << "_____HEADER_____" << std::endl << std::endl
+    << "method:" << req.method << std::endl
+    << "path:" << req.path << std::endl
+    << "host:" << req.host << std::endl
+    << "boundary:" << req.boundary << std::endl << std::endl
+    << "Has body:" << std::boolalpha << req.has_body << std::endl
+    << "Body size:" << req.body_size << std::endl
+    << "Header complete:" << std::boolalpha << req.complete_header << std::endl
+    << "Parsed header:" << std::boolalpha << req.parsed_header << std::endl
+    << "Parsed body:" << std::boolalpha << req.parsed_body << std::endl << std::endl;
+
+  n << "Header:" << std::endl;
+  for (std::map<std::string, std::string>::iterator it = req.header.begin(); it != req.header.end(); it++) {
+    n << "  key:" << it->first << " | value:" << it->second << std::endl;
+  }
+  n << std::endl << "Body:" << std::endl;
+  for (std::map<std::string, std::string>::iterator it = req.body.begin(); it != req.body.end(); it++) {
+    n << "  key:" << it->first << " | value:" << it->second << std::endl;
+  }
+  n << std::endl << "Multibody:" << std::endl;
+  for (std::vector<Body>::iterator it = req.multi_body.begin(); it != req.multi_body.end(); it++) {
+    n << "  disposition:" << it->disposition << std::endl
+      << "  type:" << it->type << std::endl
+      << "  data:" << std::endl;
+    for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
+      n << *sit << std::endl;
+    }
+    n << std::endl;
+  }
+  n << "Body str: " << req.body_str << std::endl;
+  n << std::endl << "answer:" << req.answer << std::endl << std::endl;
+  return n;
 }

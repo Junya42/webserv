@@ -1,10 +1,11 @@
-NAME = webserv
+NAME = nwebserv
 CC = c++
 SRCS = srcs/main.cpp \
 	   srcs/config.cpp \
 	   srcs/server.cpp \
 	   srcs/location.cpp \
 	   srcs/client.cpp \
+	   srcs/request.cpp \
 	   srcs/socket.cpp \
 
 FLAGS = -Wall -Wextra -Werror -g3

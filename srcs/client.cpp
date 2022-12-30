@@ -23,6 +23,7 @@ void  Client::reset(void) {
   _lastname.clear();
   _info.clear();
   std::memset(&addr, 0, sizeof(addr));
+  request.clear();
 }
 
 std::ostream &operator<<(std::ostream &nstream, Client &client) {

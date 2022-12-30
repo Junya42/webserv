@@ -23,6 +23,7 @@ class Request {
     char        buffer[4096]; //Reading buffer
     size_t      bytes; //bytes read
     size_t      current_bytes;
+    size_t      body_size;
 
     std::string method; //method string
     std::string path; //path string
@@ -55,5 +56,7 @@ class Request {
      *  Path to fd file
      */
 };
+
+std::ostream &operator<<(std::ostream &n, Request &req);
 
 #endif
