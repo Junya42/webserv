@@ -100,7 +100,7 @@ std::string handle_request(std::string &request, std::vector<Server> &serv, Clie
 	std::cout << "_____Header_____" << std::endl;
 	for (std::unordered_map<std::string, std::string>::iterator it = header.begin(); it != header.end(); it++) {
 		std::cout << "  " << it->first << ": " << it->second << std::endl;
-		if (it->first == "Host") {
+		if (it->first == "host" || it->first == "Host") {
 			host = it->second;
 			host_save = host;
 		}

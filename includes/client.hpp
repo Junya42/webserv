@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include "request.hpp"
 #include <cstring>
+#include "string.hpp"
 
 class Client {
   public:

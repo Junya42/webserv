@@ -5,6 +5,7 @@
 #include <vector>
 #include <sys/types.h>
 #include "location.hpp"
+#include "string.hpp"
 
 class Location;
 

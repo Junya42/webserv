@@ -3,6 +3,7 @@
 
 #include "client.hpp"
 #include "server.hpp"
+#include "string.hpp"
 #include <ostream>
 
 class Config {

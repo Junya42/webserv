@@ -2,6 +2,7 @@
 # define BODY_HPP
 
 #include <string>
+#include "string.hpp"
 #include <vector>
 
 class Body {

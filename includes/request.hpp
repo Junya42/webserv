@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include "body.hpp"
+#include "string.hpp"
+#include "macro.hpp"
 
 class Request {
   public:
@@ -20,9 +22,12 @@ class Request {
     int   parse_header(void);
     int   parse_body(void);
 
+    bool  in_use;
+
+    //Default 4096
     char        buffer[4096]; //Reading buffer
-    size_t      bytes; //bytes read
-    size_t      current_bytes;
+    size_t         bytes; //bytes read
+    size_t         current_bytes;
     size_t      body_size;
 
     std::string method; //method string
@@ -38,6 +43,7 @@ class Request {
     bool        parsed_header;
     bool        parsed_body;
     bool        has_body;
+    bool        has_size;
     int         header_code;
 
     size_t content_lenght; //size of body

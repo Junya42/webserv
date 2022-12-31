@@ -4,6 +4,7 @@
 #include <ostream>
 #include <string>
 #include <sstream>
+#include "string.hpp"
 #include <unordered_map>
 
 class Location {
