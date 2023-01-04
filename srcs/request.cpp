@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 void  Request::get_header(std::string &request) {
+
   std::istringstream stream(request);
   std::string line;
   size_t  line_count = 0;
@@ -49,6 +50,9 @@ void  Request::get_header(std::string &request) {
       std::getline(bound, key, '=');
       std::getline(bound, boundary);
     }
+    else if (comp(key, "transfer-encoding") == true) {
+      transfer_encoding = value;
+    }
     line_count++;
   }
   std::cout << "_____________________________" << std::endl;
@@ -56,24 +60,65 @@ void  Request::get_header(std::string &request) {
 
 void  Request::get_body(int client) {
   PRINT_FUNC();
+  char buff[buff_size];
 
   int int_bytes = 0;
-  if (content_lenght > 0 && has_size == true && (int_bytes = read(client, buffer, sizeof(buffer))) > 0) {
-    current_bytes = int_bytes;
-    PRINT_LOG("Reading body with content_lenght");
-    body_str += buffer;
-    content_lenght -= current_bytes;
+  if (comp(transfer_encoding, "chunked") == false)
+  {
+    if (content_lenght > 0 && has_size == true && (int_bytes = read(client, buff, sizeof(buff))) > 0) {
+      current_bytes = int_bytes;
+      PRINT_LOG("Reading body with content_lenght");
+      body_str += buff;
+      content_lenght -= current_bytes;
+    }
+    else if (has_body == true && has_size == false) {
+      int_bytes = read(client, buff, sizeof(buff));
+      PRINT_LOG("Reading body without content_lenght");
+      current_bytes = int_bytes;
+      std::cout << "sizeof buff: " << sizeof(buff) << std::endl;
+      std::cout << "current_bytes: " << int_bytes << std::endl;
+      if (int_bytes < 1 || current_bytes < sizeof(buff)) {
+        content_lenght = 0;
+      }
+      body_str += buff;
+    }
   }
-  else if (has_body == true && has_size == false) {
-    int_bytes = read(client, buffer, sizeof(buffer));
-    PRINT_LOG("Reading body without content_lenght");
-    current_bytes = int_bytes;
-    std::cout << "sizeof buffer: " << sizeof(buffer) << std::endl;
-    std::cout << "current_bytes: " << int_bytes << std::endl;
-    if (int_bytes < 1 || current_bytes < sizeof(buffer)) {
+  else {
+    PRINT_LOG("Reading Chunked body");
+    std::string tmp;
+    int         chunk_size = 0;
+
+    while ((int_bytes = read(client, buff, 1)) > 0) {
+      if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
+        PRINT_ERR("Invalid chunk size format");
+        exit(0);
+      }
+      tmp += buff[0];
+      if (erase(tmp, "\r\n") == true)
+        break ;
+      chunk_size++;
+      if (chunk_size > 6) {
+        PRINT_ERR("Excessive chunk size");
+        exit(0);
+      }
+    }
+    chunk_size = atoi(tmp.c_str());
+    size_t  compchunk = chunk_size;
+    if (compchunk >= sizeof(buff)) {
+      PRINT_ERR("Chunk size too big compared to buff size");
+      exit(0);
+    }
+    if ((int_bytes = read(client, buff, chunk_size)) > 0)
+      tmp = buff;
+    if (int_bytes == -1) {
+      PRINT_ERR("Couldn't read from client");
+      exit(0);
+    }
+    if (tmp == "\r\n") {
       content_lenght = 0;
     }
-    body_str += buffer;
+    else
+      body_str += tmp;
   }
 }
 
@@ -81,14 +126,14 @@ std::string check_method(std::string &method) {
   PRINT_FUNC();
   if (method == "GET" || method == "POST" || method == "DELETE") {
     PRINT_WIN("Success");
-    return std::string("", 0);
+    return std::string("HTTP/1.1 200 OK");
   }
   if (method == "HEAD" || method == "PUT" || method == "CONNECT" || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
     PRINT_ERR("501 Not Implemented");
-    return std::string("501 Not Implemented");
+    return std::string("HTTP/1.1 501 Not Implemented");
   }
   PRINT_ERR("400 Bad Request");
-  return std::string ("400 Bad Request");
+  return std::string ("HTTP/1.1 400 Bad Request");
 }
 
 int Request::parse_header(void) {
@@ -96,17 +141,19 @@ int Request::parse_header(void) {
   std::string method_buffer;
 
   method_buffer = check_method(method);
-  if (method_buffer.size() > 1) {
+  status = method_buffer + "\n";
+  if (method_buffer.size() > strlen("HTTP/1.1 200 OK ")) {
     PRINT_ERR(method_buffer);
-    answer += method_buffer;
     return -1;
   }
   if (method == "POST" && has_body == false) {
     PRINT_ERR("Couldn't find body in POST request");
+    status = "HTTP/1.1 400 Bad Request";
     return -1;
   }
   if (!host.size()) {
     PRINT_ERR("Couldn't find host");
+    status = "HTTP/1.1 400 Bad Request";
     return -1;
   }
   parsed_header = true;
@@ -141,15 +188,17 @@ int  Request::parse_body(void) {
       }
       if (boundary_count % 2) {
         PRINT_ERR("Uneven Boundary count");
+        status = "400 Bad Request";
         return -1;
       }
     }
     else {
       PRINT_ERR("Couldn't find Boundary in Body str");
+      status = "400 Bad Request";
       return -1;
     }
   }
-  else if (0) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
+  else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
     PRINT_LOG("Parsing form body");
     std::istringstream bodystream(body_str);
     std::string line;
@@ -191,22 +240,35 @@ void  Request::clear(void) {
   body.clear();
   body_str.clear();
   multi_body.clear();
+  file_content.clear();
+  file_path.clear();
+  file_type.clear();
+  file_size = 0;
+  read_size = 0;
+  complete_file = false;
+  in_response = false;
+  read_count = 0;
 }
 
 int  Request::read_client(int client) {
   std::string request;
   int int_bytes = 0;
+  char buff[buff_size];
 
   PRINT_FUNC();
+  if (in_response == true) {
+    PRINT_LOG("Continuing getting response");
+    return 1;
+  }
   if (parsed_body == true && parsed_header == true) {
     PRINT_WIN("Success");
     return 1;
   }
   if (complete_header == false) {
-    if ((int_bytes = read(client, buffer, sizeof(buffer))) > 0) {
+    if ((int_bytes = read(client, buff, sizeof(buff))) > 0) {
       current_bytes = int_bytes;
       bytes += current_bytes;
-      request += buffer;
+      request += buff;
     }
     if (int_bytes < 0) {
       PRINT_ERR("Error reading from client");
@@ -223,7 +285,8 @@ int  Request::read_client(int client) {
     get_body(client);
   if (complete_header && parsed_header == false)
     parse_header();
-  if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
+  //if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
+  if (complete_header && has_body && parsed_body == false)
     parse_body();
   if (complete_header && has_body == false)
     parsed_body = true;
@@ -239,6 +302,7 @@ int  Request::read_client(int client) {
 
 Request::Request(void) {
   PRINT_FUNC();
+  auth = false;
   has_size = false;
   in_use = false;
   answer = "HTTP/1.1 ";
@@ -250,6 +314,14 @@ Request::Request(void) {
   bytes = 0;
   current_bytes = 0;
   body_size = 0;
+  file_content.clear();
+  file_path.clear();
+  file_type.clear();
+  file_size = 0;
+  read_size = 0;
+  complete_file = false;
+  in_response = false;
+  read_count = 0;
 }
 
 Request::~Request(void) {

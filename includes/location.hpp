@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 #include "string.hpp"
-#include <unordered_map>
+#include <map>
 
 class Location {
   public:
@@ -15,7 +15,7 @@ class Location {
     ~Location(void);
     void  create_map(std::string &config);
     
-    std::unordered_map<std::string, std::string> _data;
+    std::map<std::string, std::string> _data;
     std::string _path;
     std::string _root;
 };

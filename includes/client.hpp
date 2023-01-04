@@ -4,11 +4,12 @@
 #include <string>
 #include <iostream>
 #include <sys/socket.h>
-#include <unordered_map>
+#include <map>
 #include <netinet/in.h>
 #include "request.hpp"
 #include <cstring>
 #include "string.hpp"
+#include <arpa/inet.h>
 
 class Client {
   public:
@@ -23,10 +24,11 @@ class Client {
     int _id;
     int _sock;
     unsigned short  _port;
+    std::string _cookie;
     std::string _addr;
     std::string _name;
     std::string _lastname;
-    std::unordered_map<std::string, std::string> _info;
+    std::map<std::string, std::string> _info;
     sockaddr_in addr;
     socklen_t addr_len;
     Request request;

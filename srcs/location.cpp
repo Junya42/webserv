@@ -1,7 +1,7 @@
 #include "../includes/location.hpp"
 #include <sstream>
 #include <iostream>
-#include <unordered_map>
+#include <map>
 
 Location::Location(void) {
 }
@@ -20,6 +20,8 @@ Location::Location(std::string &config) {
     std::string value;
     std::getline(line_stream, key, ':');
     std::getline(line_stream, value);
+    while (value[0] == '\t' || value[0] == ' ')
+      value.erase(0, 1);
     _data[key] = value;
   }
 }
@@ -41,8 +43,11 @@ void  Location::create_map(std::string & config) {
     std::string value;
     std::getline(line_stream, key, ':');
     std::getline(line_stream, value);
-    if (value.size())
+    if (value.size()) {
+      while (value[0] == '\t' || value[0] == ' ')
+        value.erase(0, 1);
       _data[key] = value;
+    }
     std::cout << "KEY :" << key << " : VALUE :" << value << std::endl;
     if (key.find("root") != std::string::npos) {
       _root = value;
@@ -56,8 +61,8 @@ void  Location::create_map(std::string & config) {
 }
 
 std::ostream &operator<<(std::ostream &nstream, Location &loc) {
-  for (std::unordered_map<std::string, std::string>::iterator it = loc._data.begin(); it != loc._data.end(); it++) {
-    nstream << "  " << it->first << " :::: " << it->second << std::endl;
+  for (std::map<std::string, std::string>::iterator it = loc._data.begin(); it != loc._data.end(); it++) {
+    nstream << "  " << it->first << "_::::_" << it->second << std::endl;
   }
   return nstream;
 }

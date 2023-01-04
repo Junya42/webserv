@@ -57,3 +57,24 @@ bool comp(std::string &s, std::string &str, size_t i = 0, size_t j = 0, char c =
   }
   return true;
 }
+
+bool  erase(std::string &s, const char *str, int pos = -1, size_t i = 0, size_t j = 0, size_t len = 0) {
+  if (len == 0)
+    len = strlen(str);
+  if (j == len) {
+    s.erase(pos, j);
+    return true;
+  }
+  if (i == s.size())
+    return false;
+  if (s[i] == s[j]) {
+    if (pos == -1)
+      pos = i;
+    return erase(s, str, pos, i + 1, j + 1, len);
+  }
+  else {
+    pos = -1;
+    return erase(s, str, pos, i + 1, 0, len);
+  }
+  return true;
+}

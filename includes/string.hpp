@@ -9,4 +9,6 @@ bool  comp(std::string &s, const char *str, size_t i = 0, size_t j = 0, char c =
 
 bool  comp(std::string &s, std::string &str, size_t i = 0, size_t j = 0, char c = 0);
 
+bool  erase(std::string &s, const char *str, int pos = -1, size_t i = 0, size_t j = 0, size_t len = 0);
+
 #endif

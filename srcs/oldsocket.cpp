@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdio.h>
 #include "../includes/config.hpp"
+#include "../includes/client.hpp"
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;

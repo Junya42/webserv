@@ -1,6 +1,8 @@
 #include "../includes/config.hpp"
+#include "../includes/macro.hpp"
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 
 Config::Config(void) {
 }
@@ -9,8 +11,8 @@ Config::~Config(void) {
 }
 
 void  Config::add_config(std::string &config) {
-
-  std::cout << "In add config" << std::endl;
+  this->init_mime();
+  PRINT_FUNC();
   std::istringstream stream(config);
   std::string line;
   std::string conf;
@@ -58,6 +60,41 @@ void  Config::add_config(std::string &config) {
     conf.clear();
     //std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
   }
+}
+
+void  Config::init_mime(void) {
+  PRINT_FUNC();
+  _mime.clear();
+  std::ifstream mime_reader;
+  std::string line;
+  std::string key;
+  std::string value;
+
+  mime_reader.open("./configs/mime_type");
+
+  if (mime_reader.is_open()) {
+    while (std::getline(mime_reader, line)) {
+      if (line[0] == '#')
+        continue ;
+      std::istringstream  line_stream(line);
+      std::getline(line_stream, key, '\t');
+      std::getline(line_stream, value);
+
+      while (value[0] == '\t' || value[0] == ' ')
+        value.erase(0, 1);
+      _mime[key] = value;
+    }
+  }
+  else {
+    PRINT_ERR("Couldn't get mime type");
+    PRINT_ERR("Can't handle requests");
+    PRINT_ERR("Please make sure your mime_type file located at configs/ is readable");
+    PRINT_ERR("Exiting server");
+    exit(0);
+  }
+ /* for (std::map<std::string, std::string>::iterator it = _mime.begin(); it != _mime.end(); it++) {
+    std::cout << it->first << ":" << it->second << std::endl;
+  }*/
 }
 
 std::ostream &operator<<(std::ostream &nstream, Config &config) {

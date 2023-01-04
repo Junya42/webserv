@@ -1,7 +1,7 @@
 #include "../includes/client.hpp"
 #include <ios>
 #include <ostream>
-#include <unordered_map>
+#include <map>
 
 Client::Client(void) {
   _log = false;
@@ -21,6 +21,7 @@ void  Client::reset(void) {
   _addr.clear();
   _name.clear();
   _lastname.clear();
+  _cookie.clear();
   _info.clear();
   std::memset(&addr, 0, sizeof(addr));
   request.clear();
@@ -31,11 +32,13 @@ std::ostream &operator<<(std::ostream &nstream, Client &client) {
     << "Socket: " << client._sock << std::endl
     << "Log: " << std::boolalpha << client._log << std::endl
     << "Port: " << client._port << std::endl
+    << "Address: " << inet_ntoa(client.addr.sin_addr) << std::endl
+    << "Cookie: " << client._cookie << std::endl
     << "Name: " << client._name << std::endl
     << "Last name: " << client._lastname << std::endl << std::endl
     << "Info: " << std::endl;
 
-  for (std::unordered_map<std::string, std::string>::iterator it = client._info.begin(); it != client._info.end(); it++) {
+  for (std::map<std::string, std::string>::iterator it = client._info.begin(); it != client._info.end(); it++) {
     nstream << "(Key: " << it->first << " ) (Value: " << it->second << " )" << std::endl;
   }
   nstream << std::endl;

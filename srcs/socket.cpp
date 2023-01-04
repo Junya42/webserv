@@ -12,10 +12,13 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
-#include <unordered_map>
+#include <map>
 #include <sstream>
 #include <stdio.h>
 #include "../includes/config.hpp"
+#include "../includes/client.hpp"
+#include "../includes/macro.hpp"
+#include "../includes/request.hpp"
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
@@ -115,7 +118,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *i
  */
 int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_fd, int *numclient, int epoll_fd) {
 	PRINT_FUNC();
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client, nullptr) < 0) {
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client, 0) < 0) {
 		PRINT_ERR("Couldn't remove client socket from epoll instance");
 		return -1;
 	}
@@ -154,57 +157,18 @@ int	init_epoll(int server) {
 	return epoll_fd;
 }
 
-void	answer_client(int client, Request &req) {
-	std::string answer;
+void	answer_client(Client &client, Request &req, Config &config) {
+	req.in_response = true;
 
-	answer = "HTTP/1.1 200 OK\n";
-	answer += "Content-Type: text/html\n";
-	answer += "Content-Length: ";
-
-	FILE *fd = NULL;
-	int pos = 0;
-	size_t size = 0;
-	fd = fopen("/home/junya/serv/default/button.html", "rb");
-	if (!fd) {
-		PRINT_ERR("Invalid file descriptor");
-		return ;
+	req.get_request(config._serv);
+	if (req.complete_file == true) {
+		req.get_response(config._mime);
+		std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+		write(client._sock, req.answer.c_str(), req.answer.size());
+		req.clear();
+		PRINT_WIN("Successfully sent response to client");
+		PRINT_WIN(client._id);
 	}
-	pos = ftell(fd);
-	fseek(fd, 0, SEEK_END);
-	size = ftell(fd);
-	fseek(fd, pos, SEEK_SET);
-
-	size_t bytes = 0;
-	char *buf = (char *)malloc(sizeof(char) * size);
-	if (!buf) {
-		PRINT_ERR("Couldn't allocate memory for read buffer");
-		fclose(fd);
-		return ;
-	}
-	bytes = fread(buf, 1, size, fd);
-	if (bytes < 1) {
-		PRINT_ERR("Couldn't read from file");
-		free(buf);
-		fclose(fd);
-		return ;
-	}
-	std::stringstream out;
-
-	for (size_t i = 0; i < size; i++)
-		out << buf[i];
-	std::string cpy = out.str();
-	free(buf);
-	fclose(fd);
-	std::ostringstream s;
-	s << size;
-
-	answer += s.str();
-	answer += "\r\n\r\n";
-	answer += cpy;
-
-	write(client, answer.c_str(), answer.size());
-	req.clear();
-	return ;
 }
 
 void	server_handler(Config &config) {
@@ -216,7 +180,6 @@ void	server_handler(Config &config) {
 	int status; //request status
 	std::vector<Client> clientlist;
 
-	(void)config;
 	server = init_server_socket();
 	epoll_fd = init_epoll(server);
 
@@ -226,14 +189,7 @@ void	server_handler(Config &config) {
 	int numclient = 0; //Number of clients;
 	int	id = 1; //unique client id;
 	while (1) {
-		num_events = epoll_wait(epoll_fd, events, curr_fd, -1);
-		/*if (num_events < 0) {
-			PRINT_ERR("Exiting server");
-			for (int i = 0; i < curr_fd; i++)
-				remove_client(events[i].data.fd, clientlist, i, &curr_fd, &numclient, epoll_fd);
-			close(epoll_fd);
-			exit(0);
-		}*/
+		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
 		for (int i = 0; i < num_events; i++) {
 			if (events[i].data.fd == server) {
 				PRINT_WIN("Server event"); 
@@ -248,26 +204,11 @@ void	server_handler(Config &config) {
 				 * status 0 for empty read since sockets are non blocking
 				 * status -1 for read errors
 				 */
+				std::cout << clientlist[i] << std::endl;
 				if (status == 1) {
 					PRINT_LOG("Status: 1");
 					std::cout << clientlist[i].request << std::endl; //priting the request data
-					answer_client(client, clientlist[i].request);
-					/*
-					std::string res = std::string("HTTP/1.1 200 OK\n\
-							Content-Length: 92\n\
-							Content-Type: text/html\n\
-							Connection: keep-alive\n\
-							\r\n\r\n\
-							<html>\n\
-							<body>\n\
-							<h1>Hello, World!</h1>\n\
-							</body>\n\
-							</html>");
-							
-					if (write(client, res.c_str(), res.size()) > 0) {//sending default answer to client
-						PRINT_LOG("Writing to client");
-						clientlist[i].request.clear();
-					}*/
+					answer_client(clientlist[i], clientlist[i].request, config);
 				}
 				else if (status == 0 && clientlist[i].request.in_use == false) {
 					PRINT_ERR("Client timed out or disconnected");
@@ -277,11 +218,18 @@ void	server_handler(Config &config) {
 					PRINT_ERR("Error syscall read / write");
 					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 				}
-				sleep(1);
 			}
 			else if (events[i].events & EPOLLOUT){
 				PRINT_WIN("EPOLLOUT Client event");
 			}
+		}
+		for (size_t j = 0; j < clientlist.size(); j++)
+		{
+			status = 0;
+			if (clientlist[j].request.in_use == true)
+				status = clientlist[j].request.read_client(clientlist[j]._sock);
+			if (clientlist[j].request.in_response == true || status == 1)
+					answer_client(clientlist[j], clientlist[j].request, config);
 		}
 	}
 	close(server);
