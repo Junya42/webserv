@@ -2,7 +2,7 @@
 #include <sstream>
 #include <unistd.h>
 
-void  Request::get_header(std::string &request) {
+void  Request::get_header(std::string &request, Client &parent) {
 
   std::istringstream stream(request);
   std::string line;
@@ -39,6 +39,7 @@ void  Request::get_header(std::string &request) {
       has_body = true;
     }
     else if (comp(key, "Content-type") == true) {
+      type = value;
       content_lenght = 1;
       has_body = true;
     }
@@ -56,18 +57,111 @@ void  Request::get_header(std::string &request) {
     line_count++;
   }
   std::cout << "_____________________________" << std::endl;
+  if (complete_header == true && has_body)
+    get_body_stream(stream, parent);
+}
+
+void  Request::get_body_stream(std::istringstream &stream, Client &parent) {
+  PRINT_FUNC();
+  char buff[buff_size];
+
+  memset(buff, 0, buff_size);
+  int int_bytes = 0;
+  if (comp(transfer_encoding, "chunked") == false)
+  {
+    PRINT_LOG("Body not chunked");
+    PRINT_LOG(content_lenght);
+    PRINT_LOG(has_size);
+    if (content_lenght > 0 && has_size == true) {
+      stream.read(buff, sizeof(buff));
+      int_bytes = stream.gcount();
+      current_bytes = int_bytes;
+      PRINT_LOG("Reading body with content_lenght");
+      PRINT_LOG(int_bytes);
+      body_str += buff;
+      content_lenght -= current_bytes;
+    }
+    else if (has_body == true && has_size == false) {
+      stream.read(buff, sizeof(buff));
+      int_bytes = stream.gcount();
+      PRINT_LOG("Reading body without content_lenght");
+      current_bytes = int_bytes;
+      std::cout << "sizeof buff: " << sizeof(buff) << std::endl;
+      std::cout << "current_bytes: " << int_bytes << std::endl;
+      if (int_bytes < 1 || current_bytes < sizeof(buff)) {
+        content_lenght = 0;
+      }
+      body_str += buff;
+    }
+    PRINT_LOG("TYPE = " + type);
+    if (comp(type, "x-www-form-urlencoded")) {
+      std::istringstream line_stream(body_str);
+      std::string key;
+      std::string value;
+      while (std::getline(line_stream, key, '=')) {
+        PRINT_WIN(key);
+        std::getline(line_stream, value, '&');
+        body[key] = value;
+        if (comp(key, "fname"))
+          parent._name = value;
+      }
+    }
+  }
+  /*else {
+    PRINT_LOG("Reading Chunked body");
+    std::string tmp;
+    int         chunk_size = 0;
+
+    while ((int_bytes = read(client, buff, 1)) > 0) {
+    if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
+    PRINT_ERR("Invalid chunk size format");
+    exit(0);
+    }
+    tmp += buff[0];
+    if (erase(tmp, "\r\n") == true)
+    break ;
+    chunk_size++;
+    if (chunk_size > 6) {
+    PRINT_ERR("Excessive chunk size");
+    exit(0);
+    }
+    }
+    chunk_size = atoi(tmp.c_str());
+    size_t  compchunk = chunk_size;
+    if (compchunk >= sizeof(buff)) {
+    PRINT_ERR("Chunk size too big compared to buff size");
+    exit(0);
+    }
+    if ((int_bytes = read(client, buff, chunk_size)) > 0)
+    tmp = buff;
+    if (int_bytes == -1) {
+    PRINT_ERR("Couldn't read from client");
+    exit(0);
+    }
+    if (tmp == "\r\n") {
+    content_lenght = 0;
+    }
+    else
+    body_str += tmp;
+    }*/
 }
 
 void  Request::get_body(int client) {
   PRINT_FUNC();
   char buff[buff_size];
 
+  memset(buff, 0, buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
-    if (content_lenght > 0 && has_size == true && (int_bytes = read(client, buff, sizeof(buff))) > 0) {
+    PRINT_LOG("Body not chunked");
+    PRINT_LOG(content_lenght);
+    PRINT_LOG(has_size);
+    if (content_lenght > 0 && has_size == true) {
+      int_bytes = read(client, buff, sizeof(buff));
       current_bytes = int_bytes;
       PRINT_LOG("Reading body with content_lenght");
+      PRINT_LOG(int_bytes);
       body_str += buff;
       content_lenght -= current_bytes;
     }
@@ -250,7 +344,7 @@ void  Request::clear(void) {
   read_count = 0;
 }
 
-int  Request::read_client(int client) {
+int  Request::read_client(int client, Client &parent) {
   std::string request;
   int int_bytes = 0;
   char buff[buff_size];
@@ -279,7 +373,7 @@ int  Request::read_client(int client) {
       return 0;
     }
     in_use = true;
-    get_header(request);
+    get_header(request, parent);
   }
   if (complete_header == true && has_body)
     get_body(client);

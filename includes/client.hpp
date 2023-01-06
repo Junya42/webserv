@@ -10,6 +10,12 @@
 #include <cstring>
 #include "string.hpp"
 #include <arpa/inet.h>
+#include <fstream>
+#include <vector>
+#include "body.hpp"
+#include "macro.hpp"
+#include "config.hpp"
+#include "mime.hpp"
 
 class Client {
   public:

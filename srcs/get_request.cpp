@@ -18,7 +18,7 @@ void  Request::get_file(std::vector<Server> &serv) {
       else if (path.find(".ico") != std::string::npos)
       {
         PRINT_LOG("Favicon Request");
-        file_path = "./favicon.ico";
+        file_path = "./favicon2.ico";
       }
       else
       {
@@ -41,7 +41,7 @@ void  Request::get_file(std::vector<Server> &serv) {
 void  Request::get_request(std::vector<Server> &serv) {
   PRINT_FUNC();
   std::ifstream file;
-  char buff[4096];
+  char buff[buff_size];
   std::string ascii;
 
   if (file_path.size() < 1)
@@ -114,13 +114,20 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime) {
   content_type += "\n";
 }
 
-void  Request::get_response(std::map<std::string, std::string> &_mime) {
+void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
   std::ostringstream s;
  
   this->set_content_type(_mime);
   s << read_size;
   answer = status;
  // answer += "Connection: keep-alive\n";
+  if (client._name.size()) {
+    if (client._cookie.size() < 1) {
+      client._cookie = client._name;
+    }
+    answer += "Set-Cookie: ";
+    answer += client._cookie;
+  }
   answer += content_type;
   if (comp(content_type, "html") == false)
     answer += "Content-Transfer-Encoding: binary\n";

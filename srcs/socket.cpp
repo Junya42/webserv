@@ -162,13 +162,26 @@ void	answer_client(Client &client, Request &req, Config &config) {
 
 	req.get_request(config._serv);
 	if (req.complete_file == true) {
-		req.get_response(config._mime);
+		req.get_response(config._mime, client);
 		std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 		write(client._sock, req.answer.c_str(), req.answer.size());
 		req.clear();
 		PRINT_WIN("Successfully sent response to client");
 		PRINT_WIN(client._id);
 	}
+}
+
+int find_client_in_vector(std::vector<Client> &clientlist, int client, int index) {
+	for (size_t i = 0; i < clientlist.size(); i++) {
+		if (clientlist[i]._sock == client) {
+			PRINT_WIN("Found client in vector");
+			std::cout << "\033[1;32m" << clientlist[i] << "\033[0m" << std::endl;
+			return i;
+		}
+	}
+	PRINT_ERR("Couldn't find client in vector");
+	std::cout << "\033[1;31m" << clientlist[index] << "\033[0m" << std::endl;
+	return index;
 }
 
 void	server_handler(Config &config) {
@@ -188,6 +201,7 @@ void	server_handler(Config &config) {
 	int curr_fd = 1; // Number of actual clients fd + server fd;
 	int numclient = 0; //Number of clients;
 	int	id = 1; //unique client id;
+	int save_index;
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
 		for (int i = 0; i < num_events; i++) {
@@ -198,13 +212,14 @@ void	server_handler(Config &config) {
 			else if (events[i].events & EPOLLIN) {
 				PRINT_WIN("EPOLLIN Client event");
 				client = events[i].data.fd;
-				status = clientlist[i].request.read_client(client); //read and parse client request data
+				save_index = i;
+				i = find_client_in_vector(clientlist, client, i);
+				status = clientlist[i].request.read_client(client, clientlist[i]); //read and parse client request data
 
 				/* status 1 for success, no error during read and parsing
 				 * status 0 for empty read since sockets are non blocking
 				 * status -1 for read errors
 				 */
-				std::cout << clientlist[i] << std::endl;
 				if (status == 1) {
 					PRINT_LOG("Status: 1");
 					std::cout << clientlist[i].request << std::endl; //priting the request data
@@ -218,6 +233,7 @@ void	server_handler(Config &config) {
 					PRINT_ERR("Error syscall read / write");
 					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 				}
+				i = save_index;
 			}
 			else if (events[i].events & EPOLLOUT){
 				PRINT_WIN("EPOLLOUT Client event");
@@ -227,7 +243,7 @@ void	server_handler(Config &config) {
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true)
-				status = clientlist[j].request.read_client(clientlist[j]._sock);
+				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j]);
 			if (clientlist[j].request.in_response == true || status == 1)
 					answer_client(clientlist[j], clientlist[j].request, config);
 		}

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include "client.hpp"
 #include <vector>
 #include <fstream>
 #include "body.hpp"
@@ -11,6 +12,8 @@
 #include "config.hpp"
 #include "mime.hpp"
 
+class Client;
+
 class Request {
   public:
     Request(void);
@@ -18,8 +21,9 @@ class Request {
     Request(std::string &request); //parse request using get_header and get_body
 
     void  clear(void); //clear all request variables
-    int  read_client(int client);
-    void  get_header(std::string &request);
+    int  read_client(int client, Client &parent);
+    void  get_header(std::string &request, Client &parent);
+    void  get_body_stream(std::istringstream &stream, Client &parent);
     void  get_body(int client);
 
     int   parse_header(void);
@@ -28,7 +32,7 @@ class Request {
     void        get_request(std::vector<Server> &serv); //located at srcs/get_request.cpp
     void        get_file(std::vector<Server> &serv);
     void        set_content_type(std::map<std::string, std::string> &_mime);
-    void        get_response(std::map<std::string, std::string> &_mime);
+    void        get_response(std::map<std::string, std::string> &_mime, Client &client);
 
     void        post_request(std::vector<Server> &serv); //located at srcs/post_request.cpp
 
@@ -38,7 +42,7 @@ class Request {
 
     //Default 4096
     char                buffer[4096]; //Reading buffer
-    static const int    buff_size = 10000;
+    static const int    buff_size = 16000;
     size_t              bytes; //bytes read
     size_t              current_bytes;
     size_t              body_size;
