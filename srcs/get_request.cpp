@@ -1,4 +1,4 @@
-#include "../includes/request.hpp"
+#include "../includes/client.hpp"
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -18,7 +18,7 @@ void  Request::get_file(std::vector<Server> &serv) {
       else if (path.find(".ico") != std::string::npos)
       {
         PRINT_LOG("Favicon Request");
-        file_path = "./favicon2.ico";
+        file_path = "./favicon.ico";
       }
       else
       {
@@ -123,7 +123,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
  // answer += "Connection: keep-alive\n";
   if (client._name.size()) {
     if (client._cookie.size() < 1) {
-      client._cookie = client._name;
+      client._cookie = "log=" + client._name + "\n";
     }
     answer += "Set-Cookie: ";
     answer += client._cookie;

@@ -5,9 +5,11 @@
 
 Client::Client(void) {
   _log = false;
+  _fav = false;
   _sock = -1;
   _port = -1;
   _id = -1;
+  _request_count = 0;
   addr_len = sizeof(addr);
 };
 
@@ -17,7 +19,9 @@ Client::~Client(void) {
 void  Client::reset(void) {
   _sock = -1;
   _log = false;
+  _fav = false;
   _port = -1;
+  _request_count = 0;
   _addr.clear();
   _name.clear();
   _lastname.clear();

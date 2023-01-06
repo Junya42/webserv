@@ -1,4 +1,4 @@
-#include "../includes/request.hpp"
+#include "../includes/client.hpp"
 #include <sstream>
 #include <unistd.h>
 
@@ -9,12 +9,15 @@ void  Request::get_header(std::string &request, Client &parent) {
   size_t  line_count = 0;
 
   PRINT_FUNC();
-  std::cout << "_____________________________" << std::endl
+  /*std::cout << "_____________________________" << std::endl
     << "\033[1;32mRequest: \033[0m" << std::endl
     << request << std::endl;
-
-  if (method.size() < 1)
+*/
+  if (method.size() < 1) {
     stream >> method >> path >> version;
+    if (comp(path, ".ico") == true)
+      parent._fav = true;
+  }
   PRINT_LOG(method);
   PRINT_LOG(path);
   PRINT_LOG(version);
@@ -31,7 +34,7 @@ void  Request::get_header(std::string &request, Client &parent) {
     std::getline(line_stream, value);
 
     header[key] = value;
-    PRINT_LOG(std::string(key + " : " + value, 0, key.size() + value.size() + 2));
+   // PRINT_LOG(std::string(key + " : " + value, 0, key.size() + value.size() + 2));
     if (comp(key, "Content-Length") == true) {
       content_lenght = atoi(value.c_str());
       body_size = content_lenght;
@@ -45,6 +48,10 @@ void  Request::get_header(std::string &request, Client &parent) {
     }
     else if (comp(key, "Host") == true) {
       host = value;
+    }
+    else if (comp(key, "Cookie") == true && parent._fav == false) {
+      parent._cookie = value;
+      cookie = value;
     }
     else if (comp(key, "Content-Type: multipart/form-data") == true) {
       std::istringstream bound(value);
@@ -430,6 +437,7 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     << "\033[1m\033[2mMethod:\033[0m" << req.method << std::endl
     << "\033[1m\033[2mPath:\033[0m" << req.path << std::endl
     << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
+    << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
     << "\033[1m\033[2mBoundary:\033[0m" << req.boundary << std::endl << std::endl
     << "\033[1m\033[2mHas body:\033[0m" << std::boolalpha << req.has_body << std::endl
     << "\033[1m\033[2mHas size:\033[0m" << std::boolalpha << req.has_body << std::endl

@@ -18,7 +18,6 @@
 #include "../includes/config.hpp"
 #include "../includes/client.hpp"
 #include "../includes/macro.hpp"
-#include "../includes/request.hpp"
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
@@ -124,7 +123,11 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	}
 	*curr_fd = *curr_fd - 1;
 	*numclient = *numclient - 1;
-	clientlist.erase(clientlist.begin() + i);
+	if (clientlist[i]._name.size() < 1 && clientlist[i]._cookie.size() < 1) {
+		PRINT_ERR("Deleting elem from clientlist");
+		clientlist.erase(clientlist.begin() + i);
+		PRINT_ERR(clientlist.size());
+	}
 	close(client);
 	PRINT_LOG("Updating number of clients");
 	PRINT_LOG(*numclient);
@@ -163,7 +166,7 @@ void	answer_client(Client &client, Request &req, Config &config) {
 	req.get_request(config._serv);
 	if (req.complete_file == true) {
 		req.get_response(config._mime, client);
-		std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+		/*std::cout << "ANSWER" << std::endl << req.answer << std::endl;*/
 		write(client._sock, req.answer.c_str(), req.answer.size());
 		req.clear();
 		PRINT_WIN("Successfully sent response to client");
@@ -184,13 +187,30 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 	return index;
 }
 
+void	reorganize_client_list(std::vector<Client> &clientlist, size_t index) {
+	PRINT_LOG(clientlist[index].request.path);
+	if (clientlist[index]._request_count < 1 && comp(clientlist[index].request.path, ".ico") == false && clientlist[index]._cookie.size()) {
+		for (size_t i = 0; i < clientlist.size(); i++) {
+			if (i != index && clientlist[i]._fav == false && clientlist[i]._cookie == clientlist[index]._cookie) {
+				clientlist[index]._name = clientlist[i]._name;
+				clientlist[index]._lastname = clientlist[i]._lastname;
+				clientlist[index]._request_count += clientlist[i]._request_count;
+				clientlist[index]._files = clientlist[i]._files;
+				clientlist.erase(clientlist.begin() + i);
+				PRINT_LOG(clientlist.size());
+				break ;
+			}
+		}
+	}
+}
+
 void	server_handler(Config &config) {
 
 	int server; //server socket fd
 	int	client; //client socket fd
 	int	epoll_fd; //epoll instance 
-	int num_events; //number of events occuring in epoll wait
 	int status; //request status
+	size_t num_events; //number of events occuring in epoll wait
 	std::vector<Client> clientlist;
 
 	server = init_server_socket();
@@ -204,7 +224,7 @@ void	server_handler(Config &config) {
 	int save_index;
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
-		for (int i = 0; i < num_events; i++) {
+		for (size_t i = 0; i < num_events; i++) {
 			if (events[i].data.fd == server) {
 				PRINT_WIN("Server event"); 
 				add_client(server, epoll_fd, clientlist, &id, &numclient, &curr_fd);
@@ -233,6 +253,8 @@ void	server_handler(Config &config) {
 					PRINT_ERR("Error syscall read / write");
 					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 				}
+				reorganize_client_list(clientlist, i);
+				clientlist[i]._request_count++;
 				i = save_index;
 			}
 			else if (events[i].events & EPOLLOUT){
@@ -245,7 +267,7 @@ void	server_handler(Config &config) {
 			if (clientlist[j].request.in_use == true)
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j]);
 			if (clientlist[j].request.in_response == true || status == 1)
-					answer_client(clientlist[j], clientlist[j].request, config);
+				answer_client(clientlist[j], clientlist[j].request, config);
 		}
 	}
 	close(server);
