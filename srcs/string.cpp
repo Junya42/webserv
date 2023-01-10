@@ -1,6 +1,7 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include "../includes/macro.hpp"
 
 int is_alpha(char c) {
@@ -12,7 +13,7 @@ int is_alpha(char c) {
     return 0;
 }
 
-bool comp(std::string &s, const char *str, size_t i = 0, size_t j = 0, char c = 0, size_t len = 0) {
+bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t j = 0, char c = 0, size_t len = 0) {
   if (len == 0)
     len = strlen(str);
   if (i == s.size() && j == len)
@@ -23,39 +24,73 @@ bool comp(std::string &s, const char *str, size_t i = 0, size_t j = 0, char c = 
     return false;
   if ((c = is_alpha(*(s.begin() + i))) > 0) {
     if (c == str[j] || *(s.begin() + i) == str[j])
-      return comp(s, str, i + 1, j + 1, c, len);
-    else
-      return comp(s, str, i + 1, 0, c, len);
+      return comp(s, str, pos, i + 1, j + 1, c, len);
+    else {
+      pos++;
+      i = pos;
+      return comp(s, str, pos, i, 0, c, len);
+      }
   }
   else {
     if (*(s.begin() + i) == str[j])
-      return comp(s, str, i + 1, j + 1, c, len);
-    else
-      return comp(s, str, i + 1, 0, c, len);
+      return comp(s, str, pos, i + 1, j + 1, c, len);
+    else {
+      pos++;
+      i = pos;
+      return comp(s, str, pos, i, 0, c, len);
+    }
   }
   return true;
 }
 
-bool comp(std::string &s, std::string &str, size_t i = 0, size_t j = 0, char c = 0) {
-  if (i == s.size() && j == str.size())
+/*
+ *  -----------------------------403067876422065921751058655471--
+ *  ---------------------------403067876422065921751058655471
+ */
+
+bool comp(std::string &s, std::string &str, size_t pos = 0, size_t i = 0, size_t j = 0, char c = 0) {
+  if (i == s.size() && j == str.size()) {
+    PRINT_WIN("i = size() && j = size()");
     return true;
-  if (j == str.size())
+  }
+  if (j == str.size()) {
+    PRINT_WIN("j = size()");
     return true;
-  if (i == s.size())
+  }
+  if (i == s.size()) {
+    PRINT_ERR("i = size() : unread bytes in j = " + std::to_string(str.size() - j) + ", j.size() = " + std::to_string(str.size()));
     return false;
+  }
   if ((c = is_alpha(*(s.begin() + i))) > 0) {
     if (c == str[j] || *(s.begin() + i) == str[j])
-      return comp(s, str, i + 1, j + 1);
-    else
-      return comp(s, str, i + 1);
+      return comp(s, str, pos, i + 1, j + 1);
+    else {
+      pos++;
+      i = pos;
+      return comp(s, str, pos, i);
+      }
   }
   else {
     if (*(s.begin() + i) == str[j])
-      return comp(s, str, i + 1, j + 1);
-    else
-      return comp(s, str, i + 1);
+      return comp(s, str, pos, i + 1, j + 1);
+    else {
+      pos++;
+      i = pos;
+      return comp(s, str, pos, i);
+    }
   }
   return true;
+}
+
+bool replace(std::string &s, const char *name, std::string &str, size_t found = 0) {
+  std::string sub = name;
+
+  found = s.find(sub, found);
+  if (found != std::string::npos) {
+    s.replace(found, sub.size(), str);
+    return true;
+  }
+  return false;
 }
 
 bool  erase(std::string &s, const char *str, int pos = -1, size_t i = 0, size_t j = 0, size_t len = 0) {

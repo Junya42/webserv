@@ -4,7 +4,7 @@
 #include <map>
 
 Client::Client(void) {
-  _log = false;
+  _log = true;
   _fav = false;
   _sock = -1;
   _port = -1;
@@ -18,7 +18,7 @@ Client::~Client(void) {
 
 void  Client::reset(void) {
   _sock = -1;
-  _log = false;
+  _log = true;
   _fav = false;
   _port = -1;
   _request_count = 0;
@@ -33,8 +33,12 @@ void  Client::reset(void) {
 
 std::ostream &operator<<(std::ostream &nstream, Client &client) {
   nstream << std::endl << "Client info:" << std::endl << std::endl
-    << "Socket: " << client._sock << std::endl
-    << "Log: " << std::boolalpha << client._log << std::endl
+    << "Socket: " << client._sock << std::endl;
+  if (client._log == true)
+    nstream << "Log: \033[1;32m" << std::boolalpha << client._log << "\033[0m" << std::endl;
+  else
+    nstream << "Log: \033[1;31m" << std::boolalpha << client._log << "\033[0m" << std::endl;
+  nstream << "Request count: " << client._request_count << std::endl
     << "Port: " << client._port << std::endl
     << "Address: " << inet_ntoa(client.addr.sin_addr) << std::endl
     << "Cookie: " << client._cookie << std::endl

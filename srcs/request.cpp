@@ -2,19 +2,20 @@
 #include <sstream>
 #include <unistd.h>
 
-void  Request::get_header(std::string &request, Client &parent) {
+void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   std::istringstream stream(request);
   std::string line;
   size_t  line_count = 0;
 
   PRINT_FUNC();
-  /*std::cout << "_____________________________" << std::endl
+  std::cout << "_____________________________" << std::endl
     << "\033[1;32mRequest: \033[0m" << std::endl
     << request << std::endl;
-*/
+
   if (method.size() < 1) {
     stream >> method >> path >> version;
+    parent._path = path;
     if (comp(path, ".ico") == true)
       parent._fav = true;
   }
@@ -42,7 +43,11 @@ void  Request::get_header(std::string &request, Client &parent) {
       has_body = true;
     }
     else if (comp(key, "Content-type") == true) {
-      type = value;
+      std::istringstream value_stream(value);
+      std::getline(value_stream, type, ';');
+      std::getline(value_stream, boundary, '=');
+      std::getline(value_stream, boundary);
+      //type = value;
       content_lenght = 1;
       has_body = true;
     }
@@ -64,14 +69,14 @@ void  Request::get_header(std::string &request, Client &parent) {
     line_count++;
   }
   std::cout << "_____________________________" << std::endl;
+  //std::cout << *this << std::endl;
   if (complete_header == true && has_body)
-    get_body_stream(stream, parent);
+    get_body_stream(stream, parent, tmp);
 }
 
-void  Request::get_body_stream(std::istringstream &stream, Client &parent) {
+void  Request::get_body_stream(std::istringstream &stream, Client &parent, Client &tmp) {
   PRINT_FUNC();
   char buff[buff_size];
-
   memset(buff, 0, buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
@@ -80,18 +85,24 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent) {
     PRINT_LOG(content_lenght);
     PRINT_LOG(has_size);
     if (content_lenght > 0 && has_size == true) {
-      stream.read(buff, sizeof(buff));
-      int_bytes = stream.gcount();
+      int old_bytes = stream.gcount();
+      if (content_lenght > sizeof(buff))
+        stream.read(buff, sizeof(buff));
+      else
+        stream.read(buff, content_lenght);
+      int_bytes = stream.gcount() - old_bytes;
       current_bytes = int_bytes;
-      PRINT_LOG("Reading body with content_lenght");
-      PRINT_LOG(int_bytes);
+      PRINT_LOG("Reading body with content_lenght: " + std::to_string(content_lenght));
+      PRINT_LOG("bytes read: " + std::to_string(int_bytes));
       body_str += buff;
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
+      int old_bytes = stream.gcount();
       stream.read(buff, sizeof(buff));
-      int_bytes = stream.gcount();
-      PRINT_LOG("Reading body without content_lenght");
+      int_bytes = stream.gcount() - old_bytes;
+      PRINT_LOG("Reading body without content_lenght: " + std::to_string(content_lenght));
+      PRINT_LOG("bytes read: " + std::to_string(int_bytes));
       current_bytes = int_bytes;
       std::cout << "sizeof buff: " << sizeof(buff) << std::endl;
       std::cout << "current_bytes: " << int_bytes << std::endl;
@@ -106,51 +117,61 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent) {
       std::string key;
       std::string value;
       while (std::getline(line_stream, key, '=')) {
-        PRINT_WIN(key);
         std::getline(line_stream, value, '&');
         body[key] = value;
-        if (comp(key, "fname"))
+        if (comp(key, "fname")) {
+          if (parent._name.size()) {
+            PRINT_LOG("Creating new client based on parent");
+            tmp = parent;
+            tmp._sock = 0;
+            parent._oldname = parent._name;
+          }
           parent._name = value;
+          PRINT_WIN("Set client name to: " + value);
+        }
+        else {
+          parent._lastname = value;
+        }
       }
     }
   }
   /*else {
-    PRINT_LOG("Reading Chunked body");
-    std::string tmp;
-    int         chunk_size = 0;
+  PRINT_LOG("Reading Chunked body");
+  std::string tmp;
+  int         chunk_size = 0;
 
-    while ((int_bytes = read(client, buff, 1)) > 0) {
-    if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
-    PRINT_ERR("Invalid chunk size format");
-    exit(0);
-    }
-    tmp += buff[0];
-    if (erase(tmp, "\r\n") == true)
-    break ;
-    chunk_size++;
-    if (chunk_size > 6) {
-    PRINT_ERR("Excessive chunk size");
-    exit(0);
-    }
-    }
-    chunk_size = atoi(tmp.c_str());
-    size_t  compchunk = chunk_size;
-    if (compchunk >= sizeof(buff)) {
-    PRINT_ERR("Chunk size too big compared to buff size");
-    exit(0);
-    }
-    if ((int_bytes = read(client, buff, chunk_size)) > 0)
-    tmp = buff;
-    if (int_bytes == -1) {
-    PRINT_ERR("Couldn't read from client");
-    exit(0);
-    }
-    if (tmp == "\r\n") {
-    content_lenght = 0;
-    }
-    else
-    body_str += tmp;
-    }*/
+  while ((int_bytes = read(client, buff, 1)) > 0) {
+  if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
+  PRINT_ERR("Invalid chunk size format");
+  exit(0);
+  }
+  tmp += buff[0];
+  if (erase(tmp, "\r\n") == true)
+  break ;
+  chunk_size++;
+  if (chunk_size > 6) {
+  PRINT_ERR("Excessive chunk size");
+  exit(0);
+  }
+  }
+  chunk_size = atoi(tmp.c_str());
+  size_t  compchunk = chunk_size;
+  if (compchunk >= sizeof(buff)) {
+  PRINT_ERR("Chunk size too big compared to buff size");
+  exit(0);
+  }
+  if ((int_bytes = read(client, buff, chunk_size)) > 0)
+  tmp = buff;
+  if (int_bytes == -1) {
+  PRINT_ERR("Couldn't read from client");
+  exit(0);
+  }
+  if (tmp == "\r\n") {
+  content_lenght = 0;
+  }
+  else
+  body_str += tmp;
+  }*/
 }
 
 void  Request::get_body(int client) {
@@ -274,12 +295,16 @@ int  Request::parse_body(void) {
       body_str.clear();
       int boundary_count = 0;
       while (std::getline(bodystream, cpy)) {
+        PRINT_LOG(cpy);
         if (cpy.find("Content-Disposition") != std::string::npos)
           tmpbody.disposition = cpy;
         else if (cpy.find("Content-Type") != std::string::npos)
           tmpbody.type = cpy;
-        if (cpy.find(boundary) != std::string::npos)
+        if (comp(cpy, boundary) == true) {
+          PRINT_WIN(boundary);
+          PRINT_WIN("FOUND BOUNDARY");
           boundary_count++;
+        }
         else
           tmpbody.data.push_back(cpy);
         if (boundary_count % 2 == 0) {
@@ -300,7 +325,7 @@ int  Request::parse_body(void) {
     }
   }
   else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
-    PRINT_LOG("Parsing form body");
+                                                    PRINT_LOG("Parsing form body");
     std::istringstream bodystream(body_str);
     std::string line;
     while (std::getline(bodystream, line)) {
@@ -349,9 +374,10 @@ void  Request::clear(void) {
   complete_file = false;
   in_response = false;
   read_count = 0;
+  found_user = false;
 }
 
-int  Request::read_client(int client, Client &parent) {
+int  Request::read_client(int client, Client &parent, Client &tmp) {
   std::string request;
   int int_bytes = 0;
   char buff[buff_size];
@@ -380,7 +406,7 @@ int  Request::read_client(int client, Client &parent) {
       return 0;
     }
     in_use = true;
-    get_header(request, parent);
+    get_header(request, parent, tmp);
   }
   if (complete_header == true && has_body)
     get_body(client);
@@ -392,13 +418,14 @@ int  Request::read_client(int client, Client &parent) {
   if (complete_header && has_body == false)
     parsed_body = true;
   if (parsed_body == true && parsed_header == true) {
+    in_use = false;
     PRINT_WIN("Success");
     return 1;
   }
   PRINT_LOG("Uncomplete request or bad request");
   std::cout << *this << std::endl;
   PRINT_LOG("END-OF-LOG")
-    return 0;
+  return 0;
 }
 
 Request::Request(void) {
@@ -423,6 +450,7 @@ Request::Request(void) {
   complete_file = false;
   in_response = false;
   read_count = 0;
+  found_user = false;
 }
 
 Request::~Request(void) {
@@ -438,6 +466,7 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     << "\033[1m\033[2mPath:\033[0m" << req.path << std::endl
     << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
     << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
+    << "\033[1m\033[2mType:\033[0m" << req.type << std::endl
     << "\033[1m\033[2mBoundary:\033[0m" << req.boundary << std::endl << std::endl
     << "\033[1m\033[2mHas body:\033[0m" << std::boolalpha << req.has_body << std::endl
     << "\033[1m\033[2mHas size:\033[0m" << std::boolalpha << req.has_body << std::endl

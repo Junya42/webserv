@@ -37,8 +37,36 @@
 	background-color: rgba(255,255,255,0.3);
 }
 
+.glass-button-return {
+	display: inline-block;
+	padding: 24px 32px;
+	border: 0;
+	position: absolute;
+	top: 150px; right: 30px;
+	text-decoration: none;
+	border-radius: 15px;
+	background-color: rgba(255,255,255,0.1);
+	border: 1px solid rgba(255,255,255,0.1);
+	backdrop-filter: blur(30px);
+	color: rgba(255,255,255,0.8);
+	font-size: 14px;
+	letter-spacing: 2px;
+	cursor: pointer;
+	text-transform: uppercase;
+	transition: 1s;
+}
+
+.glass-button-return:hover {
+	transform: scale(1.1);
+	background-color: rgba(255,255,255,0.3);
+}
+
 @media (max-width: 800px) {
 	.glass-button-user {
+		transition: 0s;
+		margin: 20%;
+	}
+	.glass-button-return {
 		transition: 0s;
 		margin: 20%;
 	}
@@ -120,10 +148,11 @@
 	</head>
 	<body>
 		<h1>WEBSERV</h1>
-		<div class="glass-button-user"> $fname $lname </div>
+		<a href ="http://localhost:8080/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect $@</a>
+		<a href ="http://localhost:8080/html/user" target="_self" class="glass-button-return"> Return</a>
 		<div class="glass-panel">
 			<form enctype = "multipart/form-data" action = "/html/user" method = "POST">
-				<input type = "file" name = "filename">
+				<input type = "file" id="files" name = "filenames" multiple>
 				<input type = "submit" value = "Upload" class="glass-button">
 			</form>
 			<div class="glass-toolbar">

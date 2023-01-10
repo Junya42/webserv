@@ -89,6 +89,7 @@ class Request {
     size_t              read_size; //current buffer size
     size_t              read_count;
     bool                complete_file; //set to true if read_size == file_size
+    bool                found_user;
 };
 
 std::ostream &operator<<(std::ostream &n, Request &req);

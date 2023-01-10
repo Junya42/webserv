@@ -15,6 +15,7 @@ SRCS = main.cpp \
 	   get_request.cpp \
 	   string.cpp \
 	   socket.cpp \
+	   server_loop.cpp \
 
 SRCS_PATH = $(addprefix srcs/, $(SRCS))
 SRC_NUM := $(words $(SRCS))

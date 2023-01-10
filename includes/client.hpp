@@ -25,15 +25,15 @@ class Request {
     Request(std::string &request); //parse request using get_header and get_body
 
     void  clear(void); //clear all request variables
-    int  read_client(int client, Client &parent);
-    void  get_header(std::string &request, Client &parent);
-    void  get_body_stream(std::istringstream &stream, Client &parent);
+    int  read_client(int client, Client &parent, Client &tmp);
+    void  get_header(std::string &request, Client &parent, Client &tmp);
+    void  get_body_stream(std::istringstream &stream, Client &parent, Client &tmp);
     void  get_body(int client);
 
     int   parse_header(void);
     int   parse_body(void);
 
-    void        get_request(std::vector<Server> &serv); //located at srcs/get_request.cpp
+    void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
     void        get_file(std::vector<Server> &serv);
     void        set_content_type(std::map<std::string, std::string> &_mime);
     void        get_response(std::map<std::string, std::string> &_mime, Client &client);
@@ -94,6 +94,7 @@ class Request {
     size_t              read_size; //current buffer size
     size_t              read_count;
     bool                complete_file; //set to true if read_size == file_size
+    bool                found_user;
 };
 
 std::ostream &operator<<(std::ostream &n, Request &req);
@@ -107,6 +108,40 @@ class Client {
 
     int addclient(int server, int epoll_fd, std::vector<Client> &clientlist);
 
+    Client &operator=(Client const &client) {
+      PRINT_LOG("OPERATOR =");
+      _fav = client._fav;
+      _id = client._id + 1;
+      _sock = client._sock;
+      _log = true;
+      _request_count = client._request_count;
+      _port = client._port;
+      _cookie = client._cookie;
+      _addr = client._addr;
+      _name = client._name;
+      _lastname = client._lastname;
+      _path = client._path;
+      _files = client._files;
+      request.clear();
+      return *this;
+    }
+
+    void  clear(void) {
+      _log = false;
+      _fav = false;
+      _id = 0;
+      _sock = 0;
+      _port = 0;
+      _cookie.clear();
+      _addr.clear();
+      _name.clear();
+      _lastname.clear();
+      _oldname.clear();
+      _path.clear();
+      _files.clear();
+      request.clear();
+    }
+
     bool  _log;
     bool _fav;
     int _id;
@@ -115,9 +150,11 @@ class Client {
     size_t  _request_count;
     std::string _cookie;
     std::string _addr;
+    std::string _oldname;
     std::string _name;
     std::string _lastname;
-    std::vector<std::string> _files;
+    std::string _path;
+    std::map<std::string, std::vector<std::string>> _files;
     std::map<std::string, std::string> _info;
     sockaddr_in addr;
     socklen_t addr_len;
