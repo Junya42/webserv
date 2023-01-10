@@ -1,6 +1,6 @@
 #include "../includes/socket.hpp"
 
-const int PORT = 8080;
+//const int PORT = 8080;
 const int MAX_EVENTS = 10;
 
 /*	Create a server socket

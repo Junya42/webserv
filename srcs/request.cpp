@@ -295,7 +295,7 @@ int  Request::parse_body(void) {
       body_str.clear();
       int boundary_count = 0;
       while (std::getline(bodystream, cpy)) {
-        PRINT_LOG(cpy);
+      //  PRINT_LOG(cpy);
         if (cpy.find("Content-Disposition") != std::string::npos)
           tmpbody.disposition = cpy;
         else if (cpy.find("Content-Type") != std::string::npos)
@@ -423,8 +423,8 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     return 1;
   }
   PRINT_LOG("Uncomplete request or bad request");
-  std::cout << *this << std::endl;
-  PRINT_LOG("END-OF-LOG")
+  //std::cout << *this << std::endl;
+  //PRINT_LOG("END-OF-LOG")
   return 0;
 }
 

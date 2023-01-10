@@ -141,6 +141,7 @@ int	init_epoll(int server) {
 void	answer_client(Client &client, Request &req, Config &config) {
 	req.in_response = true;
 
+	PRINT_FUNC();
 	req.get_request(config._serv, client);
 	if (req.complete_file == true) {
 		req.get_response(config._mime, client);

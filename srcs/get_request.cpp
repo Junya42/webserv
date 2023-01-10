@@ -5,38 +5,41 @@
 #include <unistd.h>
 
 void  Request::get_file(std::vector<Server> &serv) {
+  PRINT_FUNC();
   std::string tmp_path;
-  if (comp(path, "?") == true) {
+  if (comp(path, "?disconnect") == true) {
     for (size_t i = 0; i < path.size(); i++)
       if (path[i] == '?')
         tmp_path = path.substr(0, i);
   }
   else
     tmp_path = path;
+  //PRINT_LOG("path = " + path);
+  //PRINT_LOG("tmp path = " + tmp_path);
   for (size_t i = 0; i < serv.size(); i++) {
     if (comp(host, serv[i]._host) == true) {
-   //   PRINT_LOG("Found host");
+   //PRINT_LOG("Found host");
       if (tmp_path.compare("/") == 0)
       {
-      //  PRINT_LOG("Using default server index");
+      //PRINT_LOG("Using default server index");
         file_path = serv[i]._index;
         while (file_path[0] == ' ' || file_path[0] == '\t')
           file_path.erase(0, 1);
       }
       else if (tmp_path.find(".ico") != std::string::npos)
       {
-     //   PRINT_LOG("Favicon Request");
+     //PRINT_LOG("Favicon Request");
         file_path = "./favicon.ico";
       }
       else
       {
-     //   PRINT_LOG("Custom index");
-       // PRINT_LOG("Looking for path:" + path);
+     //PRINT_LOG("Custom index");
+       //PRINT_LOG("Looking for path:" + path);
         for (size_t j = 0; j < serv[i]._loc.size(); j++) {
-       //   PRINT_LOG(serv[i]._loc[j]._path);
+       //PRINT_LOG(serv[i]._loc[j]._path);
           if (comp(tmp_path, serv[i]._loc[j]._path) == true) {
             file_path = serv[i]._loc[j]._root + tmp_path + "/" + "index.html";
-        //    PRINT_WIN("Found filename");
+        //PRINT_WIN("Found filename");
             break ;
           }
         }
@@ -53,7 +56,7 @@ void  Request::get_file(std::vector<Server> &serv) {
 }
 
 void  Request::get_request(std::vector<Server> &serv, Client &client) {
-//  PRINT_FUNC();
+  PRINT_FUNC();
   std::ifstream file;
   char buff[buff_size];
   std::string ascii;
@@ -61,23 +64,23 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   if (file_path.size() < 1)
     this->get_file(serv);
   if (complete_file == true) {
-   // PRINT_WIN("File complete");
+   PRINT_WIN("File complete");
     return ;
   }
   if (file_size > 0) {
     read_count++;
     ascii = std::to_string(read_count);
-  //  PRINT_LOG(ascii + " time opening");
+  //PRINT_LOG(ascii + " time opening");
     file.open(file_path.c_str(), std::ifstream::in | std::ifstream::binary);
     file.seekg(read_size, file.beg);
     file.read(buff, sizeof(buff));
     read_size += file.gcount();
     if (file_size - read_size == 0) {
-   //   PRINT_WIN("File complete in n runs");
+   //PRINT_WIN("File complete in n runs");
       complete_file = true;
     }
     ascii = std::to_string(file_size - read_size);
-  //  PRINT_LOG("Filesize - readsize: " + ascii);
+  //PRINT_LOG("Filesize - readsize: " + ascii);
     size_t curr_size = file_content.size();
     file_content += buff;
     if (found_user == false && comp(content_type, "html") == true)
@@ -85,8 +88,8 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     file.close();
   }
   else {
-   // PRINT_LOG("First file opening");
-   // PRINT_LOG(file_path);
+   //PRINT_LOG("First file opening");
+   //PRINT_LOG(file_path);
     file.open(file_path.c_str(), std::ifstream::in | std::ifstream::binary);
     complete_file = false;
     if (file.is_open()) {
@@ -99,20 +102,20 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       file.read(buff, sizeof(buff));
       read_size = file.gcount();
       if (file_size - read_size == 0) {
-      //  PRINT_WIN("File complete");
+      PRINT_WIN("File complete");
         complete_file = true;
       }
       ascii = std::to_string(file_size);
-  //    PRINT_LOG("Filesize: " + ascii);
+  //PRINT_LOG("Filesize: " + ascii);
       ascii = std::to_string(file_size - read_size);
-    //  PRINT_LOG("Filesize - readsize: " + ascii);
+    //PRINT_LOG("Filesize - readsize: " + ascii);
       file_content = buff; 
       if (found_user == false && comp(content_type, "html") == true)
         found_user = replace(file_content, "$@", client._name);
       file.close();
     }
     else {
-   //   PRINT_ERR("404 Not Found");
+   PRINT_ERR("404 Not Found");
       status = "HTTP/1.1 404 Not Found\n";
       file_content = "<html><head><title>Error 404</title></head><body><h1>ERROR 404</h1></body></html>";
       file_path = "error.html";
@@ -136,13 +139,13 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime) {
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
   std::ostringstream s;
   bool redirect = false;
-  PRINT_WIN(path);
+  //PRINT_WIN(path);
   if (comp(path, "?disconnect=true") == true) {
     redirect = true;
     client._log = false;
     status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html\n";
   }
-  PRINT_WIN(file_path);
+  //PRINT_WIN(file_path);
   this->set_content_type(_mime);
   s << read_size;
   answer = status;

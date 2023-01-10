@@ -28,6 +28,8 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
     else {
       pos++;
       i = pos;
+      if (len - j <= 1)
+        return true;
       return comp(s, str, pos, i, 0, c, len);
       }
   }
@@ -37,6 +39,8 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
     else {
       pos++;
       i = pos;
+      if (len - j <= 1)
+        return true;
       return comp(s, str, pos, i, 0, c, len);
     }
   }
@@ -50,21 +54,20 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
 
 bool comp(std::string &s, std::string &str, size_t pos = 0, size_t i = 0, size_t j = 0, char c = 0) {
   if (i == s.size() && j == str.size()) {
-    PRINT_WIN("i = size() && j = size()");
     return true;
   }
   if (j == str.size()) {
-    PRINT_WIN("j = size()");
     return true;
   }
   if (i == s.size()) {
-    PRINT_ERR("i = size() : unread bytes in j = " + std::to_string(str.size() - j) + ", j.size() = " + std::to_string(str.size()));
     return false;
   }
   if ((c = is_alpha(*(s.begin() + i))) > 0) {
     if (c == str[j] || *(s.begin() + i) == str[j])
       return comp(s, str, pos, i + 1, j + 1);
     else {
+      if (str.size() - j <= 1)
+        return true;
       pos++;
       i = pos;
       return comp(s, str, pos, i);
@@ -74,6 +77,11 @@ bool comp(std::string &s, std::string &str, size_t pos = 0, size_t i = 0, size_t
     if (*(s.begin() + i) == str[j])
       return comp(s, str, pos, i + 1, j + 1);
     else {
+      //PRINT_LOG(s.c_str() + i);
+      //PRINT_LOG(str.c_str() + j);
+      //PRINT_LOG("Remaining size = " + std::to_string(str.size() - j));
+      if (str.size() - j <= 1)
+        return true;
       pos++;
       i = pos;
       return comp(s, str, pos, i);
