@@ -28,7 +28,7 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
     else {
       pos++;
       i = pos;
-      if (len - j <= 1)
+      if (len - j <= 1 && (str[j] == 13 || str[j] == 10))
         return true;
       return comp(s, str, pos, i, 0, c, len);
       }
@@ -39,7 +39,7 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
     else {
       pos++;
       i = pos;
-      if (len - j <= 1)
+      if (len - j <= 1 && (str[j] == 13 || str[j] == 10))
         return true;
       return comp(s, str, pos, i, 0, c, len);
     }
@@ -66,7 +66,7 @@ bool comp(std::string &s, std::string &str, size_t pos = 0, size_t i = 0, size_t
     if (c == str[j] || *(s.begin() + i) == str[j])
       return comp(s, str, pos, i + 1, j + 1);
     else {
-      if (str.size() - j <= 1)
+      if (str.size() - j <= 1 && (str[j] == 13 || str[j] == 10))
         return true;
       pos++;
       i = pos;
@@ -77,10 +77,7 @@ bool comp(std::string &s, std::string &str, size_t pos = 0, size_t i = 0, size_t
     if (*(s.begin() + i) == str[j])
       return comp(s, str, pos, i + 1, j + 1);
     else {
-      //PRINT_LOG(s.c_str() + i);
-      //PRINT_LOG(str.c_str() + j);
-      //PRINT_LOG("Remaining size = " + std::to_string(str.size() - j));
-      if (str.size() - j <= 1)
+      if (str.size() - j <= 1 && (str[j] == 13 || str[j] == 10))
         return true;
       pos++;
       i = pos;

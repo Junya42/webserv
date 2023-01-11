@@ -295,11 +295,16 @@ int  Request::parse_body(void) {
       body_str.clear();
       int boundary_count = 0;
       while (std::getline(bodystream, cpy)) {
+        int old_boundary_count = boundary_count;
       //  PRINT_LOG(cpy);
-        if (cpy.find("Content-Disposition") != std::string::npos)
+        if (cpy.find("Content-Disposition") != std::string::npos) {
           tmpbody.disposition = cpy;
-        else if (cpy.find("Content-Type") != std::string::npos)
+          continue;
+        }
+        else if (cpy.find("Content-Type") != std::string::npos) {
           tmpbody.type = cpy;
+          continue;
+        }
         if (comp(cpy, boundary) == true) {
           PRINT_WIN(boundary);
           PRINT_WIN("FOUND BOUNDARY");
@@ -307,12 +312,18 @@ int  Request::parse_body(void) {
         }
         else
           tmpbody.data.push_back(cpy);
-        if (boundary_count % 2 == 0) {
+        if (boundary_count == 2 && boundary_count != old_boundary_count) {
+          PRINT_WIN("PUSHBACK 1");
+          multi_body.push_back(tmpbody);
+          tmpbody.clear();
+        }
+        else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
+          PRINT_WIN("PUSHBACK 2");
           multi_body.push_back(tmpbody);
           tmpbody.clear();
         }
       }
-      if (boundary_count % 2) {
+      if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
         PRINT_ERR("Uneven Boundary count");
         status = "400 Bad Request";
         return -1;
@@ -484,16 +495,19 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     n << "    \033[1m" << it->first << "\033[0m     \033[38;5;110m" << it->second << "\033[0m" << std::endl;
   }
   n << std::endl << "\033[1m\033[2mMultibody:\033[0m" << std::endl;
+  size_t count = 0;
   for (std::vector<Body>::iterator it = req.multi_body.begin(); it != req.multi_body.end(); it++) {
-    n << "  disposition:" << it->disposition << std::endl
-      << "  type:" << it->type << std::endl
-      << "  data:" << std::endl;
+    n << "\033[1;35mSub body " << count << "\033[0m" << std::endl << std::endl
+      << "\033[1mdisposition:\033[0m\033[38;5;110m " << it->disposition << "\033[0m" << std::endl
+      << "\033[1mtype:\033[0m\033[38;5;110m " << it->type << "\033[0m" << std::endl
+      << "\033[1mdata:\033[0m " << std::endl;
     for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
-      n << *sit << std::endl;
+      n << "  \033[38;5;223m" << *sit << "\033[0m" << std::endl;
     }
+    count++;
     n << std::endl;
   }
   n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
-  n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
+  //n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
   return n;
 }
