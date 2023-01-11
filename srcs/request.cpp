@@ -4,7 +4,7 @@
 
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
-  std::istringstream stream(request);
+  std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   std::string line;
   size_t  line_count = 0;
 
@@ -76,8 +76,9 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
 void  Request::get_body_stream(std::istringstream &stream, Client &parent, Client &tmp) {
   PRINT_FUNC();
-  char buff[buff_size];
-  memset(buff, 0, buff_size);
+  //char buff[buff_size];
+  //memset(buff, 0, buff_size);
+  std::vector<unsigned char> buff(buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
@@ -87,29 +88,34 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
     if (content_lenght > 0 && has_size == true) {
       int old_bytes = stream.gcount();
       if (content_lenght > sizeof(buff))
-        stream.read(buff, sizeof(buff));
+        stream.read(reinterpret_cast<char *>(&buff[0]), buff_size);
       else
-        stream.read(buff, content_lenght);
+        stream.read(reinterpret_cast<char *>(&buff[0]), content_lenght);
+      PRINT_WIN(&buff[0]);
       int_bytes = stream.gcount() - old_bytes;
       current_bytes = int_bytes;
       PRINT_LOG("Reading body with content_lenght: " + std::to_string(content_lenght));
       PRINT_LOG("bytes read: " + std::to_string(int_bytes));
-      body_str += buff;
+      //body_str += buff;
+      for (size_t i = 0; i < buff.size(); i++)
+        body_str.push_back(buff[i]);
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
       int old_bytes = stream.gcount();
-      stream.read(buff, sizeof(buff));
+      stream.read(reinterpret_cast<char *>(&buff[0]), buff_size);
       int_bytes = stream.gcount() - old_bytes;
       PRINT_LOG("Reading body without content_lenght: " + std::to_string(content_lenght));
       PRINT_LOG("bytes read: " + std::to_string(int_bytes));
       current_bytes = int_bytes;
-      std::cout << "sizeof buff: " << sizeof(buff) << std::endl;
+      std::cout << "sizeof buff: " << buff_size << std::endl;
       std::cout << "current_bytes: " << int_bytes << std::endl;
-      if (int_bytes < 1 || current_bytes < sizeof(buff)) {
+      if (int_bytes < 1 || current_bytes < buff_size) {
         content_lenght = 0;
       }
-      body_str += buff;
+      //body_str += buff;
+      for (size_t i = 0; i < buff.size(); i++)
+        body_str.push_back(buff[i]);
     }
     PRINT_LOG("TYPE = " + type);
     if (comp(type, "x-www-form-urlencoded")) {
@@ -290,15 +296,24 @@ int  Request::parse_body(void) {
     size_t pos;
     if ((pos = body_str.find(boundary)) != std::string::npos) {
       Body tmpbody;
+      PRINT_LOG(body_str);
       std::string cpy(body_str, pos);
-      std::istringstream bodystream(cpy);
+      std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
       body_str.clear();
       int boundary_count = 0;
+      int linecount = 0;
+      std::ofstream file;
       while (std::getline(bodystream, cpy)) {
         int old_boundary_count = boundary_count;
-      //  PRINT_LOG(cpy);
+        PRINT_LOG(cpy);
         if (cpy.find("Content-Disposition") != std::string::npos) {
+          size_t found;
           tmpbody.disposition = cpy;
+          found = tmpbody.disposition.find_last_of('=');
+          tmpbody.filename = tmpbody.disposition.substr(found + 1);
+          //erase(tmpbody.filename, '"');
+          erase(tmpbody.filename);
+          file.open(tmpbody.filename.c_str(), std::ios::binary);
           continue;
         }
         else if (cpy.find("Content-Type") != std::string::npos) {
@@ -310,16 +325,25 @@ int  Request::parse_body(void) {
           PRINT_WIN("FOUND BOUNDARY");
           boundary_count++;
         }
-        else
+        else {
+          //PRINT_LOG("Adding cpy to file");
+          //PRINT_LOG(static_cast<int>(cpy[0]));
+          if (cpy[0] == 13 && linecount == 0)
+            continue;
+          file << cpy << "\n";
+          linecount++;
           tmpbody.data.push_back(cpy);
+        }
         if (boundary_count == 2 && boundary_count != old_boundary_count) {
           PRINT_WIN("PUSHBACK 1");
           multi_body.push_back(tmpbody);
+          file.close();
           tmpbody.clear();
         }
         else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
           PRINT_WIN("PUSHBACK 2");
           multi_body.push_back(tmpbody);
+          file.close();
           tmpbody.clear();
         }
       }
@@ -391,7 +415,8 @@ void  Request::clear(void) {
 int  Request::read_client(int client, Client &parent, Client &tmp) {
   std::string request;
   int int_bytes = 0;
-  char buff[buff_size];
+  //char buff[buff_size];
+  std::vector<unsigned char> buff(buff_size);
 
   PRINT_FUNC();
   if (in_response == true) {
@@ -403,10 +428,11 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     return 1;
   }
   if (complete_header == false) {
-    if ((int_bytes = read(client, buff, sizeof(buff))) > 0) {
+    if ((int_bytes = read(client, &buff[0], buff.size())) > 0) {
       current_bytes = int_bytes;
       bytes += current_bytes;
-      request += buff;
+      for (int i = 0; i < int_bytes; i++)
+        request += buff[i];
     }
     if (int_bytes < 0) {
       PRINT_ERR("Error reading from client");
@@ -497,13 +523,17 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
   n << std::endl << "\033[1m\033[2mMultibody:\033[0m" << std::endl;
   size_t count = 0;
   for (std::vector<Body>::iterator it = req.multi_body.begin(); it != req.multi_body.end(); it++) {
+    //std::ofstream file(it->filename, std::ios::binary);
     n << "\033[1;35mSub body " << count << "\033[0m" << std::endl << std::endl
       << "\033[1mdisposition:\033[0m\033[38;5;110m " << it->disposition << "\033[0m" << std::endl
+      << "\033[1mfilename:\033[0m\033[38;5;110m " << it->filename << "\033[0m" << std::endl
       << "\033[1mtype:\033[0m\033[38;5;110m " << it->type << "\033[0m" << std::endl
       << "\033[1mdata:\033[0m " << std::endl;
     for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
       n << "  \033[38;5;223m" << *sit << "\033[0m" << std::endl;
+     // file << *sit << "\n";
     }
+    //file.close();
     count++;
     n << std::endl;
   }

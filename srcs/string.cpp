@@ -118,3 +118,19 @@ bool  erase(std::string &s, const char *str, int pos = -1, size_t i = 0, size_t 
   }
   return true;
 }
+
+void  erase(std::string &s, char c) {
+  for (size_t i = 0; i < s.size(); i++)
+    if (s[i] == c)
+      s.erase(i, 1);
+}
+
+void erase(std::string &s) {
+
+  for (size_t i = 0; i < s.size(); i++) {
+    if (isalnum(s[i]) < 1 && s[i] != '.' && s[i] != '-' && s[i] != '_')
+      s.erase(i, 1);
+    else if (s[i] == '\r' || s[i] == '\n' || s[i] == 10 || s[i] == 13)
+      s.erase(i, 1);
+  }
+}

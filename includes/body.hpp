@@ -14,10 +14,12 @@ class Body {
     }
     void clear(void) {
       disposition.clear();
+      filename.clear();
       type.clear();
       data.clear();
     }
     std::string disposition;
+    std::string filename;
     std::string type;
     std::vector<std::string> data;
 };

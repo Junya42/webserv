@@ -15,6 +15,10 @@ bool  replace(std::string &s, const char *name, std::string &str, size_t found =
 
 bool  erase(std::string &s, const char *str, int pos = -1, size_t i = 0, size_t j = 0, size_t len = 0);
 
+void erase(std::string &s, char c);
+
+void erase(std::string &s);
+
 template <typename T>
 std::string to_string(const T src) {
   std::ostringstream s;
