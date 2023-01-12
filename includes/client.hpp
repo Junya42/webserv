@@ -46,7 +46,8 @@ class Request {
 
     //Default 4096
     char                buffer[4096]; //Reading buffer
-    static const int    buff_size = 16000;
+   // static const int    buff_size = 16000;
+   static const int    buff_size = 16000;
     size_t              bytes; //bytes read
     size_t              current_bytes;
     size_t              body_size;

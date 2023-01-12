@@ -75,10 +75,12 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     file.seekg(read_size, file.beg);
     file.read(buff, sizeof(buff));
     read_size += file.gcount();
-    if (file_size - read_size == 0) {
-   //PRINT_WIN("File complete in n runs");
+    if (file_size - read_size <= 0) {
+      PRINT_WIN("File complete in : " + to_string(read_count) + " runs");
       complete_file = true;
     }
+    else
+      file_content.pop_back();
     ascii = std::to_string(file_size - read_size);
   //PRINT_LOG("Filesize - readsize: " + ascii);
     size_t curr_size = file_content.size();
@@ -105,6 +107,8 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       PRINT_WIN("File complete");
         complete_file = true;
       }
+      else
+        file_content.pop_back();
       ascii = std::to_string(file_size);
   //PRINT_LOG("Filesize: " + ascii);
       ascii = std::to_string(file_size - read_size);

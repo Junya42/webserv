@@ -182,9 +182,10 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
 
 void  Request::get_body(int client) {
   PRINT_FUNC();
-  char buff[buff_size];
+  //char buff[buff_size];
+  std::vector<unsigned char> buff(buff_size);
 
-  memset(buff, 0, buff_size);
+  //memset(buff, 0, buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
@@ -192,23 +193,29 @@ void  Request::get_body(int client) {
     PRINT_LOG(content_lenght);
     PRINT_LOG(has_size);
     if (content_lenght > 0 && has_size == true) {
-      int_bytes = read(client, buff, sizeof(buff));
+      //int_bytes = read(client, buff, sizeof(buff));
+      int_bytes = read(client, &buff[0], buff_size);
       current_bytes = int_bytes;
       PRINT_LOG("Reading body with content_lenght");
       PRINT_LOG(int_bytes);
-      body_str += buff;
+      for (size_t i = 0; i < buff.size(); i++)
+        body_str += buff[i];
+      //body_str += buff;
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
-      int_bytes = read(client, buff, sizeof(buff));
+      //int_bytes = read(client, buff, sizeof(buff));
+      int_bytes = read(client, &buff[0], buff_size);
       PRINT_LOG("Reading body without content_lenght");
       current_bytes = int_bytes;
-      std::cout << "sizeof buff: " << sizeof(buff) << std::endl;
+      std::cout << "sizeof buff: " << buff_size << std::endl;
       std::cout << "current_bytes: " << int_bytes << std::endl;
-      if (int_bytes < 1 || current_bytes < sizeof(buff)) {
+      if (int_bytes < 1 || current_bytes < buff_size) {
         content_lenght = 0;
       }
-      body_str += buff;
+      for (size_t i = 0; i < buff.size(); i++)
+        body_str += buff[i];
+      //body_str += buff;
     }
   }
   else {
@@ -216,7 +223,8 @@ void  Request::get_body(int client) {
     std::string tmp;
     int         chunk_size = 0;
 
-    while ((int_bytes = read(client, buff, 1)) > 0) {
+    //while ((int_bytes = read(client, buff, 1)) > 0) {
+    while ((int_bytes = read(client, &buff[0], 1)) > 0) {
       if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
         PRINT_ERR("Invalid chunk size format");
         exit(0);
@@ -232,12 +240,16 @@ void  Request::get_body(int client) {
     }
     chunk_size = atoi(tmp.c_str());
     size_t  compchunk = chunk_size;
-    if (compchunk >= sizeof(buff)) {
+    if (compchunk >= buff_size) {
       PRINT_ERR("Chunk size too big compared to buff size");
       exit(0);
     }
-    if ((int_bytes = read(client, buff, chunk_size)) > 0)
-      tmp = buff;
+    tmp.clear(); //ADDITION WITH VECTOR BUFF
+    //if ((int_bytes = read(client, buff, chunk_size)) > 0)
+    if ((int_bytes = read(client, &buff[0], chunk_size)) > 0)
+      for (size_t i = 0; i < buff.size(); i++)
+        tmp += buff[i];
+      //tmp = buff;
     if (int_bytes == -1) {
       PRINT_ERR("Couldn't read from client");
       exit(0);
@@ -460,7 +472,8 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     return 1;
   }
   PRINT_LOG("Uncomplete request or bad request");
-  //std::cout << *this << std::endl;
+  std::cout << *this << std::endl;
+  sleep(2);
   //PRINT_LOG("END-OF-LOG")
   return 0;
 }
@@ -538,6 +551,6 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     n << std::endl;
   }
   n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
-  //n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
+  n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
   return n;
 }
