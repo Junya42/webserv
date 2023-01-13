@@ -38,6 +38,10 @@ std::ostream &operator<<(std::ostream &nstream, Client &client) {
     nstream << "Log: \033[1;32m" << std::boolalpha << client._log << "\033[0m" << std::endl;
   else
     nstream << "Log: \033[1;31m" << std::boolalpha << client._log << "\033[0m" << std::endl;
+  if (client._fav == true)
+    nstream << "Fav: \033[1;32m" << std::boolalpha << client._fav << "\033[0m" << std::endl;
+  else
+    nstream << "Fav: \033[1;31m" << std::boolalpha << client._fav << "\033[0m" << std::endl;
   nstream << "Request count: " << client._request_count << std::endl
     << "Port: " << client._port << std::endl
     << "Address: " << inet_ntoa(client.addr.sin_addr) << std::endl

@@ -2,6 +2,11 @@
 #include <sstream>
 #include <unistd.h>
 
+void  Request::set_error(int code) {
+  if (!header_code)
+    header_code = code;
+}
+
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
@@ -13,6 +18,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     << "\033[1;32mRequest: \033[0m" << std::endl
     << request << std::endl;
 
+  parent._fav = false;
   if (method.size() < 1) {
     stream >> method >> path >> version;
     parent._path = path;
@@ -38,6 +44,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
    // PRINT_LOG(std::string(key + " : " + value, 0, key.size() + value.size() + 2));
     if (comp(key, "Content-Length") == true) {
       content_lenght = atoi(value.c_str());
+      PRINT_LOG("Content lenght = " + to_string(content_lenght));
       body_size = content_lenght;
       has_size = true;
       has_body = true;
@@ -48,13 +55,15 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       std::getline(value_stream, boundary, '=');
       std::getline(value_stream, boundary);
       //type = value;
-      content_lenght = 1;
+      if (content_lenght < 1)
+        content_lenght = 1;
       has_body = true;
     }
     else if (comp(key, "Host") == true) {
       host = value;
     }
     else if (comp(key, "Cookie") == true && parent._fav == false) {
+      auth = true;
       parent._cookie = value;
       cookie = value;
     }
@@ -69,6 +78,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     line_count++;
   }
   std::cout << "_____________________________" << std::endl;
+  PRINT_LOG("After header Content lenght = " + to_string(content_lenght));
   //std::cout << *this << std::endl;
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
@@ -119,12 +129,15 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
     }
     PRINT_LOG("TYPE = " + type);
     if (comp(type, "x-www-form-urlencoded")) {
+      PRINT_LOG("Setting names");
       std::istringstream line_stream(body_str);
       std::string key;
       std::string value;
+      PRINT_LOG(body_str);
       while (std::getline(line_stream, key, '=')) {
         std::getline(line_stream, value, '&');
         body[key] = value;
+        PRINT_LOG(key);
         if (comp(key, "fname")) {
           if (parent._name.size()) {
             PRINT_LOG("Creating new client based on parent");
@@ -262,7 +275,7 @@ void  Request::get_body(int client) {
   }
 }
 
-std::string check_method(std::string &method) {
+std::string Request::check_method(std::string &method) {
   PRINT_FUNC();
   if (method == "GET" || method == "POST" || method == "DELETE") {
     PRINT_WIN("Success");
@@ -270,8 +283,10 @@ std::string check_method(std::string &method) {
   }
   if (method == "HEAD" || method == "PUT" || method == "CONNECT" || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
     PRINT_ERR("501 Not Implemented");
+    set_error(501);
     return std::string("HTTP/1.1 501 Not Implemented");
   }
+    set_error(400);
   PRINT_ERR("400 Bad Request");
   return std::string ("HTTP/1.1 400 Bad Request");
 }
@@ -289,11 +304,13 @@ int Request::parse_header(void) {
   if (method == "POST" && has_body == false) {
     PRINT_ERR("Couldn't find body in POST request");
     status = "HTTP/1.1 400 Bad Request";
+    set_error(400);
     return -1;
   }
   if (!host.size()) {
     PRINT_ERR("Couldn't find host");
     status = "HTTP/1.1 400 Bad Request";
+    set_error(400);
     return -1;
   }
   parsed_header = true;
@@ -360,12 +377,14 @@ int  Request::parse_body(void) {
         }
       }
       if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
+        set_error(400);
         PRINT_ERR("Uneven Boundary count");
         status = "400 Bad Request";
         return -1;
       }
     }
     else {
+      set_error(400);
       PRINT_ERR("Couldn't find Boundary in Body str");
       status = "400 Bad Request";
       return -1;
@@ -390,6 +409,8 @@ int  Request::parse_body(void) {
 
 void  Request::clear(void) {
   PRINT_FUNC();
+  auth_redirect = false;
+  auth = false;
   has_size = false;
   in_use = false;
   answer = "HTTP/1.1 ";
@@ -428,6 +449,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
   std::string request;
   int int_bytes = 0;
   //char buff[buff_size];
+  name = parent._name;
   std::vector<unsigned char> buff(buff_size);
 
   PRINT_FUNC();
@@ -480,11 +502,12 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
 
 Request::Request(void) {
   PRINT_FUNC();
+  auth_redirect = false;
+  header_code = 0;
   auth = false;
   has_size = false;
   in_use = false;
   answer = "HTTP/1.1 ";
-  header_code = 0;
   has_body = false;
   complete_header = false;
   parsed_body = false;
@@ -517,6 +540,7 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
     << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
     << "\033[1m\033[2mType:\033[0m" << req.type << std::endl
+    << "\033[1m\033[2mCode:\033[0m" << req.header_code << std::endl
     << "\033[1m\033[2mBoundary:\033[0m" << req.boundary << std::endl << std::endl
     << "\033[1m\033[2mHas body:\033[0m" << std::boolalpha << req.has_body << std::endl
     << "\033[1m\033[2mHas size:\033[0m" << std::boolalpha << req.has_body << std::endl
@@ -551,6 +575,6 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
     n << std::endl;
   }
   n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
-  n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
+ // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
   return n;
 }

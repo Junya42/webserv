@@ -16,6 +16,7 @@ class Server {
     ~Server(void);
     //void  setup_server(std::string & config);
     void  setup_server(std::vector<std::string> &vec);
+    void  clear(void);
     std::string   &get_name(void);
     std::string   &get_index(void);
     bool          method_get(void);

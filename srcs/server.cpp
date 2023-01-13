@@ -26,6 +26,19 @@ Server::Server(void) {
   _port = -1;
 }
 
+void  Server::clear(void) {
+  _host.clear();
+  _name.clear();
+  _sport.clear();
+  _index.clear();
+  _methods.clear();
+  _get = false;
+  _post = false;
+  _delete = false;
+  _bodysize = 0;
+  _port = 0;
+  _loc.clear();
+}
 
 void  Server::setup_server(std::vector<std::string> &vec) {
 //  std::cout << config << std::endl << "______________________" << std::endl;
@@ -36,12 +49,6 @@ void  Server::setup_server(std::vector<std::string> &vec) {
   int location_find = 0;
   bool  location = false;
 
-  std::cout << "Testing vector for server" << std::endl;
-  for (long unsigned int j = 0; j < vec.size(); j++) {
-    std::cout << vec[j] << std::endl;
-  }
-  std::cout << "end of test" << std::endl;
-  std::cout << "WHILE" << std::endl;
   long unsigned int i = 0;
   while (i < vec.size()) {
     line = vec[i];
@@ -88,12 +95,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
     }
     i++;
   }
-  std::cout << "                  END OF WHILE" << std::endl;
   if (_port == -1 || !_name.size() || !_index.size()) {
-    std::cerr << "Error: Missing server informations" << std::endl;
-    std::cerr << "Port: " << _port << std::endl
-      << "Name: " << _name << std::endl
-      << "index: " << _index << std::endl;
     exit(1);
   }
   _host = _name + ':' + _sport;
@@ -252,20 +254,21 @@ bool  Server::method_delete(void) {
 }
 
 std::ostream &operator<<(std::ostream &nstream, Server &server) {
-  nstream << "Server" << std::endl
-    << "name :" << server._name << std::endl
-    << "index :" << server._index << std::endl
-    << "methods :" << server._methods << std::endl
-    << "port :" << server._port << std::endl 
-    << "string port :" << server._sport << std::endl 
-    << "host :" << server._host << std::endl 
+  //nstream << "\033[7mServer\033[0m" << std::endl << std::endl
+    nstream << "\033[36mname: \033[0m" << server._name << std::endl
+    << "\033[36mindex: \033[0m" << server._index << std::endl
+    << "\033[36mmethods: \033[0m" << server._methods << std::endl
+    << "\033[36mport: \033[0m" << server._port << std::endl 
+    << "\033[36mstring port: \033[0m" << server._sport << std::endl 
+    << "\033[36mhost: \033[0m" << server._host << std::endl 
     << "_____________________________________" << std::endl << std::endl;
 
   int i = 1;
   for (unsigned long j = 0; j < server._loc.size(); j++) {
-    nstream << "Location " << i++ << std::endl;
-    nstream << server._loc[j] << std::endl
-      << "---------------" << std::endl;
+    nstream << "\033[38;5;49mLocation " << i++ << "\033[0m" << std::endl;
+    nstream << server._loc[j] << std::endl;
+    if (j + 1 < server._loc.size())
+      nstream << "---------------" << std::endl;
   }
   return nstream;
 }

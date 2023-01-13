@@ -8,6 +8,7 @@ vpath %.cpp $(foreach dir, $(SRCS_DIR), $(dir))
 SRCS = main.cpp \
 	   config.cpp \
 	   mime.cpp \
+	   error.cpp \
 	   server.cpp \
 	   location.cpp \
 	   client.cpp \
@@ -38,6 +39,7 @@ all: assign_count $(NAME)
 
 assign_count: compare-timestamps
 	$(eval override count := $(shell cat .make_num))
+	@rm -rf .make_num
 
 compare-timestamps:
 	@NUM=$(SRC_NUM); \

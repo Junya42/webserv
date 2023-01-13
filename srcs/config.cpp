@@ -13,6 +13,7 @@ Config::~Config(void) {
 void  Config::add_config(std::string &config) {
   this->init_mime();
   PRINT_FUNC();
+  //std::cout << std::endl << "---------------" << std::endl;
   std::istringstream stream(config);
   std::string line;
   std::string conf;
@@ -27,7 +28,6 @@ void  Config::add_config(std::string &config) {
       continue ;
     }
     if (line == "server") {
-      std::cout << "LINE EQUAL SERVER" << std::endl;
       if (conf.size()) {
         conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
         for (unsigned long int j = 0; j < vec.size(); j++) {
@@ -36,8 +36,8 @@ void  Config::add_config(std::string &config) {
         //std::cout << "CONF: " << std::endl << conf << std::endl << "XXXXXXXXXXXXX" << std::endl << std::endl;
         //serv.setup_server(conf);
         serv.setup_server(vec);
-        std::cout << "______________________ PUSH_BACK SERV __________________" << std::endl;
         _serv.push_back(serv);
+        serv.clear();
         //  std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
       }
       vec.clear();
@@ -53,9 +53,7 @@ void  Config::add_config(std::string &config) {
     for (unsigned long int j = 0; j < vec.size(); j++)
       vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
     //serv.setup_server(conf);
-    std::cout << "_________BEFORE PUSHBACK SERV___________" << std::endl;
     serv.setup_server(vec);
-    std::cout << "______________________ AFTER PUSH_BACK SERV __________________" << std::endl;
     _serv.push_back(serv);
     conf.clear();
     //std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
@@ -98,9 +96,12 @@ void  Config::init_mime(void) {
 }
 
 std::ostream &operator<<(std::ostream &nstream, Config &config) {
-  nstream << "CONFIG" << std::endl
-    << "/////////////////////////////////" << std::endl;
-  for (unsigned long i = 0; i < config._serv.size(); i++)
-    nstream << config._serv[i];
+  for (size_t i = 0; i < config._serv.size(); i++) {
+    nstream << std::endl << "________________________________________________________" << std::endl << std::endl
+    << "\033[48;5;237m\033[38;5;81mServer " << i + 1 << "\033[0m" << std::endl << std::endl << config._serv[i];
+    nstream << std::endl << "________________________________________________________" << std::endl
+    << "********************************************************";
+  }
+  nstream << std::endl;
   return nstream;
 }

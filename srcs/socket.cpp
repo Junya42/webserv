@@ -1,4 +1,5 @@
 #include "../includes/socket.hpp"
+#include "../includes/error.hpp"
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
@@ -144,13 +145,21 @@ void	answer_client(Client &client, Request &req, Config &config) {
 	PRINT_FUNC();
 	req.get_request(config._serv, client);
 	if (req.complete_file == true) {
-		req.get_response(config._mime, client);
-		std::cout << req << std::endl;
-		//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
-		write(client._sock, req.answer.c_str(), req.answer.size());
+		if (req.header_code == 0) {
+			req.get_response(config._mime, client);
+			std::cout << req << std::endl;
+			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			write(client._sock, req.answer.c_str(), req.answer.size());
+			PRINT_WIN("Successfully sent response to client");
+			PRINT_WIN(client._id);
+		}
+		else {
+			send_error(client._sock, req.header_code);
+			client._log = false;
+			PRINT_ERR("Sent error page to client");
+			PRINT_ERR(client._id);
+		}
 		req.clear();
-		PRINT_WIN("Successfully sent response to client");
-		PRINT_WIN(client._id);
 	}
 }
 

@@ -24,14 +24,16 @@ class Request {
     ~Request(void);
     Request(std::string &request); //parse request using get_header and get_body
 
-    void  clear(void); //clear all request variables
-    int  read_client(int client, Client &parent, Client &tmp);
-    void  get_header(std::string &request, Client &parent, Client &tmp);
-    void  get_body_stream(std::istringstream &stream, Client &parent, Client &tmp);
-    void  get_body(int client);
+    void        clear(void); //clear all request variables
+    int         read_client(int client, Client &parent, Client &tmp);
+    void        get_header(std::string &request, Client &parent, Client &tmp);
+    void        get_body_stream(std::istringstream &stream, Client &parent, Client &tmp);
+    void        get_body(int client);
 
-    int   parse_header(void);
-    int   parse_body(void);
+    std::string check_method(std::string &method);
+    void        set_error(int code);
+    int         parse_header(void);
+    int         parse_body(void);
 
     void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
     void        get_file(std::vector<Server> &serv);
@@ -65,6 +67,8 @@ class Request {
     std::string value;
     std::string boundary;
 
+    std::string name;
+
     std::string status;
 
     bool        complete_header;
@@ -74,6 +78,7 @@ class Request {
     bool        has_size;
     bool        auth;
     bool        in_response;
+    bool        auth_redirect;
     int         header_code;
 
     size_t content_lenght; //size of body
