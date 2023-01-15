@@ -84,6 +84,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   std::cout << "_____________________________" << std::endl;
   PRINT_LOG("After header Content lenght = " + to_string(content_lenght));
   //std::cout << *this << std::endl;
+  if (comp(method, "post") == false && has_body == true) {
+      set_error(400);
+      PRINT_ERR("400 Bad request");
+  }
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
