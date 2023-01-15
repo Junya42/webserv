@@ -33,7 +33,7 @@ class Request {
     std::string check_method(std::string &method);
     void        set_error(int code);
     int         parse_header(void);
-    int         parse_body(void);
+    int         parse_body(Client &parent);
 
     void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
     void        get_file(std::vector<Server> &serv);
@@ -160,7 +160,8 @@ class Client {
     std::string _name;
     std::string _lastname;
     std::string _path;
-    std::map<std::string, std::vector<std::string>> _files;
+ //   std::map<std::string, std::vector<std::string>> _files;
+    std::vector<std::string> _files;
     std::map<std::string, std::string> _info;
     sockaddr_in addr;
     socklen_t addr_len;

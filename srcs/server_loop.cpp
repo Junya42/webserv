@@ -86,14 +86,17 @@ void	server_handler(Config &config) {
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
+				PRINT_LOG("Outside read");
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);
 					tmp.clear();
 				}
 			}
-			if (clientlist[j].request.in_response == true || status == 1)
+			if (clientlist[j].request.in_response == true || status == 1) {
+				PRINT_LOG("Outside answer");
 				answer_client(clientlist[j], clientlist[j].request, config);
+			}
 		}
 	}
 	close(server);

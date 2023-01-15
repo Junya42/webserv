@@ -48,10 +48,10 @@ std::ostream &operator<<(std::ostream &nstream, Client &client) {
     << "Cookie: " << client._cookie << std::endl
     << "Name: " << client._name << std::endl
     << "Last name: " << client._lastname << std::endl << std::endl
-    << "Info: " << std::endl;
+    << "Files: " << std::endl;
 
-  for (std::map<std::string, std::string>::iterator it = client._info.begin(); it != client._info.end(); it++) {
-    nstream << "(Key: " << it->first << " ) (Value: " << it->second << " )" << std::endl;
+  for (std::vector<std::string>::iterator it = client._files.begin(); it != client._files.end(); it++) {
+    nstream << "  " << *it << std::endl;
   }
   nstream << std::endl;
   return nstream;

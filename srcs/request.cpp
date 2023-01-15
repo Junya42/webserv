@@ -40,6 +40,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     std::getline(line_stream, key, ':');
     std::getline(line_stream, value);
 
+    if (header.find(key) != header.end()) {
+      set_error(400);
+      PRINT_ERR("400 Bad request");
+    }
     header[key] = value;
    // PRINT_LOG(std::string(key + " : " + value, 0, key.size() + value.size() + 2));
     if (comp(key, "Content-Length") == true) {
@@ -143,6 +147,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
             PRINT_LOG("Creating new client based on parent");
             tmp = parent;
             tmp._sock = 0;
+            parent._files.clear();
             parent._oldname = parent._name;
           }
           parent._name = value;
@@ -214,6 +219,7 @@ void  Request::get_body(int client) {
       for (size_t i = 0; i < buff.size(); i++)
         body_str += buff[i];
       //body_str += buff;
+      PRINT_LOG(body_str);
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
@@ -281,12 +287,13 @@ std::string Request::check_method(std::string &method) {
     PRINT_WIN("Success");
     return std::string("HTTP/1.1 200 OK");
   }
-  if (method == "HEAD" || method == "PUT" || method == "CONNECT" || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
+  if (method == "HEAD" || method == "PUT" || method == "CONNECT"
+      || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
     PRINT_ERR("501 Not Implemented");
     set_error(501);
     return std::string("HTTP/1.1 501 Not Implemented");
   }
-    set_error(400);
+  set_error(400);
   PRINT_ERR("400 Bad Request");
   return std::string ("HTTP/1.1 400 Bad Request");
 }
@@ -305,12 +312,14 @@ int Request::parse_header(void) {
     PRINT_ERR("Couldn't find body in POST request");
     status = "HTTP/1.1 400 Bad Request";
     set_error(400);
+    PRINT_ERR("400 Bad Request");
     return -1;
   }
   if (!host.size()) {
     PRINT_ERR("Couldn't find host");
     status = "HTTP/1.1 400 Bad Request";
     set_error(400);
+    PRINT_ERR("400 Bad Request");
     return -1;
   }
   parsed_header = true;
@@ -318,7 +327,7 @@ int Request::parse_header(void) {
   return 0;
 }
 
-int  Request::parse_body(void) {
+int  Request::parse_body(Client &parent) {
   PRINT_FUNC();
   if (boundary.size()) {
     PRINT_LOG("Found boundary in header");
@@ -367,17 +376,20 @@ int  Request::parse_body(void) {
           PRINT_WIN("PUSHBACK 1");
           multi_body.push_back(tmpbody);
           file.close();
+          parent._files.push_back(tmpbody.filename);
           tmpbody.clear();
         }
         else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
           PRINT_WIN("PUSHBACK 2");
           multi_body.push_back(tmpbody);
           file.close();
+          parent._files.push_back(tmpbody.filename);
           tmpbody.clear();
         }
       }
       if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
         set_error(400);
+        PRINT_ERR("400 Bad request");
         PRINT_ERR("Uneven Boundary count");
         status = "400 Bad Request";
         return -1;
@@ -385,13 +397,14 @@ int  Request::parse_body(void) {
     }
     else {
       set_error(400);
+      PRINT_ERR("400 Bad Request");
       PRINT_ERR("Couldn't find Boundary in Body str");
       status = "400 Bad Request";
       return -1;
     }
   }
   else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
-                                                    PRINT_LOG("Parsing form body");
+    PRINT_LOG("Parsing form body");
     std::istringstream bodystream(body_str);
     std::string line;
     while (std::getline(bodystream, line)) {
@@ -414,6 +427,7 @@ void  Request::clear(void) {
   has_size = false;
   in_use = false;
   answer = "HTTP/1.1 ";
+  content_lenght = 0;
   header_code = 0;
   bytes = 0;
   current_bytes = 0;
@@ -485,7 +499,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     parse_header();
   //if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
   if (complete_header && has_body && parsed_body == false)
-    parse_body();
+    parse_body(parent);
   if (complete_header && has_body == false)
     parsed_body = true;
   if (parsed_body == true && parsed_header == true) {
@@ -503,6 +517,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
 Request::Request(void) {
   PRINT_FUNC();
   auth_redirect = false;
+  content_lenght = 0;
   header_code = 0;
   auth = false;
   has_size = false;
@@ -568,13 +583,13 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
       << "\033[1mdata:\033[0m " << std::endl;
     for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
       n << "  \033[38;5;223m" << *sit << "\033[0m" << std::endl;
-     // file << *sit << "\n";
+      // file << *sit << "\n";
     }
     //file.close();
     count++;
     n << std::endl;
   }
   n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
- // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
+  // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
   return n;
 }

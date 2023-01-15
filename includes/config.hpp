@@ -2,6 +2,7 @@
 # define CONFIG_HPP
 
 #include <cstdlib>
+#include "overload.hpp"
 #include "server.hpp"
 #include "string.hpp"
 #include <ostream>

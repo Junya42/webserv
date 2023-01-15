@@ -95,14 +95,14 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	PRINT_FUNC();
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client, 0) < 0) {
 		PRINT_ERR("Couldn't remove client socket from epoll instance");
-		//return -1;
+		//return 0;
 	}
 	if (*curr_fd > 1 && *numclient > 0) {
 		*curr_fd = *curr_fd - 1;
 		*numclient = *numclient - 1;
 	}
 	//clientlist[i]._log = false;
-	if (clientlist[i]._name.size() < 1 && clientlist[i]._cookie.size() < 1) {
+	if (clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) {
 		PRINT_ERR("Deleting elem from clientlist");
 		clientlist.erase(clientlist.begin() + i);
 		PRINT_ERR(clientlist.size());
@@ -110,7 +110,7 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	close(client);
 	PRINT_LOG("Updating number of clients");
 	PRINT_LOG(*numclient);
-	return 0;
+	return 1;
 }
 
 /*	Create epoll instance
@@ -206,9 +206,9 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 	while (i < clientlist.size()) {
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
-		if (clientlist[i]._cookie.empty()) {
-			remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll);
-			continue ;
+		if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
+			if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
+				continue ;
 		}
 		//if (clientlist[i]._name != tmp_name)
 		i++;

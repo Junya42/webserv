@@ -17,6 +17,7 @@ void  Request::get_file(std::vector<Server> &serv) {
   else if (name.size() && auth == true && (path == "/" || path == "/html" || path == "/html/login")) {
     auth_redirect = true;
     tmp_path = "/html/user/";
+    PRINT_WIN("Auth redirect");
   }
   else
     tmp_path = path;
@@ -56,8 +57,10 @@ void  Request::get_file(std::vector<Server> &serv) {
     }
   }
   //PRINT_LOG("After series of if");
-  if (found == false)
+  if (found == false) {
     set_error(404);
+    PRINT_ERR("404 Not found");
+  }
   size_t extpos;
   std::string file_ext;
 
@@ -106,8 +109,10 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     //PRINT_LOG("Filesize - readsize: " + ascii);
     size_t curr_size = file_content.size();
     file_content += buff;
-    if (found_user == false && comp(content_type, "html") == true)
+    if (found_user == false && comp(content_type, "html") == true) {
       found_user = replace(file_content, "$@", client._name, curr_size);
+      PRINT_LOG("Replaced: " + to_string(found_user));
+    }
     file.close();
   }
   else {
@@ -135,8 +140,10 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       ascii = std::to_string(file_size - read_size);
       //PRINT_LOG("Filesize - readsize: " + ascii);
       file_content = buff; 
-      if (found_user == false && comp(content_type, "html") == true)
+      if (found_user == false && comp(content_type, "html") == true) {
         found_user = replace(file_content, "$@", client._name);
+        PRINT_LOG("Replaced: " + to_string(found_user));
+      }
       file.close();
     }
     else {
