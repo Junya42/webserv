@@ -184,7 +184,7 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 		for (size_t i = 0; i < clientlist.size(); i++) {
 			if (i != index){
 				if (comp(clientlist[i]._name, clientlist[index]._name) == true){
-					clientlist[index]._log = true;
+					//clientlist[index]._log = true;
 					std::cout << "\033[1;45m////////////////////////////////\033[0m" << std::endl;
 					std::cout << "new client: " << std::endl << clientlist[index] << std::endl;
 					std::cout << "removed client: " << std::endl << clientlist[i] << std::endl;

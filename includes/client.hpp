@@ -36,7 +36,7 @@ class Request {
     int         parse_body(Client &parent);
 
     void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
-    void        get_file(std::vector<Server> &serv);
+    void        get_file(std::vector<Server> &serv, Client &client);
     void        set_content_type(std::map<std::string, std::string> &_mime);
     void        get_response(std::map<std::string, std::string> &_mime, Client &client);
 
@@ -78,7 +78,7 @@ class Request {
     bool        has_size;
     bool        auth;
     bool        in_response;
-    bool        auth_redirect;
+    int        auth_redirect;
     int         header_code;
 
     size_t content_lenght; //size of body

@@ -127,10 +127,20 @@ void  erase(std::string &s, char c) {
 
 void erase(std::string &s) {
 
+  size_t  pos = 0;
+  bool    found = false;
+
   for (size_t i = 0; i < s.size(); i++) {
+    if (s[i] == '/') {
+      pos = i;
+      found = true;
+    }
     if (isalnum(s[i]) < 1 && s[i] != '.' && s[i] != '-' && s[i] != '_')
       s.erase(i, 1);
     else if (s[i] == '\r' || s[i] == '\n' || s[i] == 10 || s[i] == 13)
       s.erase(i, 1);
   }
+  if (found == true)
+    for (size_t i = 0; i <= pos; i++)
+      s.erase(i, 1);
 }

@@ -4,9 +4,11 @@
 #include <string>
 #include <unistd.h>
 
-void  Request::get_file(std::vector<Server> &serv) {
+void  Request::get_file(std::vector<Server> &serv, Client &client) {
   PRINT_FUNC();
-  PRINT_ERR(path);
+  PRINT_ERR("Path: " + path);
+  PRINT_ERR("Log: " + to_string(client._log));
+  PRINT_ERR("Username: " + client._name);
   std::string tmp_path;
   bool found = false;
   if (comp(path, "?disconnect") == true) {
@@ -15,12 +17,20 @@ void  Request::get_file(std::vector<Server> &serv) {
         tmp_path = path.substr(0, i);
   }
   else if (name.size() && auth == true && (path == "/" || path == "/html" || path == "/html/login")) {
-    auth_redirect = true;
+    auth_redirect = 1;
     tmp_path = "/html/user/";
     PRINT_WIN("Auth redirect");
   }
+  else if ((client._log == false || client._name.size() < 1) && comp(path, "user") == true) {
+    auth_redirect = 2;
+    tmp_path = "/login/";
+    PRINT_ERR("Redirect to log");
+  }
   else
     tmp_path = path;
+  PRINT_ERR("tmp_path: " + tmp_path);
+  if (comp(tmp_path, "user") == true)
+    client._log = true;
   //PRINT_LOG("path = " + path);
   //PRINT_LOG("tmp path = " + tmp_path);
   size_t x = 0;
@@ -86,7 +96,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   std::string ascii;
 
   if (file_path.size() < 1)
-    this->get_file(serv);
+    this->get_file(serv, client);
   if (complete_file == true) {
     PRINT_WIN("File complete");
     return ;
@@ -180,8 +190,11 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     client._log = false;
     status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html\n";
   }
-  else if (auth_redirect == true && auth == true && client._cookie.size()) {
+  else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
     status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html/user\n";
+  }
+  else if (auth_redirect == 2) {
+    status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/login\n";
   }
   //PRINT_WIN(file_path);
   this->set_content_type(_mime);

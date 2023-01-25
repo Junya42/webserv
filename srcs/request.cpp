@@ -155,6 +155,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
             parent._oldname = parent._name;
           }
           parent._name = value;
+          parent._log = true;
           PRINT_WIN("Set client name to: " + value);
         }
         else {
@@ -426,7 +427,7 @@ int  Request::parse_body(Client &parent) {
 
 void  Request::clear(void) {
   PRINT_FUNC();
-  auth_redirect = false;
+  auth_redirect = 0;
   auth = false;
   has_size = false;
   in_use = false;
@@ -520,7 +521,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
 
 Request::Request(void) {
   PRINT_FUNC();
-  auth_redirect = false;
+  auth_redirect = 0;
   content_lenght = 0;
   header_code = 0;
   auth = false;

@@ -92,6 +92,30 @@
 		margin: 20%;
 	}
 }
+
+.glass-button-folder {
+	display: inline-block;
+	padding: 24px 40px;
+	margin: 13px;
+	border: 0;
+	text-decoration: none;
+	border-radius: 15px;
+	background-color: rgba(255,255,255,0.3);
+	border: 1px solid rgba(255,255,255,0.3);
+	backdrop-filter: blur(30px);
+	color: rgba(255,255,255,0.8);
+	font-size: 18px;
+	letter-spacing: 2px;
+	cursor: pointer;
+	text-transform: uppercase;
+	transition: 1s;
+}
+
+.glass-button-folder:hover {
+	transform: scale(1.1);
+	background-color: rgba(255,255,255,0.4);
+}
+
 .glass-button {
 	display: inline-block;
 	padding: 24px 32px;
@@ -174,13 +198,18 @@
 	<body>
 		<h1>WEBSERV</h1>
 		<a href ="http://localhost:8080/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect $@</a>
-		<a href ="http://localhost:8080/html/user" target="_self" class="glass-button-return"> Return</a>
+		<a href ="http://localhost:8080/user" target="_self" class="glass-button-return"> Return</a>
 		<div class="glass-panel">
 			<div class="glass-toolbar">
-				<a href="https://www.w3schools.com/images/picture.jpg" class="glass-button-default" download>Download</a>
-				<!--
-		<button class="glass-button">Glass Button</button>
-				-->	
+				<button class="glass-button-folder">Dossier image</button>
+				<button class="glass-button-folder">Dossier html</button>
+				<button class="glass-button-folder">Dossier random</button>
+			</div>
+			<div class="glass-toolbar">
+				<button class="glass-button">Fichier 1</button>
+				<button class="glass-button">Fichier 2</button>
+				<button class="glass-button">Fichier 3</button>
+				<button class="glass-button">Fichier 4</button>
 			</div>
 		</div>
 	</body>
