@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 void  Request::get_file(std::vector<Server> &serv, Client &client) {
+
   PRINT_FUNC();
   PRINT_ERR("Path: " + path);
   PRINT_ERR("Log: " + to_string(client._log));
@@ -95,6 +96,13 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   char buff[buff_size];
   std::string ascii;
 
+  if (comp(path, "download") == true || comp(path, "delete") == true) {
+    auto_file_name(serv, client);
+    complete_file = true;
+    read_size = file_content.size();
+    return ;
+  }
+
   if (file_path.size() < 1)
     this->get_file(serv, client);
   if (complete_file == true) {
@@ -184,7 +192,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   std::cout << client << std::endl;
   std::ostringstream s;
   bool redirect = false;
-  //PRINT_WIN(path);
+  PRINT_WIN(path);
   if (comp(path, "?disconnect=true") == true) {
     redirect = true;
     client._log = false;
@@ -197,10 +205,18 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/login\n";
   }
   //PRINT_WIN(file_path);
-  this->set_content_type(_mime);
+  if (comp(path, "download") == false && comp(path, "delete") == false)
+    this->set_content_type(_mime);
+  else
+  {
+    PRINT_WIN("LEEEEEEEEEEEEEEEEEEEEEEEEROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOY")
+    content_type = "Content-Type: text/html\n";
+  }
+
   s << read_size;
   answer = status;
-  // answer += "Connection: keep-alive\n";
+  // answer += "Connection: keep-alive\n";.
+
   PRINT_LOG(file_path);
   if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {
     PRINT_WIN("Adding cookie to: " + client._name);

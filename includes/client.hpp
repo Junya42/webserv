@@ -40,6 +40,8 @@ class Request {
     void        set_content_type(std::map<std::string, std::string> &_mime);
     void        get_response(std::map<std::string, std::string> &_mime, Client &client);
 
+    void        auto_file_name(std::vector<Server> &serv, Client & client);
+
     void        post_request(std::vector<Server> &serv); //located at srcs/post_request.cpp
 
     void        delete_request(std::vector<Server> &serv); //located at srcs/delete_request.cpp

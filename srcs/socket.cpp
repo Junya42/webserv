@@ -148,7 +148,7 @@ void	answer_client(Client &client, Request &req, Config &config) {
 		if (req.header_code == 0) {
 			req.get_response(config._mime, client);
 			std::cout << req << std::endl;
-			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client");
 			PRINT_WIN(client._id);
