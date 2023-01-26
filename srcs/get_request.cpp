@@ -96,11 +96,13 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   char buff[buff_size];
   std::string ascii;
 
-  if (comp(path, "download") == true || comp(path, "delete") == true) {
-    auto_file_name(serv, client);
-    complete_file = true;
-    read_size = file_content.size();
-    return ;
+  if (client._log == true && client._name.size() < 1) {
+    if (comp(path, "download") == true || comp(path, "delete") == true) {
+      auto_file_name(serv, client);
+      complete_file = true;
+      read_size = file_content.size();
+      return ;
+    }
   }
 
   if (file_path.size() < 1)
@@ -210,7 +212,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   else
   {
     PRINT_WIN("LEEEEEEEEEEEEEEEEEEEEEEEEROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOY")
-    content_type = "Content-Type: text/html\n";
+      content_type = "Content-Type: text/html\n";
   }
 
   s << read_size;

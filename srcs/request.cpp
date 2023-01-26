@@ -356,6 +356,7 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename = tmpbody.disposition.substr(found + 1);
           //erase(tmpbody.filename, '"');
           erase(tmpbody.filename);
+          tmpbody.filename.pop_back();
           file.open(tmpbody.filename.c_str(), std::ios::binary);
           continue;
         }
