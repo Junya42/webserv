@@ -1,7 +1,7 @@
 #include "../includes/socket.hpp"
 
 //const int PORT = 8080;
-const int MAX_EVENTS = 10;
+const int MAX_EVENTS = 100;
 
 /*	Create a server socket
  *	Set the socket option SO_REUSEADDR
@@ -9,7 +9,7 @@ const int MAX_EVENTS = 10;
  *	Bind the socket
  *	Start listening
  */
-void	server_handler(Config &config) {
+void	server_handler(Config &config, char **env) {
 
 	int server; //server socket fd
 	int	client; //client socket fd
@@ -53,7 +53,7 @@ void	server_handler(Config &config) {
 				if (status == 1) {
 					PRINT_LOG("Status: 1");
 					//std::cout << clientlist[i].request << std::endl; //priting the request data
-					answer_client(clientlist[i], clientlist[i].request, config);
+					answer_client(clientlist[i], clientlist[i].request, config, env);
 				}
 				else if (status == 0 && clientlist[i].request.in_use == false) {
 					PRINT_ERR("Client timed out or disconnected");
@@ -95,7 +95,7 @@ void	server_handler(Config &config) {
 			}
 			if (clientlist[j].request.in_response == true || status == 1) {
 				PRINT_LOG("Outside answer");
-				answer_client(clientlist[j], clientlist[j].request, config);
+				answer_client(clientlist[j], clientlist[j].request, config, env);
 			}
 		}
 	}

@@ -32,7 +32,7 @@ std::string	get_config(char *str) {
 	return config_buff;
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av, char **env) {
 
 	std::string test;
 	Config	config;
@@ -58,6 +58,6 @@ int main(int ac, char **av) {
 	std::cout << "add config" << std::endl;
 	config.add_config(config_buff);
 	std::cout << config << std::endl;
-	server_handler(config);
+	server_handler(config, env);
 	return 0;
 }

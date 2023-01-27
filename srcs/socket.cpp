@@ -139,11 +139,14 @@ int	init_epoll(int server) {
 	return epoll_fd;
 }
 
-void	answer_client(Client &client, Request &req, Config &config) {
+void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	req.in_response = true;
 
 	PRINT_FUNC();
-	req.get_request(config._serv, client);
+	if (comp(req.path, "download") == false && comp(req.path, "delete") == false)
+		req.get_request(config._serv, client);
+	else
+		req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
 	if (req.complete_file == true) {
 		if (req.header_code == 0) {
 			req.get_response(config._mime, client);
@@ -206,13 +209,16 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 	while (i < clientlist.size()) {
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
-		if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
-			if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
-				continue ;
-		}
+		//if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
+		//if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
+		//continue ;
+		//}
 		//if (clientlist[i]._name != tmp_name)
 		i++;
 	}
+	(void)numclient;
+	(void)epoll;
+	(void)curr_fd;
 	PRINT_LOG("End of reorganize_client_list");
 }
 

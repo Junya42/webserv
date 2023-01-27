@@ -18,6 +18,7 @@ SRCS = main.cpp \
 	   socket.cpp \
 	   server_loop.cpp \
 	   auto_index.cpp \
+	   cgi.cpp
 
 SRCS_PATH = $(addprefix srcs/, $(SRCS))
 SRC_NUM := $(words $(SRCS))
@@ -41,6 +42,7 @@ all: assign_count $(NAME)
 assign_count: compare-timestamps
 	$(eval override count := $(shell cat .make_num))
 	@rm -rf .make_num
+	@mkdir -p /tmp/private_webserv
 
 compare-timestamps:
 	@NUM=$(SRC_NUM); \

@@ -96,7 +96,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   char buff[buff_size];
   std::string ascii;
 
-  if (client._log == true && client._name.size() < 1) {
+  if (client._log == true && client._name.size() > 0) {
     if (comp(path, "download") == true || comp(path, "delete") == true) {
       auto_file_name(serv, client);
       complete_file = true;
@@ -115,10 +115,11 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     read_count++;
     ascii = std::to_string(read_count);
     //PRINT_LOG(ascii + " time opening");
-    file.open(file_path.c_str(), std::ifstream::in | std::ifstream::binary);
+    file.open(file_path.c_str(), std::ios::in | std::ios::binary);
     file.seekg(read_size, file.beg);
-    file.read(buff, sizeof(buff));
-    read_size += file.gcount();
+    file.read(buff, buff_size);
+    size_t last_read = file.gcount();
+    read_size += last_read;
     if (file_size - read_size <= 0) {
       PRINT_WIN("File complete in : " + to_string(read_count) + " runs");
       complete_file = true;
@@ -128,7 +129,8 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     ascii = std::to_string(file_size - read_size);
     //PRINT_LOG("Filesize - readsize: " + ascii);
     size_t curr_size = file_content.size();
-    file_content += buff;
+    for (size_t i = 0; i < last_read; i++)
+      file_content += buff[i];
     if (found_user == false && comp(content_type, "html") == true) {
       found_user = replace(file_content, "$@", client._name, curr_size);
       PRINT_LOG("Replaced: " + to_string(found_user));
@@ -138,7 +140,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   else {
     //PRINT_LOG("First file opening");
     //PRINT_LOG(file_path);
-    file.open(file_path.c_str(), std::ifstream::in | std::ifstream::binary);
+    file.open(file_path.c_str(), std::ios::in | std::ios::binary);
     complete_file = false;
     if (file.is_open()) {
 
@@ -147,7 +149,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       file_size = read_size;
       file.seekg(0, file.beg);
 
-      file.read(buff, sizeof(buff));
+      file.read(buff, buff_size);
       read_size = file.gcount();
       if (file_size - read_size == 0) {
         PRINT_WIN("File complete");
@@ -159,7 +161,10 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       //PRINT_LOG("Filesize: " + ascii);
       ascii = std::to_string(file_size - read_size);
       //PRINT_LOG("Filesize - readsize: " + ascii);
-      file_content = buff; 
+      file_content.clear();
+      for (size_t i = 0; i < read_size; i++)
+        file_content += buff[i];
+      //file_content = buff; 
       if (found_user == false && comp(content_type, "html") == true) {
         found_user = replace(file_content, "$@", client._name);
         PRINT_LOG("Replaced: " + to_string(found_user));
@@ -195,51 +200,52 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   std::ostringstream s;
   bool redirect = false;
   PRINT_WIN(path);
-  if (comp(path, "?disconnect=true") == true) {
-    redirect = true;
-    client._log = false;
-    status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html\n";
-  }
-  else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-    status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html/user\n";
-  }
-  else if (auth_redirect == 2) {
-    status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/login\n";
-  }
-  //PRINT_WIN(file_path);
-  if (comp(path, "download") == false && comp(path, "delete") == false)
+  if (comp(path, "download") == false && comp(path, "delete") == false) {
+    if (comp(path, "?disconnect=true") == true) {
+      redirect = true;
+      client._log = false;
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html\n";
+    }
+    else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html/user\n";
+    }
+    else if (auth_redirect == 2) {
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/login\n";
+    }
+    //PRINT_WIN(file_path);
     this->set_content_type(_mime);
-  else
-  {
-    PRINT_WIN("LEEEEEEEEEEEEEEEEEEEEEEEEROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOY")
-      content_type = "Content-Type: text/html\n";
-  }
 
-  s << read_size;
-  answer = status;
-  // answer += "Connection: keep-alive\n";.
+    s << read_size;
+    answer = status;
+    // answer += "Connection: keep-alive\n";.
 
-  PRINT_LOG(file_path);
-  if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {
-    PRINT_WIN("Adding cookie to: " + client._name);
-    client._log = true;
-    client._cookie = "log=" + client._name;
-    answer += "Set-Cookie: ";
-    answer += client._cookie;
-    answer += "; Path=/; Expires= Fri, 5 Oct 2042 14:42:00 CMT;\n";
+    PRINT_LOG(file_path);
+    if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {
+      PRINT_WIN("Adding cookie to: " + client._name);
+      client._log = true;
+      client._cookie = "log=" + client._name;
+      answer += "Set-Cookie: ";
+      answer += client._cookie;
+      answer += "; Path=/; Expires= Fri, 5 Oct 2042 14:42:00 CMT;\n";
+    }
+    else if (redirect == true) {
+      PRINT_ERR("Remove cookie from: " + client._name);
+      std::string tmp = "log=" + client._name + "; Path=/; Expires=Fri, 5 Oct 2018 14:42:00 GMT;\n";
+      answer += "Set-Cookie: ";
+      answer += tmp;
+    }
+    answer += content_type;
+    if (comp(content_type, "html") == false)
+      answer += "Content-Transfer-Encoding: binary\n";
+    answer += "Content-Length: ";
+    answer += s.str();
+    answer += "\r\n\r\n";
+    answer += file_content;
+    answer += "\r\n\r\n";
   }
-  else if (redirect == true) {
-    PRINT_ERR("Remove cookie from: " + client._name);
-    std::string tmp = "log=" + client._name + "; Path=/; Expires=Fri, 5 Oct 2018 14:42:00 GMT;\n";
-    answer += "Set-Cookie: ";
-    answer += tmp;
+  else {
+    answer.clear();
+    answer = file_content;
+    answer += "\r\n\r\n";
   }
-  answer += content_type;
-  if (comp(content_type, "html") == false)
-    answer += "Content-Transfer-Encoding: binary\n";
-  answer += "Content-Length: ";
-  answer += s.str();
-  answer += "\r\n\r\n";
-  answer += file_content;
-  answer += "\r\n\r\n";
 }

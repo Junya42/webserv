@@ -45,6 +45,8 @@ class Request {
     void        post_request(std::vector<Server> &serv); //located at srcs/post_request.cpp
 
     void        delete_request(std::vector<Server> &serv); //located at srcs/delete_request.cpp
+    
+    void        download_delete_cgi(Client &client, Server &serv, const char *path, char **env);
 
     bool  in_use;
 

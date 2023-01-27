@@ -27,7 +27,7 @@ int init_epoll(int server);
 
 int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *id, int *numclient, int *curr_fd);
 int remove_client(int client, std::vector<Client> &clientlist, int i, int *curr_fd, int *numclient, int epoll_fd);
-void  answer_client(Client &client, Request &req, Config &config);
+void  answer_client(Client &client, Request &req, Config &config, char **env);
 
 int find_client_in_vector(std::vector<Client> &clientlist, int client, int index);
 void reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *curr_fd, int *numclient, int epoll);
