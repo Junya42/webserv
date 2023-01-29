@@ -24,4 +24,6 @@ void  insufficient_storage(int client); //507
 //  Switch error
 void  send_error(int client, int code);
 
+// Redirect to error page
+void  redirect_error(int client, int code);
 #endif

@@ -1,4 +1,6 @@
 #include "../includes/error.hpp"
+#include "../includes/macro.hpp"
+#include "../includes/string.hpp"
 
 //  Client side errors
 std::string start = "<html><head><title>Webserv</title><link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\"><style>.glass-panel {color: #fff;margin: 40px auto;background-color: rgba(255,255,255,0.3);border: 1px solid rgba(255,255,255,0.1);width: 100%;border-radius: 15px;padding: 32px;backdrop-filter: blur(10px);}.glass-button {display: inline-block;padding: 24px 32px;border: 0;text-decoration: none;border-radius: 15px;background-color: rgba(255,255,255,0.1);border: 1px solid rgba(255,255,255,0.1);backdrop-filter: blur(30px);color: rgba(255,255,255,0.8);font-size: 14px;letter-spacing: 2px;cursor: pointer;text-transform: uppercase;transition: 1s;}.glass-button:hover {transform: scale(1.1);background-color: rgba(255,255,255,0.3);}html, body {margin: 0;height: 100%;}body {background: linear-gradient(45deg, rgb(62, 78, 102), rgb(192,177,184), rgb(194,152,163), rgb(170, 177, 189), rgb(135, 155, 177), rgb(107, 130, 162));background-size: 400% 400%;animation: gradient 10s ease infinite;}@keyframes gradient {  0% {    background-position: 0% 50%;  }  50% {    background-position: 100% 50%;  }  100% {    background-position: 0% 50%;  }}.glass-panel {  max-width: 600px;}.glass-button {margin: 200px;        margin-top: 40px;}h1, h1 a {  min-height: 120px;width: 90%;       max-width: 700px;       vertical-align: middle;       text-align: center;margin: 0 auto;        text-decoration: none;color: #fff;       padding-top: 60px;color: rgba(255,255,255,0.8);}p {width: 80%;margin: 0 auto;        padding-bottom: 32px;color: rgba(255,255,255,0.6);}</style></head><body><h1></h1><div class=\"glass-panel\"><h1><a>";
@@ -10,6 +12,7 @@ void  bad_request(int client) {
   std::string error;
 
   error = "HTTP/1.1 400 Bad Request\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "400 Bad Request";
@@ -22,6 +25,7 @@ void  unauthorized(int client) {
   std::string error;
 
   error = "HTTP/1.1 401 Unauthorized\n";
+  error += "Set-Cookie: error=401; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "401 Unauthorized";
@@ -34,6 +38,7 @@ void  forbidden(int client) {
   std::string error;
 
   error = "HTTP/1.1 403 Forbidden\n";
+  error += "Set-Cookie: error=403; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "403 Forbidden";
@@ -46,6 +51,7 @@ void  not_found(int client) {
   std::string error;
 
   error = "HTTP/1.1 404 Not Found\n";
+  error += "Set-Cookie: error=404; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "404 Not Found";
@@ -58,6 +64,7 @@ void  method_not_allowed(int client) {
   std::string error;
 
   error = "HTTP/1.1 405 Method Not Allowed\n";
+  error += "Set-Cookie: error=405; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "405 Method Not Allowed";
@@ -70,6 +77,7 @@ void  gone(int client) {
   std::string error;
 
   error = "HTTP/1.1 410 Gone\n";
+  error += "Set-Cookie: error=410; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "410 Gone";
@@ -82,6 +90,7 @@ void  length_required(int client) {
   std::string error;
 
   error = "HTTP/1.1 411 Length Required\n";
+  error += "Set-Cookie: error=411; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "411 Length Required";
@@ -94,6 +103,7 @@ void  uri_too_long(int client) {
   std::string error;
 
   error = "HTTP/1.1 414 URI Too Long\n";
+  error += "Set-Cookie: error=414; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "414 URI Too Long";
@@ -106,6 +116,7 @@ void  unsupported_media_type(int client) {
   std::string error;
 
   error = "HTTP/1.1 415 Unsupported Media Type\n";
+  error += "Set-Cookie: error=415; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "415 Unsupported Media Type";
@@ -119,6 +130,7 @@ void  internal_server_error(int client) {
   std::string error;
 
   error = "HTTP/1.1 500 Internal Server Error\n";
+  error += "Set-Cookie: error=500; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "500 Internal Server Error";
@@ -131,6 +143,7 @@ void  not_implemented(int client) {
   std::string error;
 
   error = "HTTP/1.1 501 Not Implemented\n";
+  error += "Set-Cookie: error=501; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "501 Not Implemented";
@@ -143,6 +156,7 @@ void  http_version_not_supported(int client) {
   std::string error;
 
   error = "HTTP/1.1 505 HTTP Version Not Supported\n";
+  error += "Set-Cookie: error=505; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "505 HTTP Version Not Supported";
@@ -155,6 +169,7 @@ void  insufficient_storage(int client) {
   std::string error;
 
   error = "HTTP/1.1 507 Insufficient Storage\n";
+  error += "Set-Cookie: error=507; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\r\n\r\n";
   error += start;
   error += "507 Insufficient Storage";
@@ -166,6 +181,7 @@ void  insufficient_storage(int client) {
 // Switch error
 
 void  send_error(int client, int code) {
+  PRINT_ERR(code);
   switch (code) {
     case 400:
       bad_request(client);
@@ -207,4 +223,13 @@ void  send_error(int client, int code) {
       insufficient_storage(client);
       break;
   }
+}
+
+void  redirect_error(int client, int code) {
+  PRINT_ERR(code);
+  std::string answer = "HTTP/1.1 307 Temporary Redirect\n";
+              answer += "Location: http://localhost:8080/" + to_string(code) + "\r\n\r\n";
+ //             answer += "Set-Cookie: error=" + to_string(code) + "\r\n\r\n";
+
+  write(client, answer.c_str(), answer.size());
 }

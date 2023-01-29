@@ -58,6 +58,9 @@ class Request {
     size_t              current_bytes;
     size_t              body_size;
 
+    size_t              ncount;
+    size_t              fpos;
+
     std::string method; //method string
     std::string path; //path string
     std::string version;
@@ -76,13 +79,14 @@ class Request {
     std::string status;
 
     bool        complete_header;
+    bool        complete_body;
     bool        parsed_header;
     bool        parsed_body;
     bool        has_body;
     bool        has_size;
     bool        auth;
     bool        in_response;
-    int        auth_redirect;
+    int         auth_redirect;
     int         header_code;
 
     size_t content_lenght; //size of body

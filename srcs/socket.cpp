@@ -1,5 +1,6 @@
 #include "../includes/socket.hpp"
 #include "../includes/error.hpp"
+#include <cstdlib>
 
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
@@ -148,19 +149,24 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	else
 		req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
 	if (req.complete_file == true) {
-		if (req.header_code == 0) {
+		if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
+			std::string code(req.cookie, 6);
+			req.header_code = atoi(code.c_str());
+			send_error(client._sock, req.header_code);
+			client._log = false;
+			PRINT_ERR("Sent error page to client");
+			PRINT_ERR(client._id);
+		}
+		else if (req.header_code == 0) {
 			req.get_response(config._mime, client);
-			std::cout << req << std::endl;
-			std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			//std::cout << req << std::endl;
+			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client");
 			PRINT_WIN(client._id);
 		}
 		else {
-			send_error(client._sock, req.header_code);
-			client._log = false;
-			PRINT_ERR("Sent error page to client");
-			PRINT_ERR(client._id);
+			redirect_error(client._sock, req.header_code);
 		}
 		req.clear();
 	}
