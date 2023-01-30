@@ -196,10 +196,10 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime) {
 
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
   PRINT_FUNC();
-  std::cout << client << std::endl;
+  //std::cout << client << std::endl;
   std::ostringstream s;
   bool redirect = false;
-  PRINT_WIN(path);
+  //PRINT_WIN(path);
   if (comp(path, "download") == false && comp(path, "delete") == false) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
@@ -245,7 +245,9 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   }
   else {
     answer.clear();
-    answer = file_content;
-    answer += "\r\n\r\n";
+    answer = "HTTP/1.1 200 OK\n";
+    answer += "Content-Lenght: " + to_string(file_content.size());
+    answer += file_content;
+    //answer += "\r\n\r\n";
   }
 }

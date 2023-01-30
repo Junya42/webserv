@@ -60,6 +60,7 @@ class Request {
 
     size_t              ncount;
     size_t              fpos;
+    size_t              initial_lenght;
 
     std::string method; //method string
     std::string path; //path string

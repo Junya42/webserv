@@ -104,13 +104,11 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	}
 	//clientlist[i]._log = false;
 	if (clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) {
-		PRINT_ERR("Deleting elem from clientlist");
 		clientlist.erase(clientlist.begin() + i);
-		PRINT_ERR(clientlist.size());
+		PRINT_ERR("Deleting elem from clientlist : " + to_string(clientlist.size()));
 	}
 	close(client);
-	PRINT_LOG("Updating number of clients");
-	PRINT_LOG(*numclient);
+	PRINT_LOG("Updating number of clients : " + to_string(*numclient));
 	return 1;
 }
 
@@ -160,7 +158,7 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 		else if (req.header_code == 0) {
 			req.get_response(config._mime, client);
 			//std::cout << req << std::endl;
-			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client");
 			PRINT_WIN(client._id);
@@ -173,15 +171,15 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 }
 
 int find_client_in_vector(std::vector<Client> &clientlist, int client, int index) {
-	PRINT_LOG("Current client socked: " + to_string(client));
+	//PRINT_LOG("Current client socked: " + to_string(client));
 	for (size_t i = 0; i < clientlist.size(); i++) {
 		if (clientlist[i]._sock == client) {
-			PRINT_WIN("Found client in vector");
+			//PRINT_WIN("Found client in vector");
 			//std::cout << "\033[1;32m" << clientlist[i] << "\033[0m" << std::endl;
 			return i;
 		}
 	}
-	PRINT_ERR("Couldn't find client in vector");
+	//PRINT_ERR("Couldn't find client in vector");
 	//std::cout << "\033[1;31m" << clientlist[index] << "\033[0m" << std::endl;
 	return index;
 }
@@ -225,6 +223,6 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 	(void)numclient;
 	(void)epoll;
 	(void)curr_fd;
-	PRINT_LOG("End of reorganize_client_list");
+	//PRINT_LOG("End of reorganize_client_list");
 }
 

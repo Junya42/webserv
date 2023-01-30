@@ -37,7 +37,7 @@ void	server_handler(Config &config, char **env) {
 				add_client(server, epoll_fd, clientlist, &id, &numclient, &curr_fd);
 			}
 			else if (events[i].events & EPOLLIN) {
-				PRINT_WIN("EPOLLIN Client event");
+				//PRINT_WIN("EPOLLIN Client event");
 				client = events[i].data.fd;
 				save_index = i;
 				i = find_client_in_vector(clientlist, client, i);
@@ -57,7 +57,7 @@ void	server_handler(Config &config, char **env) {
 				}
 				else if (status == 0 && clientlist[i].request.in_use == false) {
 					PRINT_ERR("Client timed out or disconnected");
-					std::cout << "\033[1;31m" << clientlist[i] << "\033[0m" << std::endl;
+					//std::cout << "\033[1;31m" << clientlist[i] << "\033[0m" << std::endl;
 					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 				}
 				else if (status == -1) {
@@ -66,17 +66,17 @@ void	server_handler(Config &config, char **env) {
 				}
 				reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 				clientlist[i]._request_count++;
-				std::cout << "Number of clients : " << numclient << std::endl;
-				std::cout << "Number of fd : " << curr_fd << std::endl;
-				for (size_t x = 0; x < clientlist.size(); x++) {
+				//std::cout << "Number of clients : " << numclient << std::endl;
+				//std::cout << "Number of fd : " << curr_fd << std::endl;
+				/*for (size_t x = 0; x < clientlist.size(); x++) {
 					std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
 					if (x == i)
 						std::cout << "\033[1;34m##############################\033[0m" << std::endl;
 					else
 						std::cout << "##############################" << std::endl;
-				}
+				}*/
 				i = save_index;
-				std::cout << std::endl;
+				//std::cout << std::endl;
 			}
 			else if (events[i].events & EPOLLOUT){
 				PRINT_WIN("EPOLLOUT Client event");
@@ -86,7 +86,7 @@ void	server_handler(Config &config, char **env) {
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
-				PRINT_LOG("Outside read");
+				//PRINT_LOG("Outside read");
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);
@@ -94,7 +94,7 @@ void	server_handler(Config &config, char **env) {
 				}
 			}
 			if (clientlist[j].request.in_response == true || status == 1) {
-				PRINT_LOG("Outside answer");
+				//PRINT_LOG("Outside answer");
 				answer_client(clientlist[j], clientlist[j].request, config, env);
 			}
 		}

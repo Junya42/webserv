@@ -3,8 +3,10 @@
 #include <unistd.h>
 
 void  Request::set_error(int code) {
-  if (!header_code)
+  if (!header_code) {
+    PRINT_ERR("Error : " + to_string(code));
     header_code = code;
+  }
 }
 
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
@@ -14,8 +16,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   size_t  line_count = 0;
 
   PRINT_FUNC();
-  //std::cout << "_____________________________" << std::endl
-    //<< "\033[1;32mRequest: \033[0m" << std::endl
+  std::cout << "_____________________________" << std::endl
+    << "\033[1;32mRequest: \033[0m" << std::endl << std::endl;
     //<< request << std::endl;
 
   parent._fav = false;
@@ -25,14 +27,14 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     if (comp(path, ".ico") == true)
       parent._fav = true;
   }
-  //PRINT_LOG(method);
-  //PRINT_LOG(path);
-  //PRINT_LOG(version);
+  PRINT_LOG(method);
+  PRINT_LOG(path);
+  PRINT_LOG(version);
+  std::cout << std::endl << "_____________________________" << std::endl;
   while (std::getline(stream, line)) {
     if (line == "\r" && line_count == 0)
       continue ;
     else if (line == "\r") {
-      PRINT_WIN("Complete header");
       complete_header = true;
       break ;
     }
@@ -42,14 +44,11 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
     if (header.find(key) != header.end()) {
       set_error(400);
-      //PRINT_ERR("400 Bad request");
     }
     header[key] = value;
-   // PRINT_LOG(std::string(key + " : " + value, 0, key.size() + value.size() + 2));
     if (comp(key, "Content-Length") == true) {
-      PRINT_WIN("STRING LENGHT = " + value);
       content_lenght = atoi(value.c_str());
-      //PRINT_LOG("Content lenght = " + to_string(content_lenght));
+      initial_lenght = content_lenght;
       body_size = content_lenght;
       has_size = true;
       has_body = true;
@@ -82,84 +81,57 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
     line_count++;
   }
-  //std::cout << "_____________________________" << std::endl;
-  //PRINT_LOG("After header Content lenght = " + to_string(content_lenght));
-  //std::cout << *this << std::endl;
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
-      //PRINT_ERR("400 Bad request");
   }
-  PRINT_WIN("Content lenght = " + to_string(content_lenght));
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
 
 void  Request::get_body_stream(std::istringstream &stream, Client &parent, Client &tmp) {
-  PRINT_FUNC();
-  //char buff[buff_size];
-  //memset(buff, 0, buff_size);
   std::vector<unsigned char> buff(buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
-    //PRINT_LOG("Body not chunked");
-    //PRINT_LOG(content_lenght);
-    //PRINT_LOG(has_size);
     if (content_lenght > 0 && has_size == true) {
       int old_bytes = stream.gcount();
       if (content_lenght >= sizeof(buff))
         stream.read(reinterpret_cast<char *>(&buff[0]), buff_size - 1);
       else
         stream.read(reinterpret_cast<char *>(&buff[0]), content_lenght);
-      //PRINT_WIN(&buff[0]);
       int_bytes = stream.gcount() - old_bytes;
       current_bytes = int_bytes;
-      //PRINT_LOG("Reading body with content_lenght: " + std::to_string(content_lenght));
-      //PRINT_LOG("bytes read: " + std::to_string(int_bytes));
-      //body_str += buff;
       for (int i = 0; i < int_bytes; i++) {
         if (buff[i] == '\n') {
           ncount++;
         }
         body_str.push_back(buff[i]);
       }
-      if (body_str.size() > 1)
-        PRINT_WIN(&body_str[body_str.find_last_of('\n') + 1]);
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
       int old_bytes = stream.gcount();
       stream.read(reinterpret_cast<char *>(&buff[0]), buff_size - 1);
       int_bytes = stream.gcount() - old_bytes;
-      //PRINT_LOG("Reading body without content_lenght: " + std::to_string(content_lenght));
-      //PRINT_LOG("bytes read: " + std::to_string(int_bytes));
       current_bytes = int_bytes;
-      //std::cout << "sizeof buff: " << buff_size << std::endl;
-      //std::cout << "current_bytes: " << int_bytes << std::endl;
       if (int_bytes < 1 || current_bytes < buff_size - 1) {
         content_lenght = 0;
       }
-      //body_str += buff;
       for (size_t i = 0; i < buff.size(); i++) {
         if (buff[i] == '\n')
           ncount++;
         body_str.push_back(buff[i]);
       }
     }
-    PRINT_LOG("TYPE = " + type);
     if (comp(type, "x-www-form-urlencoded")) {
-      //PRINT_LOG("Setting names");
       std::istringstream line_stream(body_str);
       std::string key;
       std::string value;
-      //PRINT_LOG(body_str);
       while (std::getline(line_stream, key, '=')) {
         std::getline(line_stream, value, '&');
         body[key] = value;
-        //PRINT_LOG(key);
         if (comp(key, "fname")) {
           if (parent._name.size()) {
-            //PRINT_LOG("Creating new client based on parent");
             tmp = parent;
             tmp._sock = 0;
             parent._files.clear();
@@ -167,7 +139,6 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
           }
           parent._name = value;
           parent._log = true;
-          //PRINT_WIN("Set client name to: " + value);
         }
         else {
           parent._lastname = value;
@@ -215,28 +186,16 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
 }
 
 void  Request::get_body(int client) {
-  PRINT_FUNC();
-  //char buff[buff_size];
   std::vector<unsigned char> buff(buff_size + 1);
 
-  //memset(buff, 0, buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
-    //PRINT_LOG("Body not chunked");
-    PRINT_LOG(content_lenght);
-    //PRINT_LOG(has_size);
     if (content_lenght > 0 && has_size == true) {
-      //int_bytes = read(client, buff, sizeof(buff));
       int_bytes = recv(client, &buff[0], buff_size - 1, 0);
       if (int_bytes < 1)
         return ;
       current_bytes = int_bytes;
-     // PRINT_LOG("Reading body with content_lenght");
-      //PRINT_LOG(int_bytes);
-      if (body_str.size()) {
-        PRINT_WIN(body_str.substr(fpos, body_str.find_first_of('\n', fpos + 1) - fpos));
-      }
       for (int i = 0; i < int_bytes; i++) {
         if (buff[i] == '\n') {
           ncount++;
@@ -244,43 +203,26 @@ void  Request::get_body(int client) {
         }
         body_str.push_back(buff[i]);
       }
-      /*if (body_str[body_str.size() - 1] == 0) {
-        PRINT_ERR("Current line : " + to_string(ncount));
-        PRINT_ERR(&body_str[body_str.find_last_of('\n') + 1]);
-        PRINT_ERR("Last bodystr char : '" + to_string(body_str[body_str.size() - 1]) + "' | ascii : " + to_string(static_cast<int>(body_str[body_str.size() - 1])));
-      }*/
-      //body_str += buff;
-      //PRINT_LOG(body_str);
-      PRINT_LOG("int bytes: " + to_string(int_bytes));
+      PRINT_WIN(to_string(static_cast<double>(body_str.size()) / static_cast<double>(initial_lenght) * 100) + "%");
       content_lenght -= current_bytes;
-      PRINT_LOG("current_bytes: " + to_string(current_bytes));
-      PRINT_LOG(content_lenght);
     }
     else if (has_body == true && has_size == false) {
-      //int_bytes = read(client, buff, sizeof(buff));
       int_bytes = recv(client, &buff[0], buff_size - 1, 0);
-      //PRINT_LOG("Reading body without content_lenght");
       current_bytes = int_bytes;
-      //std::cout << "sizeof buff: " << buff_size << std::endl;
-      //std::cout << "current_bytes: " << int_bytes << std::endl;
       if (int_bytes < 1 || current_bytes < buff_size) {
         complete_body = true;
         content_lenght = 0;
       }
       for (int i = 0; i < int_bytes; i++)
         body_str.push_back(buff[i]);
-      //body_str += buff;
     }
   }
   else {
-    //PRINT_LOG("Reading Chunked body");
     std::string tmp;
     int         chunk_size = 0;
 
-    //while ((int_bytes = read(client, buff, 1)) > 0) {
-    while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) {
+    while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) { //DANGER EXIT
       if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
-        PRINT_ERR("Invalid chunk size format");
         exit(0);
       }
       tmp += buff[0];
@@ -295,7 +237,6 @@ void  Request::get_body(int client) {
     chunk_size = atoi(tmp.c_str());
     size_t  compchunk = chunk_size;
     if (compchunk >= buff_size - 1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
-      PRINT_ERR("Chunk size too big compared to buff size");
       exit(0);
     }
     tmp.clear(); //ADDITION WITH VECTOR BUFF
@@ -303,7 +244,6 @@ void  Request::get_body(int client) {
     if ((int_bytes = recv(client, &buff[0], chunk_size, 0)) > 0)
       for (size_t i = 0; i < buff.size(); i++)
         tmp += buff[i];
-    //tmp = buff;
     if (int_bytes == -1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
                            //PRINT_ERR("Couldn't read from client");
       exit(0);
@@ -318,66 +258,51 @@ void  Request::get_body(int client) {
   }
 
   std::string Request::check_method(std::string &method) {
-    PRINT_FUNC();
     if (method == "GET" || method == "POST" || method == "DELETE") {
-      //PRINT_WIN("Success");
       return std::string("HTTP/1.1 200 OK");
     }
     if (method == "HEAD" || method == "PUT" || method == "CONNECT"
         || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
-      //PRINT_ERR("501 Not Implemented");
       set_error(501);
       return std::string("HTTP/1.1 501 Not Implemented");
     }
     set_error(400);
-    //PRINT_ERR("400 Bad Request");
     return std::string ("HTTP/1.1 400 Bad Request");
   }
 
   int Request::parse_header(void) {
-    PRINT_FUNC();
     std::string method_buffer;
 
     method_buffer = check_method(method);
     status = method_buffer + "\n";
     if (method_buffer.size() > strlen("HTTP/1.1 200 OK ")) {
-      PRINT_ERR(method_buffer);
       return -1;
     }
     if (method == "POST" && has_body == false) {
-      PRINT_ERR("Couldn't find body in POST request");
       status = "HTTP/1.1 400 Bad Request";
       set_error(400);
-      //PRINT_ERR("400 Bad Request");
       return -1;
     }
     if (!host.size()) {
-      //PRINT_ERR("Couldn't find host");
       status = "HTTP/1.1 400 Bad Request";
       set_error(400);
-      //PRINT_ERR("400 Bad Request");
       return -1;
     }
     parsed_header = true;
-    //PRINT_WIN("Success");
     return 0;
   }
 
   int  Request::parse_body(Client &parent) {
-    PRINT_FUNC();
     if (boundary.size()) {
-      PRINT_LOG("Found boundary in header");
       size_t pos;
       if ((pos = body_str.find(boundary)) != std::string::npos) {
         Body tmpbody;
-        //PRINT_LOG(body_str);
         std::string cpy(body_str, pos);
         std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
         body_str.clear();
         int boundary_count = 0;
         int linecount = 0;
         std::ofstream file;
-        PRINT_WIN("Before WHILE");
         while (std::getline(bodystream, cpy)) {
           int old_boundary_count = boundary_count;
           if (cpy.find("Content-Disposition") != std::string::npos) {
@@ -417,25 +342,19 @@ void  Request::get_body(int client) {
             tmpbody.clear();
           }
         }
-        PRINT_WIN("Out of while");
         if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
           set_error(400);
-          //PRINT_ERR("400 Bad request");
-          //PRINT_ERR("Uneven Boundary count");
           status = "400 Bad Request";
           return -1;
         }
       }
       else {
         set_error(400);
-        //PRINT_ERR("400 Bad Request");
-        //PRINT_ERR("Couldn't find Boundary in Body str");
         status = "400 Bad Request";
         return -1;
       }
     }
     else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
-      PRINT_LOG("Parsing form body");
       std::istringstream bodystream(body_str);
       std::string line;
       while (std::getline(bodystream, line)) {
@@ -447,14 +366,13 @@ void  Request::get_body(int client) {
       }
     }
     parsed_body = true;
-    PRINT_WIN("Success");
     return 0;
   }
 
   void  Request::clear(void) {
-    PRINT_FUNC();
     fpos = 0;
     ncount = 0;
+    initial_lenght = 0;
     auth_redirect = 0;
     complete_body = false;
     auth = false;
@@ -494,20 +412,16 @@ void  Request::get_body(int client) {
   }
 
   int  Request::read_client(int client, Client &parent, Client &tmp) {
-    PRINT_WIN("lenght: " + to_string(content_lenght));
     std::string request;
     int int_bytes = 0;
     //char buff[buff_size];
     name = parent._name;
     std::vector<unsigned char> buff(buff_size);
 
-    PRINT_FUNC();
     if (in_response == true) {
-      PRINT_LOG("Continuing getting response");
       return 1;
     }
     if (parsed_body == true && parsed_header == true) {
-      PRINT_WIN("Success");
       return 1;
     }
     if (complete_header == false) {
@@ -518,11 +432,9 @@ void  Request::get_body(int client) {
           request += buff[i];
       }
       if (int_bytes < 0) {
-        PRINT_ERR("Error reading from client");
         return -1;
       }
       else if (int_bytes == 0) {
-        PRINT_LOG("No more data in client fd");
         return 0;
       }
       in_use = true;
@@ -539,20 +451,16 @@ void  Request::get_body(int client) {
       parsed_body = true;
     if (parsed_body == true && parsed_header == true) {
       in_use = false;
-      PRINT_WIN("Success");
       return 1;
     }
-    PRINT_LOG("Uncomplete request or bad request");
-    //std::cout << *this << std::endl;
     if (parsed_body == true)
       return 1;
-    PRINT_ERR("lenght: " + to_string(content_lenght));
     return 2;
   }
 
   Request::Request(void) {
-    PRINT_FUNC();
     fpos = 0;
+    initial_lenght = 0;
     ncount = 0;
     auth_redirect = 0;
     content_lenght = 0;

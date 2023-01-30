@@ -20,7 +20,7 @@ int main(int ac, char **av)
 
 /* On sépare le squelette HTML du reste du code */
 void haut(char *title) {
-     printf("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"fr\" >\n\t<head>");
+     printf("<html><head>");
      printf("\t\t<title>%s</title>", title);
      printf("\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n\t</head>\n\t<body>");
 }
