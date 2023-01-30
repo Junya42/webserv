@@ -56,18 +56,21 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
   else
   {
     //PRINT_LOG("Custom index");
-    //PRINT_LOG("Looking for path:" + path);
+    PRINT_LOG("Looking for path:" + path);
     for (size_t j = 0; j < serv[x]._loc.size(); j++) {
       //PRINT_LOG(serv[i]._loc[j]._path);
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
-        file_path = serv[x]._loc[j]._root + tmp_path + "/" + "index.html";
+        file_path = serv[x]._loc[j]._root + tmp_path;
+        DIR *dir = opendir(file_path.c_str());
+        if (dir)
+          file_path += "/index.html";
         found = true;
-        //PRINT_WIN("Found filename");
+        PRINT_WIN("Found filename");
         break ;
       }
     }
   }
-  //PRINT_LOG("After series of if");
+  PRINT_LOG("After series of if");
   if (found == false) {
     set_error(404);
     PRINT_ERR("404 Not found");
@@ -75,19 +78,23 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
   size_t extpos;
   std::string file_ext;
 
-  //PRINT_LOG(file_path);
-  //PRINT_LOG("extension pos");
+  PRINT_LOG(file_path);
+  PRINT_LOG("extension pos");
   if (file_path.size()) {
     extpos = file_path.find_last_of(".");
-    //PRINT_WIN(extpos);
-    //PRINT_LOG("file ext");
+    if (extpos >= file_path.size()){
+      content_type = ".txt";
+      return ;
+    }
+    PRINT_WIN(extpos);
+    PRINT_LOG("file ext");
     file_ext = file_path.substr(extpos);
-    //PRINT_WIN(file_ext);
-    //PRINT_LOG("content_type");
+    PRINT_WIN(file_ext);
+    PRINT_LOG("content_type");
     content_type = file_ext;
-    //PRINT_WIN(content_type);
+    PRINT_WIN(content_type);
   }
-  //PRINT_LOG("End of function");
+  PRINT_LOG("End of function");
 }
 
 void  Request::get_request(std::vector<Server> &serv, Client &client) {
@@ -96,14 +103,14 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   char buff[buff_size];
   std::string ascii;
 
-  if (client._log == true && client._name.size() > 0) {
-    if (comp(path, "download") == true || comp(path, "delete") == true) {
-      auto_file_name(serv, client);
-      complete_file = true;
-      read_size = file_content.size();
-      return ;
-    }
-  }
+ // if (client._log == true && client._name.size() > 0) {
+    //if (comp(path, "download") == true || comp(path, "delete") == true) {
+     // auto_file_name(serv, client);
+     // complete_file = true;
+     // read_size = file_content.size();
+     // return ;
+   // }
+ // }
 
   if (file_path.size() < 1)
     this->get_file(serv, client);
@@ -188,6 +195,10 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime) {
   std::string file_ext;
 
   extpos = file_path.find_last_of(".");
+  if (extpos >= file_path.size()) {
+    content_type = "Content-Type: text/plain\n";
+    return;
+  }
   content_type = "Content-Type: ";
   file_ext = file_path.substr(extpos);
   content_type += get_mime(file_ext, _mime);
@@ -200,7 +211,8 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   std::ostringstream s;
   bool redirect = false;
   //PRINT_WIN(path);
-  if (comp(path, "download") == false && comp(path, "delete") == false) {
+  //if (comp(path, "download") == false && comp(path, "delete") == false) {
+  if (1 == 1) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
@@ -243,11 +255,12 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     answer += file_content;
     answer += "\r\n\r\n";
   }
-  else {
+ /* else {
     answer.clear();
     answer = "HTTP/1.1 200 OK\n";
     answer += "Content-Lenght: " + to_string(file_content.size());
     answer += file_content;
     //answer += "\r\n\r\n";
   }
+  */
 }

@@ -18,6 +18,6 @@ print("</div><div class=\"glass-toolbar\">")
 n = len(sys.argv)
 
 for i in range(2, n):
-    print("<a href=\"" + sys.argv[1] + "/" + sys.argv[i] + "\"", "download=\"" + sys.argv[i] + "\"", "class=\"glass-button\">" + sys.argv[i] + "</a>")
+    print("<a href=\"/tmp/private_webserv/" + sys.argv[1] + "/" + sys.argv[i] + "\"", "download=\"" + sys.argv[i] + "\"", "class=\"glass-button\">" + sys.argv[i] + "</a>")
 
 print("</div></div></body></html>\r\n\r\n")

@@ -142,10 +142,11 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	req.in_response = true;
 
 	PRINT_FUNC();
-	if (comp(req.path, "download") == false && comp(req.path, "delete") == false)
+	(void)env;
+	//if (comp(req.path, "download") == false && comp(req.path, "delete") == false)
 		req.get_request(config._serv, client);
-	else
-		req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
+	//else
+	//	req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
 	if (req.complete_file == true) {
 		//if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
 		if (req.header_code != 0) {
