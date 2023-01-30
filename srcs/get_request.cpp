@@ -20,16 +20,16 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
   else if (name.size() && auth == true && (path == "/" || path == "/html" || path == "/html/login")) {
     auth_redirect = 1;
     tmp_path = "/html/user/";
-    PRINT_WIN("Auth redirect");
+    //PRINT_WIN("Auth redirect");
   }
   else if ((client._log == false || client._name.size() < 1) && comp(path, "user") == true) {
     auth_redirect = 2;
     tmp_path = "/login/";
-    PRINT_ERR("Redirect to log");
+    //PRINT_ERR("Redirect to log");
   }
   else
     tmp_path = path;
-  PRINT_ERR("tmp_path: " + tmp_path);
+  //PRINT_ERR("tmp_path: " + tmp_path);
   if (comp(tmp_path, "user") == true)
     client._log = true;
   //PRINT_LOG("path = " + path);
@@ -56,7 +56,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
   else
   {
     //PRINT_LOG("Custom index");
-    PRINT_LOG("Looking for path:" + path);
+    //PRINT_LOG("Looking for path:" + path);
     for (size_t j = 0; j < serv[x]._loc.size(); j++) {
       //PRINT_LOG(serv[i]._loc[j]._path);
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
@@ -70,31 +70,31 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
       }
     }
   }
-  PRINT_LOG("After series of if");
+  //PRINT_LOG("After series of if");
   if (found == false) {
     set_error(404);
-    PRINT_ERR("404 Not found");
+    //PRINT_ERR("404 Not found");
   }
   size_t extpos;
   std::string file_ext;
 
   PRINT_LOG(file_path);
-  PRINT_LOG("extension pos");
+  //PRINT_LOG("extension pos");
   if (file_path.size()) {
     extpos = file_path.find_last_of(".");
     if (extpos >= file_path.size()){
       content_type = ".txt";
       return ;
     }
-    PRINT_WIN(extpos);
-    PRINT_LOG("file ext");
+    //PRINT_WIN(extpos);
+    //PRINT_LOG("file ext");
     file_ext = file_path.substr(extpos);
-    PRINT_WIN(file_ext);
-    PRINT_LOG("content_type");
+    //PRINT_WIN(file_ext);
+    //PRINT_LOG("content_type");
     content_type = file_ext;
-    PRINT_WIN(content_type);
+    //PRINT_WIN(content_type);
   }
-  PRINT_LOG("End of function");
+  //PRINT_LOG("End of function");
 }
 
 void  Request::get_request(std::vector<Server> &serv, Client &client) {
@@ -174,7 +174,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       //file_content = buff; 
       if (found_user == false && comp(content_type, "html") == true) {
         found_user = replace(file_content, "$@", client._name);
-        PRINT_LOG("Replaced: " + to_string(found_user));
+        //PRINT_LOG("Replaced: " + to_string(found_user));
       }
       file.close();
     }

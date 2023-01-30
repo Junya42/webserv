@@ -15,8 +15,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   std::string line;
   size_t  line_count = 0;
 
-  PRINT_FUNC();
-  std::cout << "_____________________________" << std::endl
+  std::cout << std::endl << "_____________________________" << std::endl
     << "\033[1;32mRequest: \033[0m" << std::endl << std::endl;
     //<< request << std::endl;
 
@@ -89,6 +88,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 }
 
 void  Request::get_body_stream(std::istringstream &stream, Client &parent, Client &tmp) {
+  //PRINT_FUNC();
   std::vector<unsigned char> buff(buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
@@ -186,6 +186,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
 }
 
 void  Request::get_body(int client) {
+  //PRINT_FUNC();
   std::vector<unsigned char> buff(buff_size + 1);
 
   int int_bytes = 0;

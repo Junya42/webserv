@@ -66,15 +66,15 @@ void	server_handler(Config &config, char **env) {
 				}
 				reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 				clientlist[i]._request_count++;
-				/*std::cout << "Number of clients : " << numclient << std::endl;
-				std::cout << "Number of fd : " << curr_fd << std::endl;
+				//std::cout << "Number of clients : " << numclient << std::endl;
+				//std::cout << "Number of fd : " << curr_fd << std::endl;
 				for (size_t x = 0; x < clientlist.size(); x++) {
 					std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
 					if (x == i)
 						std::cout << "\033[1;34m##############################\033[0m" << std::endl;
 					else
 						std::cout << "##############################" << std::endl;
-				}*/
+				}
 				i = save_index;
 				//std::cout << std::endl;
 			}
@@ -86,7 +86,7 @@ void	server_handler(Config &config, char **env) {
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
-				//PRINT_LOG("Outside read");
+				//PRINT_LOG("Outside read : " + clientlist[j]._name);
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);

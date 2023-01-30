@@ -93,7 +93,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *i
  *	close client socket
  */
 int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_fd, int *numclient, int epoll_fd) {
-	PRINT_FUNC();
+	//PRINT_FUNC();
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client, 0) < 0) {
 		PRINT_ERR("Couldn't remove client socket from epoll instance");
 		//return 0;
@@ -105,10 +105,10 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	//clientlist[i]._log = false;
 	if (clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) {
 		clientlist.erase(clientlist.begin() + i);
-		PRINT_ERR("Deleting elem from clientlist : " + to_string(clientlist.size()));
+		//PRINT_ERR("Deleting elem from clientlist : " + to_string(clientlist.size()));
 	}
 	close(client);
-	PRINT_LOG("Updating number of clients : " + to_string(*numclient));
+	//PRINT_LOG("Updating number of clients : " + to_string(*numclient));
 	return 1;
 }
 
@@ -189,6 +189,7 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 }
 
 void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *curr_fd, int *numclient, int epoll) {
+	PRINT_FUNC();
 	std::string tmp_name;
 	if (clientlist[index]._name.size() > 1) {
 		tmp_name = clientlist[index]._name;
@@ -217,16 +218,20 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 	while (i < clientlist.size()) {
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
-		//if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
-		//	if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
-		//		continue ;
-		//}
-		//if (clientlist[i]._name != tmp_name)
+
+		if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
+			PRINT_ERR("Removing client from vector");
+			if (*curr_fd > 1 && *numclient > 0) {
+				*curr_fd = *curr_fd - 1;
+				*numclient = *numclient - 1;
+			}
+			clientlist.erase(clientlist.begin() + i);
+		}
+		std::cout << std::endl;
 		i++;
 	}
 	(void)numclient;
 	(void)epoll;
 	(void)curr_fd;
-	//PRINT_LOG("End of reorganize_client_list");
 }
 

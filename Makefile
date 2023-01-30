@@ -42,6 +42,7 @@ all: assign_count $(NAME)
 assign_count: compare-timestamps
 	$(eval override count := $(shell cat .make_num))
 	@rm -rf .make_num
+	@rm -rf /tmp/private_webserv
 	@mkdir -p /tmp/private_webserv
 
 compare-timestamps:
