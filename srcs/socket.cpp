@@ -147,12 +147,15 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	else
 		req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
 	if (req.complete_file == true) {
-		if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
-			std::string code(req.cookie, 6);
-			req.header_code = atoi(code.c_str());
-			send_error(client._sock, req.header_code);
+		//if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
+		if (req.header_code != 0) {
+			PRINT_ERR("Sending error to client");
+			//std::string code(req.cookie, 6);
+			//req.header_code = atoi(code.c_str());
+			send_error(client._sock, req.header_code, client);
+			PRINT_ERR("After sending error to client");
 			client._log = false;
-			PRINT_ERR("Sent error page to client " + to_string(client._id) + " " + client._name);
+			PRINT_ERR("Sent error page to client " + to_string(client._sock) + " " + client._name);
 		}
 		else if (req.header_code == 0) {
 			req.get_response(config._mime, client);
@@ -161,10 +164,12 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
-		else {
-			redirect_error(client._sock, req.header_code);
-		}
+		//else {
+		//	redirect_error(client._sock, req.header_code);
+		//}
+		close(client._sock);
 		req.clear();
+		//std::cout << client << std::endl;
 	}
 }
 
@@ -212,8 +217,8 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
 		//if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
-		//if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
-		//continue ;
+		//	if (remove_client(clientlist[i]._sock, clientlist, i, curr_fd, numclient, epoll))
+		//		continue ;
 		//}
 		//if (clientlist[i]._name != tmp_name)
 		i++;

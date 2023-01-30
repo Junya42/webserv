@@ -106,6 +106,7 @@ $(OBJ_DIR):
 clean:
 	@echo "Removing objects and dependencies"
 	@rm -rf $(OBJS) $(DEPS) $(OBJ_DIR)
+	@rm -rf /tmp/private_webserv
 
 fclean: clean
 	@echo "Removing executable '$(NAME)'"

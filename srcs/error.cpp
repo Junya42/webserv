@@ -10,177 +10,218 @@ std::string end = "</a></h1><div class=\"glass-toolbar\"><a href=\"http://localh
 
 void  bad_request(int client) {
   std::string error;
+  std::string content = start + "400 Bad Request" + end + "\n\n";
 
-  error = "HTTP/1.1 400 Bad Request\r\n";
-  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "400 Bad Request";
-  error += end;
-  error += "\r\n";
+  error = "HTTP/1.1 400 Bad Request\n";
+  //error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  unauthorized(int client) {
   std::string error;
+  std::string content = start + "401 Unauthorized" + end + "\n\n";
 
   error = "HTTP/1.1 401 Unauthorized\n";
-  error += "Set-Cookie: error=401; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "401 Unauthorized";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  forbidden(int client) {
   std::string error;
+  std::string content = start + "403 Forbidden" + end + "\n\n";
 
   error = "HTTP/1.1 403 Forbidden\n";
-  error += "Set-Cookie: error=403; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "403 Forbidden";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  not_found(int client) {
   std::string error;
+  std::string content = start + "404 Not Found" + end + "\n\n";
 
   error = "HTTP/1.1 404 Not Found\n";
-  error += "Set-Cookie: error=404; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "404 Not Found";
-  error += end;
-  error += "\r\n";
+  //error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
+
+  std::cout << "[" << error << "]";
   write(client, error.c_str(), error.size());
 }
 
 void  method_not_allowed(int client) {
   std::string error;
+  std::string content = start + "405 Method Not Allowed" + end + "\n\n";
 
   error = "HTTP/1.1 405 Method Not Allowed\n";
-  error += "Set-Cookie: error=405; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "405 Method Not Allowed";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  gone(int client) {
   std::string error;
+  std::string content = start + "410 Gone" + end + "\n\n";
 
   error = "HTTP/1.1 410 Gone\n";
-  error += "Set-Cookie: error=410; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "410 Gone";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  length_required(int client) {
   std::string error;
+  std::string content = start + "411 Length Required" + end + "\n\n";
 
   error = "HTTP/1.1 411 Length Required\n";
-  error += "Set-Cookie: error=411; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "411 Length Required";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  uri_too_long(int client) {
   std::string error;
+  std::string content = start + "414 URI Too Long" + end + "\n\n";
 
   error = "HTTP/1.1 414 URI Too Long\n";
-  error += "Set-Cookie: error=414; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "414 URI Too Long";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  unsupported_media_type(int client) {
   std::string error;
+  std::string content = start + "415 Unsupported Media Type" + end + "\n\n";
 
   error = "HTTP/1.1 415 Unsupported Media Type\n";
-  error += "Set-Cookie: error=415; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "415 Unsupported Media Type";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+ error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 //  Server side errors
 void  internal_server_error(int client) {
   std::string error;
+  std::string content = start + "500 Internal Server Error" + end + "\n\n";
 
   error = "HTTP/1.1 500 Internal Server Error\n";
   error += "Set-Cookie: error=500; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "500 Internal Server Error";
-  error += end;
-  error += "\r\n";
+  error += "Content-Type: text/html\n";
+ error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  not_implemented(int client) {
   std::string error;
+  std::string content = start + "501 Not Implemented" + end + "\n\n";
 
   error = "HTTP/1.1 501 Not Implemented\n";
-  error += "Set-Cookie: error=501; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "501 Not Implemented";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  http_version_not_supported(int client) {
   std::string error;
+  std::string content = start + "505 HTTP Version Not Supported" + end + "\n\n";
 
   error = "HTTP/1.1 505 HTTP Version Not Supported\n";
-  error += "Set-Cookie: error=505; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "505 HTTP Version Not Supported";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 void  insufficient_storage(int client) {
   std::string error;
+  std::string content = start + "507 Insufficient Storage" + end + "\n\n";
 
   error = "HTTP/1.1 507 Insufficient Storage\n";
-  error += "Set-Cookie: error=507; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
-  error += "Content-Type: text/html\r\n\r\n";
-  error += start;
-  error += "507 Insufficient Storage";
-  error += end;
-  error += "\r\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
 // Switch error
 
-void  send_error(int client, int code) {
+void  send_error(int client, int code, Client &curr) {
   PRINT_ERR(code);
   switch (code) {
     case 400:
@@ -223,6 +264,7 @@ void  send_error(int client, int code) {
       insufficient_storage(client);
       break;
   }
+  std::cout << curr << std::endl;
 }
 
 void  redirect_error(int client, int code) {

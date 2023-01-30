@@ -293,6 +293,7 @@ void  Request::get_body(int client) {
   }
 
   int  Request::parse_body(Client &parent) {
+    PRINT_FUNC();
     if (boundary.size()) {
       size_t pos;
       if ((pos = body_str.find(boundary)) != std::string::npos) {
@@ -312,7 +313,43 @@ void  Request::get_body(int client) {
             tmpbody.filename = tmpbody.disposition.substr(found + 1);
             erase(tmpbody.filename);
             tmpbody.filename.pop_back();
-            file.open(tmpbody.filename.c_str(), std::ios::binary);
+            if ( parent._name.size())
+            {
+              PRINT_LOG("parent name size");
+              std::string file_path("/tmp/private_webserv/" + parent._name);
+
+              PRINT_LOG(file_path);
+              struct stat st;
+
+              if ( stat(file_path.c_str(), &st) == -1 )
+                if (mkdir(file_path.c_str(), 0777) == -1) {
+                  PRINT_ERR("MKDIR");
+                  set_error(500);
+                  parsed_body = true;
+                  return -1;
+                }
+
+              file_path += "/";
+              file_path += tmpbody.filename.c_str();
+              file.open(file_path.c_str(), std::ios::binary);
+            }
+            else
+            {
+              PRINT_LOG("else name sizeeeeeeeeeeeeee");
+              std::string file_path("/tmp/private_webserv/unknown");
+              struct stat st;
+
+              if ( stat(file_path.c_str(), &st) == -1 )
+                if (mkdir(file_path.c_str(), 0777) == -1) {
+                  PRINT_ERR("MKDIR");
+                  set_error(500);
+                  parsed_body = true;
+                  return -1;
+                }
+              file_path += "/";
+              file_path += tmpbody.filename;
+              file.open(file_path.c_str(), std::ios::binary);
+            }
             continue;
           }
           else if (cpy.find("Content-Type") != std::string::npos) {
@@ -453,8 +490,11 @@ void  Request::get_body(int client) {
       in_use = false;
       return 1;
     }
-    if (parsed_body == true)
+    if (parsed_body == true) {
+      PRINT_ERR("return 1");
       return 1;
+    }
+    PRINT_ERR("return 2");
     return 2;
   }
 
