@@ -152,16 +152,14 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			req.header_code = atoi(code.c_str());
 			send_error(client._sock, req.header_code);
 			client._log = false;
-			PRINT_ERR("Sent error page to client");
-			PRINT_ERR(client._id);
+			PRINT_ERR("Sent error page to client " + to_string(client._id) + " " + client._name);
 		}
 		else if (req.header_code == 0) {
 			req.get_response(config._mime, client);
 			//std::cout << req << std::endl;
-			std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
-			PRINT_WIN("Successfully sent response to client");
-			PRINT_WIN(client._id);
+			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
 		else {
 			redirect_error(client._sock, req.header_code);
