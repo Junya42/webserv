@@ -16,12 +16,19 @@ std::string	get_config(char *str) {
 	std::string config_file;
 	char buffer[1024];
 	int	fd;
+	struct stat path;
 
 	if (!str)
 		config_file = "configs/config";
 	else
 		config_file = str;
-	fd = open(config_file.c_str(), O_RDONLY);
+	fd = -1;
+	if (stat(config_file.c_str(), &path) == -1) {
+		std::cerr << "Can't open configuration file" << std::endl;
+		exit(1);
+	}
+	if (S_ISREG(path.st_mode) != 0)
+		fd = open(config_file.c_str(), O_RDONLY);
 	if (fd < 0) {
 		std::cerr << "Can't open configuration file" << std::endl;
 		exit(1);
