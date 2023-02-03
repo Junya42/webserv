@@ -12,7 +12,6 @@
 	padding: 32px;
 	backdrop-filter: blur(10px);
 }
-
 .glass-button-user {
 	display: inline-block;
 	padding: 24px 32px;
@@ -31,12 +30,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button-user:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 @media (max-width: 800px) {
 	.glass-button-user {
 		transition: 0s;
@@ -59,12 +56,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 		html, body {
 			margin: 0;
 				height: 100%;
@@ -75,7 +70,6 @@
 			animation: gradient 10s ease infinite;
 
 		}
-
 		@keyframes gradient {
 			0% {
 				background-position: 0% 50%;
@@ -90,12 +84,10 @@
 		.glass-panel {  
 			max-width: 600px;
 		}
-
 		.glass-button {
 			margin: 15px;
 			margin-top: 40px;
 		}
-
 		h1, h1 a {
 			min-height: 120px;
 			width: 90%;
@@ -108,33 +100,27 @@
 			padding-top: 60px;
 			color: rgba(255,255,255,0.8);
 		}
-
 		p {
 			width: 80%;
 			margin: 0 auto;
 			padding-bottom: 32px;
 			color: rgba(255,255,255,0.6);
 		}
-
 		ul {
 			list-style-type: none;
 		}
-
 		</style>
 	</head>
 	<body>
 		<h1>WEBSERV</h1>
-		<a href ="http://localhost:8080/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect $@</a>
+		<a href ="http://localhost:8080/cgi-bin/get.sh/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect USERNAME</a>
 		<div class="glass-panel">
 			<h1><a href="https://www.youtube.com/" target="_blank">Currently in development</a></h1>
 			<p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."</p>
 			<div class="glass-toolbar">
-				<!--
-		<button class="glass-button">Glass Button</button>
-				-->	
-				<a href="http://localhost:8080/user/upload" target="_self" class="glass-button">Upload file</a>
-				<a href="http://localhost:8080/user/download" target="_self" class="glass-button">Download file</a>
-				<a href="http://localhost:8080/user/delete" target="_self" class="glass-button">Delete file</a>
+				<a href="http://localhost:8080/cgi-bin/get.sh/user/upload" target="_self" class="glass-button">Upload file</a>
+				<a href="http://localhost:8080/cgi-bin/get.sh/user/download" target="_self" class="glass-button">Download file</a>
+				<a href="http://localhost:8080/cgi-bin/get.sh/user/delete" target="_self" class="glass-button">Delete file</a>
 			</div>
 		</div>
 	</body>

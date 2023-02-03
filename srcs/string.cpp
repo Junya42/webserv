@@ -144,3 +144,14 @@ void erase(std::string &s) {
     for (size_t i = 0; i <= pos; i++)
       s.erase(i, 1);
 }
+
+size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
+  while (s[i]) {
+    if (count == iter)
+      return i;
+    if (s[i] == c)
+      count++;
+    i++;
+  }
+  return i;
+}

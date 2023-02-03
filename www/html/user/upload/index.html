@@ -12,7 +12,6 @@
 	padding: 32px;
 	backdrop-filter: blur(10px);
 }
-
 .glass-button-user {
 	display: inline-block;
 	padding: 24px 32px;
@@ -31,12 +30,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button-user:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 .glass-button-return {
 	display: inline-block;
 	padding: 24px 32px;
@@ -55,12 +52,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button-return:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 @media (max-width: 800px) {
 	.glass-button-user {
 		transition: 0s;
@@ -87,12 +82,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 		html, body {
 			margin: 0;
 				height: 100%;
@@ -103,7 +96,6 @@
 			animation: gradient 10s ease infinite;
 
 		}
-
 		@keyframes gradient {
 			0% {
 				background-position: 0% 50%;
@@ -118,12 +110,10 @@
 		.glass-panel {  
 			max-width: 600px;
 		}
-
 		.glass-button {
 			margin: 15px;
 			margin-top: 40px;
 		}
-
 		h1, h1 a {
 			min-height: 120px;
 			width: 90%;
@@ -136,33 +126,27 @@
 			padding-top: 60px;
 			color: rgba(255,255,255,0.8);
 		}
-
 		p {
 			width: 80%;
 			margin: 0 auto;
 			padding-bottom: 32px;
 			color: rgba(255,255,255,0.6);
 		}
-
 		ul {
 			list-style-type: none;
 		}
-
 		</style>
 	</head>
 	<body>
 		<h1>WEBSERV</h1>
-		<a href ="http://localhost:8080/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect $@</a>
-		<a href ="http://localhost:8080/user" target="_self" class="glass-button-return"> Return</a>
+		<a href ="http://localhost:8080/cgi-bin/get.sh/html?disconnect=true" target="_self" class="glass-button-user"> Disconnect USERNAME</a>
+		<a href ="http://localhost:8080/cgi-bin/get.sh/user" target="_self" class="glass-button-return"> Return</a>
 		<div class="glass-panel">
-			<form enctype = "multipart/form-data" action = "/user" method = "POST">
+			<form enctype = "multipart/form-data" action = "/cgi-bin/get.sh/user" method = "POST">
 				<input type = "file" id="files" name = "filenames" multiple>
 				<input type = "submit" value = "Upload" class="glass-button">
 			</form>
 			<div class="glass-toolbar">
-				<!--
-		<button class="glass-button">Glass Button</button>
-				-->	
 			</div>
 		</div>
 	</body>

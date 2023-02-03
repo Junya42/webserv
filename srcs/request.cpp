@@ -1,5 +1,7 @@
 #include "../includes/client.hpp"
+#include <ios>
 #include <sstream>
+#include <string>
 #include <unistd.h>
 
 void  Request::set_error(int code) {
@@ -22,14 +24,30 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   parent._fav = false;
   if (method.size() < 1) {
     stream >> method >> path >> version;
+
+    std::istringstream tmpstream(path, std::ios_base::binary | std::ios_base::out);
+
+    std::getline(tmpstream, path, '?');
+    std::getline(tmpstream, query);
     parent._path = path;
     if (comp(path, ".ico") == true)
       parent._fav = true;
+    path_info = path;
+    if (comp(path, "cgi")) {
+      size_t pos = find(path, '/', 3);
+      if (pos != path.size()) {
+        using_cgi = true;
+        path_info = path.substr(pos - 1);
+        path = path.substr(0, pos - 1);
+        PRINT_WIN(path_info);
+        PRINT_WIN(path);
+      }
+    }
+
   }
   PRINT_LOG(method);
   PRINT_LOG(path);
   PRINT_LOG(version);
-  std::cout << std::endl << "_____________________________" << std::endl;
   while (std::getline(stream, line)) {
     if (line == "\r" && line_count == 0)
       continue ;
@@ -45,6 +63,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       set_error(400);
     }
     header[key] = value;
+    std::cout << key << ": " << value << std::endl;
     if (comp(key, "Content-Length") == true) {
       content_lenght = atoi(value.c_str());
       initial_lenght = content_lenght;
@@ -80,6 +99,9 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
     line_count++;
   }
+  
+  std::cout << std::endl << "_____________________________" << std::endl;
+
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
@@ -300,10 +322,10 @@ void  Request::get_body(int client) {
       if ((pos = body_str.find(boundary)) != std::string::npos) {
         Body tmpbody;
         std::string cpy(body_str, pos);
+        cpy.pop_back();
         std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
         body_str.clear();
         int boundary_count = 0;
-        int linecount = 0;
         std::ofstream file;
         while (std::getline(bodystream, cpy)) {
           int old_boundary_count = boundary_count;
@@ -361,19 +383,38 @@ void  Request::get_body(int client) {
             boundary_count++;
           }
           else {
+            bool  end = false;
             if (cpy[0] == 13 && linecount == 0)
               continue;
-            file << cpy << "\n";
+            //if (bodystream.tellp() == std::streampos(0))
+              //PRINT_LOG("bodystream is empty");
+            if (bodystream.peek() == 45) {
+              std::string test;
+              std::streampos  save = bodystream.tellg();
+              std::getline(bodystream, test);
+              if ((test.size() < boundary.size() + 6) && comp(test, boundary) == true) {
+                end = true;
+              }
+              bodystream.seekg(save);
+            }
+            if (end == false)
+              file << cpy << "\n";
+            else {
+              cpy.pop_back();
+              file << cpy;
+            }
             linecount++;
             tmpbody.data.push_back(cpy);
           }
           if (boundary_count == 2 && boundary_count != old_boundary_count) {
+            PRINT_WIN("PUSH");
             multi_body.push_back(tmpbody);
             file.close();
             parent._files.push_back(tmpbody.filename);
             tmpbody.clear();
           }
           else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
+            PRINT_WIN("PUSH 2");
             multi_body.push_back(tmpbody);
             file.close();
             parent._files.push_back(tmpbody.filename);
@@ -410,6 +451,7 @@ void  Request::get_body(int client) {
   void  Request::clear(void) {
     fpos = 0;
     ncount = 0;
+    linecount = 0;
     initial_lenght = 0;
     auth_redirect = 0;
     complete_body = false;
@@ -441,6 +483,14 @@ void  Request::get_body(int client) {
     file_content.clear();
     file_path.clear();
     file_type.clear();
+    path_info.clear();
+    query.clear();
+    cgi.clear();
+    cgi_path.clear();
+    using_cgi = false;
+    chunked = false;
+    nread = 0;
+    cgi_size = 0;
     file_size = 0;
     read_size = 0;
     complete_file = false;
@@ -500,6 +550,7 @@ void  Request::get_body(int client) {
   }
 
   Request::Request(void) {
+    linecount = 0;
     fpos = 0;
     initial_lenght = 0;
     ncount = 0;
@@ -527,6 +578,14 @@ void  Request::get_body(int client) {
     in_response = false;
     read_count = 0;
     found_user = false;
+    path_info.clear();
+    query.clear();
+    cgi.clear();
+    cgi_path.clear();
+    using_cgi = false;
+    chunked = false;
+    nread = 0;
+    cgi_size = 0;
   }
 
   Request::~Request(void) {
@@ -540,6 +599,7 @@ void  Request::get_body(int client) {
     n << std::endl << "\033[7mRequest data\033[0m" << std::endl << std::endl
       << "\033[1m\033[2mMethod:\033[0m" << req.method << std::endl
       << "\033[1m\033[2mPath:\033[0m" << req.path << std::endl
+      << "\033[1m\033[2mPath info:\033[0m" << req.path_info << std::endl
       << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
       << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
       << "\033[1m\033[2mType:\033[0m" << req.type << std::endl

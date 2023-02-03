@@ -80,14 +80,11 @@ void    Request::download_delete_cgi(Client &client, Server &serv, const char *p
         while (rbytes) {
             memset(buff, 0, buff_size);
             rbytes = read(outFd, buff, buff_size - 1);
-            //PRINT_ERR("Bytes read: " + to_string(rbytes));
-            //PRINT_ERR("Buffer: " + std::string(buff));
             file_content += buff;
         }
     }
     fclose(inFile);
     fclose(outFile);
 
-    //std::cout << "\033[1;31m\n\nSTRING\n\n" << cgi << "\033[0m" << std::endl << std::endl;
     complete_file = true;
 }

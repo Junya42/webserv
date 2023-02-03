@@ -37,6 +37,7 @@ void  Server::clear(void) {
   _delete = false;
   _bodysize = 0;
   _port = 0;
+  _valid = false;
   _loc.clear();
 }
 
@@ -81,6 +82,17 @@ void  Server::setup_server(std::vector<std::string> &vec) {
     else {
      // std::cout << "key: " << key << std::endl;
       if (key == "listen") {
+        if (value.size() > 6 || value.size() < 1) {
+          PRINT_ERR("Error Port size");
+          exit(0);
+        } 
+        for (std::string::iterator it = value.begin(); it != value.end(); it++) {
+          if (!isdigit(*it) && *it != ' ') {
+            PRINT_ERR("Error Port does not contain only digits");
+            PRINT_ERR(value);
+            exit(0);
+          }
+        }
         _port = atoi(value.c_str());
         _sport = value;
       }
@@ -90,12 +102,25 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         _index = value;
       if (key == "method_accept")
         _methods = value;
+      if (key == "cgi") {
+        erase(value, " ");
+        std::istringstream cgiparser(value);
+        std::string tmpkey;
+        std::string tmpvalue;
+        while (std::getline(cgiparser, tmpkey, ' ')) {
+          std::getline(cgiparser, tmpvalue, ' ');
+          cgi[tmpkey] = tmpvalue;
+        }
+        if (cgi.size() % 2)
+          PRINT_ERR("CGI FAIL ?");
+      }
       //else
       //std::cout << "Unknown key: " << key << " | value: " << value << std::endl;
     }
     i++;
   }
   if (_port == -1 || !_name.size() || !_index.size()) {
+    PRINT_ERR("Error server config");
     exit(1);
   }
   _host = _name + ':' + _sport;
@@ -104,84 +129,8 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         loc.create_map(location_conf);
         _loc.push_back(loc);
   }
-  //if (location_conf.size())
-  //std::cout << "Hanging location_cong: " << std::endl << location_conf << std::endl << "000000000000000" << std::endl;
-  /* if (location && location_conf.size()) {
-     loc.create_map(location_conf);
-     _loc.push_back(loc);
-     location_conf.clear();
-     }*/
-  //std::cout << "key:" << key << std::endl << "value:" << value << std::endl << std::endl;
+  _valid = true;
 }
-/*
-   void  Server::setup_server(std::string & config) {
-//  std::cout << config << std::endl << "______________________" << std::endl;
-std::istringstream stream(config);
-std::string location_conf;
-std::string line;
-Location loc;
-bool  location = false;
-
-std::cout << "WHILE" << std::endl;
-while (std::getline(stream, line)) {
-std::cout << "LINE: " << line << std::endl;
-std::istringstream line_stream(line);
-std::string key;
-std::string value;
-
-std::getline(line_stream, key, ':');
-std::getline(line_stream, value);
-
-if (value.size())
-trim(value);
-//value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
-if (key == "location") {
-if (location == true) {
-loc.create_map(location_conf);
-_loc.push_back(loc);
-// std::cout << std::endl << "LOCATION CONF" << std::endl << location_conf << "END OF LOCATION CONF" <<std::endl;
-}
-location = true;
-location_conf.clear();
-}
-if (location) {
-location_conf += line;
-location_conf += '\n';
-}
-else {
-//std::cout << line << std::endl;
-if (key == "listen") {
-_port = atoi(value.c_str());
-_sport = value;
-}
-if (key == "server_name")
-_name = value;
-if (key == "index")
-_index = value;
-if (key == "method_accept")
-_methods = value;
-//else
-//std::cout << "Unknown key: " << key << " | value: " << value << std::endl;
-}
-std::cout << "END OF WHILE" << std::endl;
-if (_port == -1 || !_name.size() || !_index.size()) {
-std::cerr << "Error: Missing server informations" << std::endl;
-std::cerr << "Port: " << _port << std::endl
-<< "Name: " << _name << std::endl
-<< "index: " << _index << std::endl;
-exit(1);
-}
-_host = _name + _sport;
-//if (location_conf.size())
-//std::cout << "Hanging location_cong: " << std::endl << location_conf << std::endl << "000000000000000" << std::endl;
-if (location && location_conf.size()) {
-loc.create_map(location_conf);
-_loc.push_back(loc);
-location_conf.clear();
-}
-//std::cout << "key:" << key << std::endl << "value:" << value << std::endl << std::endl;
-}
-}*/
 
 Server::Server(std::string &config) {
   std::cout << "config: " << config << std::endl << std::endl;
@@ -199,7 +148,6 @@ Server::Server(std::string &config) {
     if (key == "location") {
       if (location == true) {
         _loc.push_back(Location(location_conf));
-        //std::cout << std::endl << location_conf << std::endl;
       }
       location = true;
       location_conf.clear();
@@ -207,7 +155,6 @@ Server::Server(std::string &config) {
     if (location)
       location_conf += line;
     else {
-      //std::cout << line << std::endl;
       if (key == "listen")
         _port = atoi(value.c_str());
       else if (key == "server_name")
@@ -216,8 +163,6 @@ Server::Server(std::string &config) {
         _index = value;
       else if (key == "method_accept")
         _methods = value;
-      //else
-      //std::cout << "Unknown key: " << key << " | value: " << value << std::endl;
     }
   }
 }
@@ -254,7 +199,6 @@ bool  Server::method_delete(void) {
 }
 
 std::ostream &operator<<(std::ostream &nstream, Server &server) {
-  //nstream << "\033[7mServer\033[0m" << std::endl << std::endl
     nstream << "\033[36mname: \033[0m" << server._name << std::endl
     << "\033[36mindex: \033[0m" << server._index << std::endl
     << "\033[36mmethods: \033[0m" << server._methods << std::endl

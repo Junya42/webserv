@@ -22,10 +22,10 @@
 #include "../includes/client.hpp"
 #include "../includes/macro.hpp"
 
-int init_server_socket(void);
-int init_epoll(int server);
+int init_server_socket(int port);
+int init_epoll(std::vector<int> &server);
 
-int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *id, int *numclient, int *curr_fd);
+int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *id, int *numclient, int *curr_fd, std::string &hostname, std::string &port);
 int remove_client(int client, std::vector<Client> &clientlist, int i, int *curr_fd, int *numclient, int epoll_fd);
 void  answer_client(Client &client, Request &req, Config &config, char **env);
 

@@ -3,8 +3,15 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 Config::Config(void) {
+  char cwd[1024];
+  getcwd(cwd, sizeof(cwd));
+  _pwd = cwd;
+  _pwd += "/";
 }
 
 Config::~Config(void) {
@@ -57,6 +64,34 @@ void  Config::add_config(std::string &config) {
     _serv.push_back(serv);
     conf.clear();
     //std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
+  }
+  for (std::vector<Server>::iterator it = _serv.begin(); it != _serv.end(); it++) {
+    for (std::vector<Server>::iterator itn = it + 1; itn < _serv.end(); itn++) {
+      if (it->_host.compare(itn->_host) == 0)
+        it->_valid = false;
+    }
+  }
+  size_t i = 0;
+  while (i < _serv.size()) {
+    if (_serv[i]._valid == false) {
+      _serv.erase(_serv.begin() + i);
+      continue ;
+    }
+    else {
+      std::string tmp = "/tmp/private_webserv/" + _serv[i]._name;
+      struct stat st;
+
+      if (stat(tmp.c_str(), &st) == -1)
+        if (mkdir(tmp.c_str(), 0777) == -1) {
+          PRINT_ERR("Couldn't create server directory for : " + _serv[i]._host);
+          exit(0);
+        }
+    }
+    i++;
+  }
+  if (_serv.empty() == true) {
+    PRINT_ERR("No functionnal server found");
+    exit(0);
   }
 }
 

@@ -31,12 +31,15 @@ class Server {
     std::string _sport;
     std::string _index;
     std::string _methods;
+    bool        _valid;
     bool        _get;
     bool        _post;
     bool        _delete;
     ssize_t     _bodysize;
     int         _port;
+    int         _sock;
     std::vector<Location> _loc;
+    std::map<std::string, std::string> cgi;
 };
 
 std::ostream &operator<<(std::ostream &nstream, Server &server);

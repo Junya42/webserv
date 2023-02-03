@@ -44,6 +44,7 @@ std::ostream &operator<<(std::ostream &nstream, Client &client) {
     nstream << "Fav: \033[1;31m" << std::boolalpha << client._fav << "\033[0m" << std::endl;
   nstream << "Request count: " << client._request_count << std::endl
     << "Port: " << client._port << std::endl
+    << "Host: " << client._host << std::endl
     << "Address: " << inet_ntoa(client.addr.sin_addr) << std::endl
     << "Cookie: " << client._cookie << std::endl
     << "Name: " << client._name << std::endl

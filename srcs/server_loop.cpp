@@ -3,61 +3,85 @@
 //const int PORT = 8080;
 const int MAX_EVENTS = 100;
 
-/*	Create a server socket
- *	Set the socket option SO_REUSEADDR
- *	Add informations to socket
- *	Bind the socket
- *	Start listening
- */
+
+std::vector<int> create_servers(std::vector<Server> &servconf) {
+	std::vector<int> server;
+
+	for (size_t i  = 0; i < servconf.size(); i++) {
+		server.push_back(init_server_socket(servconf[i]._port));
+		servconf[i]._sock = server[i];
+	}
+	return server;
+}
+
+int	check_server_event(int fd, std::vector<int> &server) {
+	for (size_t i = 0; i < server.size(); i++) {
+		if (fd == server[i])
+			return i;
+	}
+	return -1;
+}
+
+std::string &hostname(int server, Config &config) {
+	for (std::vector<Server>::iterator it = config._serv.begin(); it != config._serv.end(); it++) {
+		if (server == it->_sock)
+			return it->_name;
+	}
+	return config._serv[0]._name;
+}
+
+std::string &port(int server, Config &config) {
+	for (std::vector<Server>::iterator it = config._serv.begin(); it != config._serv.end(); it++) {
+		if (server == it->_sock)
+			return it->_sport;
+	}
+	return config._serv[0]._sport;
+}
+
 void	server_handler(Config &config, char **env) {
 
-	int server; //server socket fd
-	int	client; //client socket fd
-	int	epoll_fd; //epoll instance 
-	int status; //request status
-	size_t num_events; //number of events occuring in epoll wait
+	std::vector<int> server;
+	int	index;
+	int	client;
+	int	epoll_fd;
+	int status;
+	size_t num_events;
 	Client tmp;
 	std::vector<Client> clientlist;
 
-	server = init_server_socket();
+	server = create_servers(config._serv);
 	epoll_fd = init_epoll(server);
 
 	struct epoll_event events[MAX_EVENTS];
 
-	int curr_fd = 1; // Number of actual clients fd + server fd;
-	int numclient = 0; //Number of clients;
-	int	id = 1; //unique client id;
+	int curr_fd = 1;
+	int numclient = 0;
+	int	id = 1;
 	int save_index;
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
 		for (size_t i = 0; i < num_events; i++) {
-			if (events[i].data.fd == server) {
+			index = check_server_event(events[i].data.fd, server);
+			if (index != -1 && events[i].data.fd == server[index]) {
 				PRINT_WIN("Server event"); 
-				add_client(server, epoll_fd, clientlist, &id, &numclient, &curr_fd);
+				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));
 			}
 			else if (events[i].events & EPOLLIN) {
-				//PRINT_WIN("EPOLLIN Client event");
 				client = events[i].data.fd;
 				save_index = i;
 				i = find_client_in_vector(clientlist, client, i);
-				status = clientlist[i].request.read_client(client, clientlist[i], tmp); //read and parse client request data
+				status = clientlist[i].request.read_client(client, clientlist[i], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);
 					tmp.clear();
 				}
-				/* status 1 for success, no error during read and parsing
-				 * status 0 for empty read since sockets are non blocking
-				 * status -1 for read errors
-				 */
 				if (status == 1) {
 					PRINT_LOG("Status: 1");
-					//std::cout << clientlist[i].request << std::endl; //priting the request data
 					answer_client(clientlist[i], clientlist[i].request, config, env);
 				}
 				else if (status == 0 && clientlist[i].request.in_use == false) {
 					PRINT_ERR("Client timed out or disconnected");
-					//std::cout << "\033[1;31m" << clientlist[i] << "\033[0m" << std::endl;
 					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 				}
 				else if (status == -1) {
@@ -66,8 +90,6 @@ void	server_handler(Config &config, char **env) {
 				}
 				reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 				clientlist[i]._request_count++;
-				//std::cout << "Number of clients : " << numclient << std::endl;
-				//std::cout << "Number of fd : " << curr_fd << std::endl;
 				for (size_t x = 0; x < clientlist.size(); x++) {
 					std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
 					if (x == i)
@@ -99,5 +121,5 @@ void	server_handler(Config &config, char **env) {
 			}
 		}
 	}
-	close(server);
+	//close(server);
 }

@@ -41,8 +41,11 @@ class Request {
     int         parse_body(Client &parent);
 
     void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
-    void        get_file(std::vector<Server> &serv, Client &client);
-    void        set_content_type(std::map<std::string, std::string> &_mime);
+    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, size_t flag = 0);
+    void        get_cgi_read(Client &client, std::string &cgi_path, std::string &cgi_executor, std::string &file_path, std::string &pwd, int flag = 0, size_t n = 0);
+    void        get_cgi_answer(Client &client);
+    void        get_cgi(Client &client, Config &config, int flag = 0);
+    void        set_content_type(std::map<std::string, std::string> &_mime, size_t flag = 0);
     void        get_response(std::map<std::string, std::string> &_mime, Client &client);
 
     void        auto_file_name(std::vector<Server> &serv, Client & client);
@@ -62,6 +65,7 @@ class Request {
     size_t              bytes; //bytes read
     size_t              current_bytes;
     size_t              body_size;
+    size_t              linecount;
 
     size_t              ncount;
     size_t              fpos;
@@ -79,6 +83,10 @@ class Request {
     std::string key;
     std::string value;
     std::string boundary;
+    std::string path_info;
+    std::string query;
+    std::string cgi;
+    std::string cgi_path;
 
     std::string name;
 
@@ -94,6 +102,11 @@ class Request {
     bool        in_response;
     int         auth_redirect;
     int         header_code;
+
+    bool        using_cgi;
+    bool        chunked;
+    size_t      nread;
+    size_t      cgi_size;
 
     size_t content_lenght; //size of body
     std::map<std::string, std::string> header; //header
@@ -142,6 +155,7 @@ class Client {
       _lastname = client._lastname;
       _path = client._path;
       _files = client._files;
+      _host = client._host;
       request.clear();
       return *this;
     }
@@ -174,6 +188,9 @@ class Client {
     std::string _name;
     std::string _lastname;
     std::string _path;
+    std::string _host;
+    std::string _ip;
+    std::string _sport;
  //   std::map<std::string, std::vector<std::string>> _files;
     std::vector<std::string> _files;
     std::map<std::string, std::string> _info;

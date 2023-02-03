@@ -4,31 +4,31 @@
 #include <string>
 #include <unistd.h>
 
-void  Request::get_file(std::vector<Server> &serv, Client &client) {
+void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, size_t flag) {
 
   PRINT_FUNC();
-  PRINT_ERR("Path: " + path);
+  PRINT_ERR("Path: " + path_info);
   PRINT_ERR("Log: " + to_string(client._log));
   PRINT_ERR("Username: " + client._name);
   std::string tmp_path;
   bool found = false;
-  if (comp(path, "?disconnect") == true) {
-    for (size_t i = 0; i < path.size(); i++)
-      if (path[i] == '?')
-        tmp_path = path.substr(0, i);
+  if (comp(path_info, "?disconnect") == true) {
+    for (size_t i = 0; i < path_info.size(); i++)
+      if (path_info[i] == '?')
+        tmp_path = path_info.substr(0, i);
   }
-  else if (name.size() && auth == true && (path == "/" || path == "/html" || path == "/html/login")) {
+  else if (name.size() && auth == true && (path_info== "/" || path_info == "/html" || path_info == "/html/login")) {
     auth_redirect = 1;
     tmp_path = "/html/user/";
     //PRINT_WIN("Auth redirect");
   }
-  else if ((client._log == false || client._name.size() < 1) && comp(path, "user") == true) {
+  else if ((client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
     tmp_path = "/login/";
     //PRINT_ERR("Redirect to log");
   }
   else
-    tmp_path = path;
+    tmp_path = path_info;
   //PRINT_ERR("tmp_path: " + tmp_path);
   if (comp(tmp_path, "user") == true)
     client._log = true;
@@ -75,6 +75,8 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
     set_error(404);
     //PRINT_ERR("404 Not found");
   }
+  if (flag != 0)
+    return ;
   size_t extpos;
   std::string file_ext;
 
@@ -100,7 +102,8 @@ void  Request::get_file(std::vector<Server> &serv, Client &client) {
 void  Request::get_request(std::vector<Server> &serv, Client &client) {
   PRINT_FUNC();
   std::ifstream file;
-  char buff[buff_size];
+  int bsize = buff_size * 2;
+  char buff[bsize];
   std::string ascii;
 
  // if (client._log == true && client._name.size() > 0) {
@@ -113,7 +116,9 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
  // }
 
   if (file_path.size() < 1)
-    this->get_file(serv, client);
+    this->get_file(serv, client, path_info, file_path);
+  //else
+    //PRINT_WIN(file_path);
   if (complete_file == true) {
     PRINT_WIN("File complete");
     return ;
@@ -122,9 +127,11 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     read_count++;
     ascii = std::to_string(read_count);
     //PRINT_LOG(ascii + " time opening");
+    //PRINT_LOG("Read size: " + to_string(read_size));
+    //PRINT_LOG("File size: " + to_string(file_size));
     file.open(file_path.c_str(), std::ios::in | std::ios::binary);
     file.seekg(read_size, file.beg);
-    file.read(buff, buff_size);
+    file.read(buff, bsize);
     size_t last_read = file.gcount();
     read_size += last_read;
     if (file_size - read_size <= 0) {
@@ -138,10 +145,10 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
     size_t curr_size = file_content.size();
     for (size_t i = 0; i < last_read; i++)
       file_content += buff[i];
-    if (found_user == false && comp(content_type, "html") == true) {
+    /*if (found_user == false && comp(content_type, "html") == true) {
       found_user = replace(file_content, "$@", client._name, curr_size);
-      PRINT_LOG("Replaced: " + to_string(found_user));
-    }
+    }*/
+    (void)curr_size;
     file.close();
   }
   else {
@@ -172,10 +179,10 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
       for (size_t i = 0; i < read_size; i++)
         file_content += buff[i];
       //file_content = buff; 
-      if (found_user == false && comp(content_type, "html") == true) {
+      /*if (found_user == false && comp(content_type, "html") == true) {
         found_user = replace(file_content, "$@", client._name);
         //PRINT_LOG("Replaced: " + to_string(found_user));
-      }
+      }*/
       file.close();
     }
     else {
@@ -190,19 +197,26 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
   }
 }
 
-void  Request::set_content_type(std::map<std::string, std::string> &_mime) {
+void  Request::set_content_type(std::map<std::string, std::string> &_mime, size_t flag) {
   size_t extpos;
   std::string file_ext;
 
   extpos = file_path.find_last_of(".");
+  content_type.clear();
   if (extpos >= file_path.size()) {
-    content_type = "Content-Type: text/plain\n";
+    if (flag == 0)
+      content_type = "Content-Type: text/plain\n";
+    else {
+      content_type = "text/plain";
+    }
     return;
   }
-  content_type = "Content-Type: ";
+  if (flag == 0)
+    content_type = "Content-Type: ";
   file_ext = file_path.substr(extpos);
   content_type += get_mime(file_ext, _mime);
-  content_type += "\n";
+  if (flag == 0)
+    content_type += "\n";
 }
 
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
@@ -211,8 +225,8 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   std::ostringstream s;
   bool redirect = false;
   //PRINT_WIN(path);
-  //if (comp(path, "download") == false && comp(path, "delete") == false) {
-  if (1 == 1) {
+  if (comp(path, "download") == false && comp(path, "delete") == false) {
+    //if (1 == 1) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
@@ -255,12 +269,11 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     answer += file_content;
     answer += "\r\n\r\n";
   }
- /* else {
-    answer.clear();
-    answer = "HTTP/1.1 200 OK\n";
-    answer += "Content-Lenght: " + to_string(file_content.size());
-    answer += file_content;
-    //answer += "\r\n\r\n";
+  else {
+      answer.clear();
+      answer = "HTTP/1.1 200 OK\n";
+      answer += "Content-Lenght: " + to_string(file_content.size());
+      answer += file_content;
+      //answer += "\r\n\r\n";
   }
-  */
 }

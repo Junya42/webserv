@@ -12,7 +12,6 @@
 	padding: 32px;
 	backdrop-filter: blur(10px);
 }
-
 .glass-button-login {
 	display: inline-block;
 	padding: 24px 32px;
@@ -31,12 +30,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button-login:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 .glass-button {
 	display: inline-block;
 	padding: 24px 32px;
@@ -53,12 +50,10 @@
 	text-transform: uppercase;
 	transition: 1s;
 }
-
 .glass-button:hover {
 	transform: scale(1.1);
 	background-color: rgba(255,255,255,0.3);
 }
-
 		html, body {
 			margin: 0;
 				height: 100%;
@@ -69,7 +64,6 @@
 			animation: gradient 10s ease infinite;
 
 		}
-
 		@keyframes gradient {
 			0% {
 				background-position: 0% 50%;
@@ -84,12 +78,10 @@
 		.glass-panel {  
 			max-width: 600px;
 		}
-
 		.glass-button {
 			margin: 15px;
 			margin-top: 40px;
 		}
-
 		h1, h1 a {
 			min-height: 120px;
 			width: 90%;
@@ -102,37 +94,28 @@
 			padding-top: 60px;
 			color: rgba(255,255,255,0.8);
 		}
-
 		p {
 			width: 80%;
 			margin: 0 auto;
 			padding-bottom: 32px;
 			color: rgba(255,255,255,0.6);
 		}
-
 		ul {
 			list-style-type: none;
 		}
-
 		</style>
 	</head>
 	<body>
 		<h1>WEBSERV</h1>
-		<!-- <a href="http://webserv.42.com:8080/html/login" target="_self" class="glass-button-login">Log in</a> -->
 		<div class="glass-panel">
-			<form action="/user" method="POST">
+			<form action="/cgi-bin/get.sh/user" method="POST">
 				<label for="fname">First name:</label>
 				<input type="text" id="fname" name="fname"><br><br>
 				<label for="lname">Last name: </label>
 				<input type="text" id="lname" name="lname"><br><br>
 				<input type="submit" value="Submit">
 			</form>
-			<!--	</form>><a href="https://www.youtube.com/" target="_blank">Currently in development</a></h1> -->
 			<div class="glass-toolbar">
-				<!--
-		<button class="glass-button">Glass Button</button>
-				<a href="http://webserv.42.com:8080/html" target="_self" class="glass-button">Get started</a>
-				-->
 			</div>
 		</div>
 	</body>

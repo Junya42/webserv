@@ -18,6 +18,7 @@ class Config {
 
     std::vector<Server> _serv;
     std::map<std::string, std::string> _mime;
+    std::string _pwd;
 };
 
 std::ostream &operator<<(std::ostream &nstream, Config &config);

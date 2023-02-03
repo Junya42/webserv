@@ -19,6 +19,8 @@ void erase(std::string &s, char c);
 
 void erase(std::string &s);
 
+size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0);
+
 template <typename T>
 std::string to_string(const T src) {
   std::ostringstream s;
