@@ -4,6 +4,22 @@
 #include <string>
 #include <unistd.h>
 
+void  swap_request(Request &a, Request &b) {
+  Request tmp;
+
+  tmp = a;
+  a = b;
+  b = tmp;
+}
+
+void  swap_clients(Client &a, Client &b) {
+  Client tmp;
+
+  tmp = a;
+  a = b;
+  b = tmp;
+}
+
 void  Request::set_error(int code) {
   if (!header_code) {
     PRINT_ERR("Error : " + to_string(code));
@@ -35,13 +51,15 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     path_info = path;
     if (comp(path, "cgi")) {
       size_t pos = find(path, '/', 3);
-      if (pos != path.size()) {
+      //if (pos != path.size()) {
         using_cgi = true;
+        pos++;
         path_info = path.substr(pos - 1);
         path = path.substr(0, pos - 1);
-        PRINT_WIN(path_info);
-        PRINT_WIN(path);
-      }
+        PRINT_WIN("header path info: " + path_info);
+        PRINT_WIN("header path" + path);
+        PRINT_WIN("pathinfo size: " + to_string(path_info.size()));
+      //}
     }
 
   }
@@ -105,6 +123,11 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
+ if (comp(host, parent._host) == false) {
+   PRINT_ERR("HOST DIFFERENCE");
+    //swap_clients(parent, tmp);
+    //*this = tmp.request;
+  }
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
@@ -146,6 +169,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
       }
     }
     if (comp(type, "x-www-form-urlencoded")) {
+      query = body_str;
       std::istringstream line_stream(body_str);
       std::string key;
       std::string value;
@@ -155,6 +179,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
         if (comp(key, "fname")) {
           if (parent._name.size()) {
             tmp = parent;
+            //tmp.request.clear();
             tmp._sock = 0;
             parent._files.clear();
             parent._oldname = parent._name;
@@ -278,366 +303,435 @@ void  Request::get_body(int client) {
     else
       body_str += tmp;
   }
-  }
+}
 
-  std::string Request::check_method(std::string &method) {
-    if (method == "GET" || method == "POST" || method == "DELETE") {
-      return std::string("HTTP/1.1 200 OK");
-    }
-    if (method == "HEAD" || method == "PUT" || method == "CONNECT"
-        || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
-      set_error(501);
-      return std::string("HTTP/1.1 501 Not Implemented");
-    }
+std::string Request::check_method(std::string &method) {
+  if (method == "GET" || method == "POST" || method == "DELETE") {
+    return std::string("HTTP/1.1 200 OK");
+  }
+  if (method == "HEAD" || method == "PUT" || method == "CONNECT"
+      || method == "OPTIONS" || method == "TRACE" || method == "PATCH") {
+    set_error(501);
+    return std::string("HTTP/1.1 501 Not Implemented");
+  }
+  set_error(400);
+  return std::string ("HTTP/1.1 400 Bad Request");
+}
+
+int Request::parse_header(void) {
+  std::string method_buffer;
+
+  method_buffer = check_method(method);
+  status = method_buffer + "\n";
+  if (method_buffer.size() > strlen("HTTP/1.1 200 OK ")) {
+    return -1;
+  }
+  if (method == "POST" && has_body == false) {
+    status = "HTTP/1.1 400 Bad Request";
     set_error(400);
-    return std::string ("HTTP/1.1 400 Bad Request");
+    return -1;
   }
-
-  int Request::parse_header(void) {
-    std::string method_buffer;
-
-    method_buffer = check_method(method);
-    status = method_buffer + "\n";
-    if (method_buffer.size() > strlen("HTTP/1.1 200 OK ")) {
-      return -1;
-    }
-    if (method == "POST" && has_body == false) {
-      status = "HTTP/1.1 400 Bad Request";
-      set_error(400);
-      return -1;
-    }
-    if (!host.size()) {
-      status = "HTTP/1.1 400 Bad Request";
-      set_error(400);
-      return -1;
-    }
-    parsed_header = true;
-    return 0;
+  if (!host.size()) {
+    status = "HTTP/1.1 400 Bad Request";
+    set_error(400);
+    return -1;
   }
+  parsed_header = true;
+  return 0;
+}
 
-  int  Request::parse_body(Client &parent) {
-    PRINT_FUNC();
-    if (boundary.size()) {
-      size_t pos;
-      if ((pos = body_str.find(boundary)) != std::string::npos) {
-        Body tmpbody;
-        std::string cpy(body_str, pos);
-        cpy.pop_back();
-        std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
-        body_str.clear();
-        int boundary_count = 0;
-        std::ofstream file;
-        while (std::getline(bodystream, cpy)) {
-          int old_boundary_count = boundary_count;
-          if (cpy.find("Content-Disposition") != std::string::npos) {
-            size_t found;
-            tmpbody.disposition = cpy;
-            found = tmpbody.disposition.find_last_of('=');
-            tmpbody.filename = tmpbody.disposition.substr(found + 1);
-            erase(tmpbody.filename);
-            tmpbody.filename.pop_back();
-            if ( parent._name.size())
-            {
-              PRINT_LOG("parent name size");
-              std::string file_path("/tmp/private_webserv/" + parent._name);
+int  Request::parse_body(Client &parent) {
+  PRINT_FUNC();
+  if (boundary.size()) {
+    size_t pos;
+    if ((pos = body_str.find(boundary)) != std::string::npos) {
+      Body tmpbody;
+      std::string cpy(body_str, pos);
+      cpy.pop_back();
+      std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
+      body_str.clear();
+      int boundary_count = 0;
+      std::ofstream file;
+      while (std::getline(bodystream, cpy)) {
+        int old_boundary_count = boundary_count;
+        if (cpy.find("Content-Disposition") != std::string::npos) {
+          size_t found;
+          tmpbody.disposition = cpy;
+          found = tmpbody.disposition.find_last_of('=');
+          tmpbody.filename = tmpbody.disposition.substr(found + 1);
+          erase(tmpbody.filename);
+          tmpbody.filename.pop_back();
+          if ( parent._name.size())
+          {
+            PRINT_LOG("parent name size");
+            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
 
-              PRINT_LOG(file_path);
-              struct stat st;
+            PRINT_LOG(file_path);
+            struct stat st;
 
-              if ( stat(file_path.c_str(), &st) == -1 )
-                if (mkdir(file_path.c_str(), 0777) == -1) {
-                  PRINT_ERR("MKDIR");
-                  set_error(500);
-                  parsed_body = true;
-                  return -1;
-                }
-
-              file_path += "/";
-              file_path += tmpbody.filename.c_str();
-              file.open(file_path.c_str(), std::ios::binary);
-            }
-            else
-            {
-              PRINT_LOG("else name sizeeeeeeeeeeeeee");
-              std::string file_path("/tmp/private_webserv/unknown");
-              struct stat st;
-
-              if ( stat(file_path.c_str(), &st) == -1 )
-                if (mkdir(file_path.c_str(), 0777) == -1) {
-                  PRINT_ERR("MKDIR");
-                  set_error(500);
-                  parsed_body = true;
-                  return -1;
-                }
-              file_path += "/";
-              file_path += tmpbody.filename;
-              file.open(file_path.c_str(), std::ios::binary);
-            }
-            continue;
-          }
-          else if (cpy.find("Content-Type") != std::string::npos) {
-            tmpbody.type = cpy;
-            continue;
-          }
-          if ((cpy.size() < boundary.size() + 6) && comp(cpy, boundary) == true) {
-            boundary_count++;
-          }
-          else {
-            bool  end = false;
-            if (cpy[0] == 13 && linecount == 0)
-              continue;
-            //if (bodystream.tellp() == std::streampos(0))
-              //PRINT_LOG("bodystream is empty");
-            if (bodystream.peek() == 45) {
-              std::string test;
-              std::streampos  save = bodystream.tellg();
-              std::getline(bodystream, test);
-              if ((test.size() < boundary.size() + 6) && comp(test, boundary) == true) {
-                end = true;
+            if ( stat(file_path.c_str(), &st) == -1 )
+              if (mkdir(file_path.c_str(), 0777) == -1) {
+                PRINT_ERR("MKDIR");
+                set_error(500);
+                parsed_body = true;
+                return -1;
               }
-              bodystream.seekg(save);
-            }
-            if (end == false)
-              file << cpy << "\n";
-            else {
-              cpy.pop_back();
-              file << cpy;
-            }
-            linecount++;
-            tmpbody.data.push_back(cpy);
+
+            file_path += "/";
+            file_path += tmpbody.filename.c_str();
+            file.open(file_path.c_str(), std::ios::binary);
           }
-          if (boundary_count == 2 && boundary_count != old_boundary_count) {
-            PRINT_WIN("PUSH");
-            multi_body.push_back(tmpbody);
-            file.close();
-            parent._files.push_back(tmpbody.filename);
-            tmpbody.clear();
+          else
+          {
+            PRINT_LOG("else name sizeeeeeeeeeeeeee");
+            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + "unknown");
+            struct stat st;
+
+            if ( stat(file_path.c_str(), &st) == -1 )
+              if (mkdir(file_path.c_str(), 0777) == -1) {
+                PRINT_ERR("MKDIR");
+                set_error(500);
+                parsed_body = true;
+                return -1;
+              }
+            file_path += "/";
+            file_path += tmpbody.filename;
+            file.open(file_path.c_str(), std::ios::binary);
           }
-          else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
-            PRINT_WIN("PUSH 2");
-            multi_body.push_back(tmpbody);
-            file.close();
-            parent._files.push_back(tmpbody.filename);
-            tmpbody.clear();
-          }
+          continue;
         }
-        if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
-          set_error(400);
-          status = "400 Bad Request";
-          return -1;
+        else if (cpy.find("Content-Type") != std::string::npos) {
+          tmpbody.type = cpy;
+          continue;
+        }
+        if ((cpy.size() < boundary.size() + 6) && comp(cpy, boundary) == true) {
+          boundary_count++;
+        }
+        else {
+          bool  end = false;
+          if (cpy[0] == 13 && linecount == 0)
+            continue;
+          //if (bodystream.tellp() == std::streampos(0))
+          //PRINT_LOG("bodystream is empty");
+          if (bodystream.peek() == 45) {
+            std::string test;
+            std::streampos  save = bodystream.tellg();
+            std::getline(bodystream, test);
+            if ((test.size() < boundary.size() + 6) && comp(test, boundary) == true) {
+              end = true;
+            }
+            bodystream.seekg(save);
+          }
+          if (end == false)
+            file << cpy << "\n";
+          else {
+            cpy.pop_back();
+            file << cpy;
+          }
+          linecount++;
+          tmpbody.data.push_back(cpy);
+        }
+        if (boundary_count == 2 && boundary_count != old_boundary_count) {
+          PRINT_WIN("PUSH");
+          multi_body.push_back(tmpbody);
+          file.close();
+          parent._files.push_back(tmpbody.filename);
+          tmpbody.clear();
+        }
+        else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
+          PRINT_WIN("PUSH 2");
+          multi_body.push_back(tmpbody);
+          file.close();
+          parent._files.push_back(tmpbody.filename);
+          tmpbody.clear();
         }
       }
-      else {
+      if (boundary_count < 2 || (boundary_count > 2 && boundary_count % 2 != 1 && boundary_count)) {
         set_error(400);
         status = "400 Bad Request";
         return -1;
       }
     }
-    else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
-      std::istringstream bodystream(body_str);
-      std::string line;
-      while (std::getline(bodystream, line)) {
-        std::istringstream line_stream(line);
-        while (std::getline(line_stream, key, '=')) {
-          std::getline(line_stream, value, '&');
-          body[key] = value;
-        }
+    else {
+      set_error(400);
+      status = "400 Bad Request";
+      return -1;
+    }
+  }
+  else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
+    std::istringstream bodystream(body_str);
+    std::string line;
+    while (std::getline(bodystream, line)) {
+      std::istringstream line_stream(line);
+      while (std::getline(line_stream, key, '=')) {
+        std::getline(line_stream, value, '&');
+        body[key] = value;
       }
     }
+  }
+  parsed_body = true;
+  return 0;
+}
+
+void  Request::clear(void) {
+  fpos = 0;
+  ncount = 0;
+  linecount = 0;
+  initial_lenght = 0;
+  auth_redirect = 0;
+  complete_body = false;
+  auth = false;
+  has_size = false;
+  in_use = false;
+  answer = "HTTP/1.1 ";
+  content_lenght = 0;
+  header_code = 0;
+  bytes = 0;
+  current_bytes = 0;
+  has_body = false;
+  complete_header = false;
+  parsed_body = false;
+  parsed_header = false;
+  method.clear();
+  path.clear();
+  version.clear();
+  host.clear();
+  index.clear();
+  type.clear();
+  key.clear();
+  value.clear();
+  boundary.clear();
+  header.clear();
+  body.clear();
+  body_str.clear();
+  multi_body.clear();
+  file_content.clear();
+  file_path.clear();
+  file_type.clear();
+  path_info.clear();
+  query.clear();
+  cgi.clear();
+  cgi_path.clear();
+  using_cgi = false;
+  chunked = false;
+  nread = 0;
+  cgi_size = 0;
+  file_size = 0;
+  read_size = 0;
+  complete_file = false;
+  in_response = false;
+  read_count = 0;
+  found_user = false;
+}
+
+int  Request::read_client(int client, Client &parent, Client &tmp) {
+  std::string request;
+  int int_bytes = 0;
+  //char buff[buff_size];
+  name = parent._name;
+  std::vector<unsigned char> buff(buff_size);
+
+  if (in_response == true) {
+    return 1;
+  }
+  if (parsed_body == true && parsed_header == true) {
+    return 1;
+  }
+  if (complete_header == false) {
+    if ((int_bytes = recv(client, &buff[0], buff.size() - 1, 0)) > 0) {
+      current_bytes = int_bytes;
+      bytes += current_bytes;
+      for (int i = 0; i < int_bytes; i++)
+        request += buff[i];
+    }
+    if (int_bytes < 0) {
+      PRINT_ERR("WHYYY");
+      sleep(1);
+      return -1;
+    }
+    else if (int_bytes == 0) {
+      return 0;
+    }
+    in_use = true;
+    get_header(request, parent, tmp);
+  }
+  if (complete_header == true && has_body)
+    get_body(client);
+  if (complete_header && parsed_header == false)
+    parse_header();
+  //if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
+  if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
+    parse_body(parent);
+  if (complete_header && has_body == false)
     parsed_body = true;
-    return 0;
-  }
-
-  void  Request::clear(void) {
-    fpos = 0;
-    ncount = 0;
-    linecount = 0;
-    initial_lenght = 0;
-    auth_redirect = 0;
-    complete_body = false;
-    auth = false;
-    has_size = false;
+  if (parsed_body == true && parsed_header == true) {
     in_use = false;
-    answer = "HTTP/1.1 ";
-    content_lenght = 0;
-    header_code = 0;
-    bytes = 0;
-    current_bytes = 0;
-    has_body = false;
-    complete_header = false;
-    parsed_body = false;
-    parsed_header = false;
-    method.clear();
-    path.clear();
-    version.clear();
-    host.clear();
-    index.clear();
-    type.clear();
-    key.clear();
-    value.clear();
-    boundary.clear();
-    header.clear();
-    body.clear();
-    body_str.clear();
-    multi_body.clear();
-    file_content.clear();
-    file_path.clear();
-    file_type.clear();
-    path_info.clear();
-    query.clear();
-    cgi.clear();
-    cgi_path.clear();
-    using_cgi = false;
-    chunked = false;
-    nread = 0;
-    cgi_size = 0;
-    file_size = 0;
-    read_size = 0;
-    complete_file = false;
-    in_response = false;
-    read_count = 0;
-    found_user = false;
+    return 1;
   }
-
-  int  Request::read_client(int client, Client &parent, Client &tmp) {
-    std::string request;
-    int int_bytes = 0;
-    //char buff[buff_size];
-    name = parent._name;
-    std::vector<unsigned char> buff(buff_size);
-
-    if (in_response == true) {
-      return 1;
-    }
-    if (parsed_body == true && parsed_header == true) {
-      return 1;
-    }
-    if (complete_header == false) {
-      if ((int_bytes = recv(client, &buff[0], buff.size() - 1, 0)) > 0) {
-        current_bytes = int_bytes;
-        bytes += current_bytes;
-        for (int i = 0; i < int_bytes; i++)
-          request += buff[i];
-      }
-      if (int_bytes < 0) {
-        return -1;
-      }
-      else if (int_bytes == 0) {
-        return 0;
-      }
-      in_use = true;
-      get_header(request, parent, tmp);
-    }
-    if (complete_header == true && has_body)
-      get_body(client);
-    if (complete_header && parsed_header == false)
-      parse_header();
-    //if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
-    if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
-      parse_body(parent);
-    if (complete_header && has_body == false)
-      parsed_body = true;
-    if (parsed_body == true && parsed_header == true) {
-      in_use = false;
-      return 1;
-    }
-    if (parsed_body == true) {
-      PRINT_ERR("return 1");
-      return 1;
-    }
-    PRINT_ERR("return 2");
-    return 2;
+  if (parsed_body == true) {
+    PRINT_ERR("return 1");
+    return 1;
   }
+  PRINT_ERR("return 2");
+  return 2;
+}
 
-  Request::Request(void) {
-    linecount = 0;
-    fpos = 0;
-    initial_lenght = 0;
-    ncount = 0;
-    auth_redirect = 0;
-    content_lenght = 0;
-    complete_body = false;
-    header_code = 0;
-    auth = false;
-    has_size = false;
-    in_use = false;
-    answer = "HTTP/1.1 ";
-    has_body = false;
-    complete_header = false;
-    parsed_body = false;
-    parsed_header = false;
-    bytes = 0;
-    current_bytes = 0;
-    body_size = 0;
-    file_content.clear();
-    file_path.clear();
-    file_type.clear();
-    file_size = 0;
-    read_size = 0;
-    complete_file = false;
-    in_response = false;
-    read_count = 0;
-    found_user = false;
-    path_info.clear();
-    query.clear();
-    cgi.clear();
-    cgi_path.clear();
-    using_cgi = false;
-    chunked = false;
-    nread = 0;
-    cgi_size = 0;
+Request::Request(void) {
+  linecount = 0;
+  fpos = 0;
+  initial_lenght = 0;
+  ncount = 0;
+  auth_redirect = 0;
+  content_lenght = 0;
+  complete_body = false;
+  header_code = 0;
+  auth = false;
+  has_size = false;
+  in_use = false;
+  answer = "HTTP/1.1 ";
+  has_body = false;
+  complete_header = false;
+  parsed_body = false;
+  parsed_header = false;
+  bytes = 0;
+  current_bytes = 0;
+  body_size = 0;
+  file_content.clear();
+  file_path.clear();
+  file_type.clear();
+  file_size = 0;
+  read_size = 0;
+  complete_file = false;
+  in_response = false;
+  read_count = 0;
+  found_user = false;
+  path_info.clear();
+  query.clear();
+  cgi.clear();
+  cgi_path.clear();
+  using_cgi = false;
+  chunked = false;
+  nread = 0;
+  cgi_size = 0;
+}
+
+Request::~Request(void) {
+}
+
+Request::Request(std::string &request) {
+  (void)request;
+}
+
+std::ostream &operator<<(std::ostream &n, Request &req) {
+  n << std::endl << "\033[7mRequest data\033[0m" << std::endl << std::endl
+    << "\033[1m\033[2mMethod:\033[0m" << req.method << std::endl
+    << "\033[1m\033[2mPath:\033[0m" << req.path << std::endl
+    << "\033[1m\033[2mPath info:\033[0m" << req.path_info << std::endl
+    << "\033[1m\033[2mQuery:\033[0m" << req.query << std::endl
+    << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
+    << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
+    << "\033[1m\033[2mType:\033[0m" << req.type << std::endl
+    << "\033[1m\033[2mCode:\033[0m" << req.header_code << std::endl
+    << "\033[1m\033[2mBoundary:\033[0m" << req.boundary << std::endl << std::endl
+    << "\033[1m\033[2mHas body:\033[0m" << std::boolalpha << req.has_body << std::endl
+    << "\033[1m\033[2mHas size:\033[0m" << std::boolalpha << req.has_body << std::endl
+    << "\033[1m\033[2mBody size:\033[0m" << req.body_size << std::endl
+    << "\033[1m\033[2mHeader complete:\033[0m" << std::boolalpha << req.complete_header << std::endl
+    << "\033[1m\033[2mParsed header:\033[0m" << std::boolalpha << req.parsed_header << std::endl
+    << "\033[1m\033[2mParsed body:\033[0m" << std::boolalpha << req.parsed_body << std::endl << std::endl;
+
+  n << "\033[1m\033[2mHeader:\033[0m" << std::endl;
+  for (std::map<std::string, std::string>::iterator it = req.header.begin(); it != req.header.end(); it++) {
+    n << "    \033[1m" << it->first << "\033[0m     \033[38;5;110m" << it->second << "\033[0m" << std::endl;
   }
-
-  Request::~Request(void) {
+  n << std::endl << "\033[1m\033[2mBody:\033[0m" << std::endl;
+  for (std::map<std::string, std::string>::iterator it = req.body.begin(); it != req.body.end(); it++) {
+    n << "    \033[1m" << it->first << "\033[0m     \033[38;5;110m" << it->second << "\033[0m" << std::endl;
   }
-
-  Request::Request(std::string &request) {
-    (void)request;
-  }
-
-  std::ostream &operator<<(std::ostream &n, Request &req) {
-    n << std::endl << "\033[7mRequest data\033[0m" << std::endl << std::endl
-      << "\033[1m\033[2mMethod:\033[0m" << req.method << std::endl
-      << "\033[1m\033[2mPath:\033[0m" << req.path << std::endl
-      << "\033[1m\033[2mPath info:\033[0m" << req.path_info << std::endl
-      << "\033[1m\033[2mHost:\033[0m" << req.host << std::endl
-      << "\033[1m\033[2mCookie:\033[0m" << req.cookie << std::endl
-      << "\033[1m\033[2mType:\033[0m" << req.type << std::endl
-      << "\033[1m\033[2mCode:\033[0m" << req.header_code << std::endl
-      << "\033[1m\033[2mBoundary:\033[0m" << req.boundary << std::endl << std::endl
-      << "\033[1m\033[2mHas body:\033[0m" << std::boolalpha << req.has_body << std::endl
-      << "\033[1m\033[2mHas size:\033[0m" << std::boolalpha << req.has_body << std::endl
-      << "\033[1m\033[2mBody size:\033[0m" << req.body_size << std::endl
-      << "\033[1m\033[2mHeader complete:\033[0m" << std::boolalpha << req.complete_header << std::endl
-      << "\033[1m\033[2mParsed header:\033[0m" << std::boolalpha << req.parsed_header << std::endl
-      << "\033[1m\033[2mParsed body:\033[0m" << std::boolalpha << req.parsed_body << std::endl << std::endl;
-
-    n << "\033[1m\033[2mHeader:\033[0m" << std::endl;
-    for (std::map<std::string, std::string>::iterator it = req.header.begin(); it != req.header.end(); it++) {
-      n << "    \033[1m" << it->first << "\033[0m     \033[38;5;110m" << it->second << "\033[0m" << std::endl;
+  n << std::endl << "\033[1m\033[2mMultibody:\033[0m" << std::endl;
+  size_t count = 0;
+  for (std::vector<Body>::iterator it = req.multi_body.begin(); it != req.multi_body.end(); it++) {
+    //std::ofstream file(it->filename, std::ios::binary);
+    n << "\033[1;35mSub body " << count << "\033[0m" << std::endl << std::endl
+      << "\033[1mdisposition:\033[0m\033[38;5;110m " << it->disposition << "\033[0m" << std::endl
+      << "\033[1mfilename:\033[0m\033[38;5;110m " << it->filename << "\033[0m" << std::endl
+      << "\033[1mtype:\033[0m\033[38;5;110m " << it->type << "\033[0m" << std::endl
+      << "\033[1mdata:\033[0m " << std::endl;
+    for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
+      n << "  \033[38;5;223m" << *sit << "\033[0m" << std::endl;
+      // file << *sit << "\n";
     }
-    n << std::endl << "\033[1m\033[2mBody:\033[0m" << std::endl;
-    for (std::map<std::string, std::string>::iterator it = req.body.begin(); it != req.body.end(); it++) {
-      n << "    \033[1m" << it->first << "\033[0m     \033[38;5;110m" << it->second << "\033[0m" << std::endl;
-    }
-    n << std::endl << "\033[1m\033[2mMultibody:\033[0m" << std::endl;
-    size_t count = 0;
-    for (std::vector<Body>::iterator it = req.multi_body.begin(); it != req.multi_body.end(); it++) {
-      //std::ofstream file(it->filename, std::ios::binary);
-      n << "\033[1;35mSub body " << count << "\033[0m" << std::endl << std::endl
-        << "\033[1mdisposition:\033[0m\033[38;5;110m " << it->disposition << "\033[0m" << std::endl
-        << "\033[1mfilename:\033[0m\033[38;5;110m " << it->filename << "\033[0m" << std::endl
-        << "\033[1mtype:\033[0m\033[38;5;110m " << it->type << "\033[0m" << std::endl
-        << "\033[1mdata:\033[0m " << std::endl;
-      for (std::vector<std::string>::iterator sit = it->data.begin(); sit != it->data.end(); sit++) {
-        n << "  \033[38;5;223m" << *sit << "\033[0m" << std::endl;
-        // file << *sit << "\n";
-      }
-      //file.close();
-      count++;
-      n << std::endl;
-    }
-    n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
-    // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
-    return n;
+    //file.close();
+    count++;
+    n << std::endl;
   }
+  n << "\033[1m\033[2mBody str:\033[0m" << req.body_str << std::endl;
+  // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
+  return n;
+}
+/*
+Request &Request::operator=(const Request &req) {
+  bytes = req.bytes;
+  current_bytes = req.current_bytes;
+  body_size = req.body_size;
+  linecount = req.linecount;
+
+  ncount = req.ncount;
+  fpos = req.fpos;
+  initial_lenght = req.initial_lenght;
+
+  method = req.method;
+  path = req.path;
+  version = req.version;
+  host = req.host;
+  index = req.index;
+  cookie = req.cookie;
+  URI = req.URI;
+  transfer_encoding = req.transfer_encoding;
+  type = req.type;
+  key = req.key;
+  value = req.value;
+  boundary = req.boundary;
+
+  path_info = req.path_info;
+  query = req.query;
+  cgi = req.cgi;
+  cgi_path = req.cgi_path;
+
+  name = req.name;
+  status = req.status;
+  
+  complete_header = req.complete_header;
+  complete_body = req.complete_body;
+  parsed_header = req.parsed_header;
+  parsed_body = req.parsed_body;
+  has_body = req.has_body;
+  has_size = req.has_size;
+  auth = req.auth;
+  in_response = req.in_response;
+  auth_redirect = req.auth_redirect;
+  header_code = req.header_code;
+
+  using_cgi = req.using_cgi;
+  chunked = req.chunked;
+  nread = req.nread;
+  cgi_size = req.cgi_size;
+
+  content_lenght = req.content_lenght;
+  header = req.header;
+  body = req.body;
+  body_str = req.body_str;
+  multi_body = req.multi_body;
+  answer = req.answer;
+
+  content_type = req.content_type;
+  file_content = req.file_content;
+  file_path = req.file_path;
+  file_type = req.file_type;
+  file_size = req.file_size;
+  read_size = req.read_size;
+  read_count = req.read_count;
+  complete_file = req.complete_file;
+  found_user = req.found_user;
+  return *this;
+}*/

@@ -35,6 +35,8 @@ class Server {
     bool        _get;
     bool        _post;
     bool        _delete;
+    bool        _login;
+    bool        _redirect;
     ssize_t     _bodysize;
     int         _port;
     int         _sock;

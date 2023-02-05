@@ -33,6 +33,7 @@ Location &Location::operator=(const Location &src) {
 
 void  Location::create_map(std::string & config) {
   _data.clear();
+  method.clear();
   std::istringstream stream(config);
   std::string line;
 
@@ -52,6 +53,18 @@ void  Location::create_map(std::string & config) {
     }
     else if (key.find("location") != std::string::npos) {
       _path = value;
+    }
+    else if (key.find("method_accept") != std::string::npos) {
+      std::istringstream methods(value);
+      std::string tmp;
+      while (std::getline(methods, tmp, ' ')) {
+        method[tmp] = true;
+      }
+      PRINT_LOG("METHODS");
+      for (std::map<std::string, bool>::iterator it = method.begin(); it != method.end(); it++) {
+        std::cout << it->first << " ____ " << it->second << std::endl;
+      }
+      PRINT_LOG("END OF METHODS");
     }
   }
 }

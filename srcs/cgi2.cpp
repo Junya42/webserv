@@ -1,4 +1,5 @@
 #include "../includes/cgi.hpp"
+#include "../includes/socket.hpp"
 #include <cstdlib>
 #include <set>
 
@@ -162,20 +163,25 @@ void    Request::get_cgi_answer(Client &client) {
     bool    redirect = false;
 
     PRINT_FUNC();
+    answer.clear();
     if (comp(path, "download") == false && comp(path, "delete") == false) {
-        if (comp(path, "?disconnect=true") == true) {
+        PRINT_ERR("ENTERING IF");
+        if (comp(query, "disconnect=true") == true) {
+            PRINT_ERR("Redirect 0");
             redirect = true;
             client._log = false;
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + client._sport + "/html\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
         }
         else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + client._sport + "/html/user\n";
+            PRINT_ERR("Redirect 1");
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
         }
         else if (auth_redirect == 2) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + client._sport + "/login\n";
+            PRINT_ERR("Redirect 2");
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
         }
         answer = status;
-        if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {
+        if (client._name.size() && comp(file_path, "/user/*.html") == true && client._fav == false) {
             PRINT_WIN("Adding cookie to: " + client._name);
             client._log = true;
             client._cookie = "log=" + client._name;
@@ -189,17 +195,17 @@ void    Request::get_cgi_answer(Client &client) {
             answer += "Set-Cookie: ";
             answer += tmp;
         }
-        answer += content_type;
+        answer += "Content-Type: " + content_type + "\n";
         if (comp(content_type, "html") == false)
             answer += "Content-Transfer-Encoding: binary\n";
         answer += file_content;
-        answer += "\r\n\r\n";
+        //answer += "\n\n";
     }
     else {
-        answer.clear();
+        PRINT_ERR("ENTERING ELSE");
         answer = "HTTP/1.1 200 OK\n";
         answer += file_content;
-        answer += "\r\n\r\n";
+        //answer += "\n\n";
     }
 }
 
@@ -213,15 +219,18 @@ void    get_executor(std::vector<Server> &serv, Request &req, std::string &cgi_e
 void    Request::get_cgi(Client &client, Config &config, int flag) {
     PRINT_FUNC();
     if (file_path.size() < 1) {
-        this->get_file(config._serv, client, path_info, file_path);
-        this->set_content_type(config._mime, 1);
-        this->get_file(config._serv, client, path, cgi_path, 1);
+        int index = get_serv_from_client(client, config._serv);
+        if (path_info.size()) {
+            this->get_file(config._serv, client, path_info, file_path, index);
+            this->set_content_type(config._mime, 1);
+        }
+        this->get_file(config._serv, client, path, cgi_path, index, 1);
         cgi_path = config._pwd + cgi_path;
         //cgi_path = "/home/junya/serv/www/cgi-bin/get.sh";
     }
     if (complete_file == true)
         return ;
-    if (comp(client.request.header["Referer"], "download") == false)
+    if (comp(client.request.header["Referer"], "download") == false || client.request.path_info == "/user")
         flag = 1;
 
     size_t extension_pos = cgi_path.find_last_of('.');

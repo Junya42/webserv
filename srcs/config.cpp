@@ -78,7 +78,9 @@ void  Config::add_config(std::string &config) {
       continue ;
     }
     else {
-      std::string tmp = "/tmp/private_webserv/" + _serv[i]._name;
+      std::string tmpname = _serv[i]._name;
+      erase(tmpname, " ");
+      std::string tmp = "/tmp/private_webserv/" + tmpname;
       struct stat st;
 
       if (stat(tmp.c_str(), &st) == -1)

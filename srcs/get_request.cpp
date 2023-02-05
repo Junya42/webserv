@@ -4,7 +4,7 @@
 #include <string>
 #include <unistd.h>
 
-void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, size_t flag) {
+void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag) {
 
   PRINT_FUNC();
   PRINT_ERR("Path: " + path_info);
@@ -12,28 +12,29 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   PRINT_ERR("Username: " + client._name);
   std::string tmp_path;
   bool found = false;
-  if (comp(path_info, "?disconnect") == true) {
+  if (using_cgi == false && comp(path_info, "?disconnect") == true) {
     for (size_t i = 0; i < path_info.size(); i++)
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);
   }
-  else if (name.size() && auth == true && (path_info== "/" || path_info == "/html" || path_info == "/html/login")) {
+  else if (serv[index]._redirect && name.size() && auth == true && (path_info== "/" || path_info == "/html" || path_info == "/html/login")) {
     auth_redirect = 1;
-    tmp_path = "/html/user/";
+    tmp_path = "/user";
     //PRINT_WIN("Auth redirect");
   }
-  else if ((client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
-    tmp_path = "/login/";
+    tmp_path = "/login";
     //PRINT_ERR("Redirect to log");
   }
   else
     tmp_path = path_info;
   //PRINT_ERR("tmp_path: " + tmp_path);
-  if (comp(tmp_path, "user") == true)
+  if (comp(tmp_path, "user") == true) {
     client._log = true;
+  }
   //PRINT_LOG("path = " + path);
-  //PRINT_LOG("tmp path = " + tmp_path);
+  PRINT_LOG("tmp path = " + tmp_path);
   size_t x = 0;
   for (size_t i = 0; i < serv.size(); i++)
     if (comp(host, serv[i]._host) == true)
@@ -41,8 +42,9 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   //PRINT_LOG("Found host");
   if (tmp_path.compare("/") == 0)
   {
-   //PRINT_LOG("Using default server index");
+   PRINT_LOG("Using default server index");
     file_path = serv[x]._index;
+    PRINT_LOG("default index: " + file_path);
     while (file_path[0] == ' ' || file_path[0] == '\t')
       file_path.erase(0, 1);
     found = true;
@@ -58,14 +60,16 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     //PRINT_LOG("Custom index");
     //PRINT_LOG("Looking for path:" + path);
     for (size_t j = 0; j < serv[x]._loc.size(); j++) {
-      //PRINT_LOG(serv[i]._loc[j]._path);
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
+        PRINT_LOG("Serv-path: " + serv[x]._loc[j]._path);
+        PRINT_LOG("Tmp-path: " + tmp_path);
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
         if (dir)
           file_path += "/index.html";
         found = true;
         PRINT_WIN("Found filename");
+        PRINT_WIN(file_path);
         break ;
       }
     }
@@ -99,7 +103,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   //PRINT_LOG("End of function");
 }
 
-void  Request::get_request(std::vector<Server> &serv, Client &client) {
+void  Request::get_request(std::vector<Server> &serv, Client &client, int index) {
   PRINT_FUNC();
   std::ifstream file;
   int bsize = buff_size * 2;
@@ -116,7 +120,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client) {
  // }
 
   if (file_path.size() < 1)
-    this->get_file(serv, client, path_info, file_path);
+    this->get_file(serv, client, path_info, file_path, index);
   //else
     //PRINT_WIN(file_path);
   if (complete_file == true) {
@@ -230,13 +234,13 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
     }
     else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/html/user\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
     }
     else if (auth_redirect == 2) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://localhost:8080/login\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
     }
     //PRINT_WIN(file_path);
     this->set_content_type(_mime);
@@ -270,10 +274,11 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     answer += "\r\n\r\n";
   }
   else {
+    PRINT_ERR("WHY ARE YOU GOING HERE MATE");
       answer.clear();
       answer = "HTTP/1.1 200 OK\n";
       answer += "Content-Lenght: " + to_string(file_content.size());
       answer += file_content;
-      //answer += "\r\n\r\n";
+      answer += "\r\n\r\n";
   }
 }

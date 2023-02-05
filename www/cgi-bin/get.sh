@@ -12,14 +12,14 @@ check=0
 #	Check if file is a directory
 if [ -d "$filename" ]
 then
-	echo -n "Bad Request"
+	>$2 echo "Bad Request"
 	exit 42
 fi
 
 # Check if file exist
 if [ ! -f "$filename" ]
 then
-	echo -n "Not Found"
+	>$2 echo "Not Found"
 	exit 42
 fi
 
@@ -37,6 +37,7 @@ size=$(wc -c $filename | awk '{print $1}')
 
 echo -ne "Content-Lenght: $size\n\n"
 
+#cat $filename | sed -z '$ s/\n$//'
 cat $filename
 
 if [ $check -eq 1 ]

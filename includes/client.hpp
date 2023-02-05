@@ -28,7 +28,7 @@ class Request {
     Request(void);
     ~Request(void);
     Request(std::string &request); //parse request using get_header and get_body
-
+    //Request &operator=(const Request &req);
     void        clear(void); //clear all request variables
     int         read_client(int client, Client &parent, Client &tmp);
     void        get_header(std::string &request, Client &parent, Client &tmp);
@@ -40,8 +40,8 @@ class Request {
     int         parse_header(void);
     int         parse_body(Client &parent);
 
-    void        get_request(std::vector<Server> &serv, Client &client); //located at srcs/get_request.cpp
-    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, size_t flag = 0);
+    void        get_request(std::vector<Server> &serv, Client &client, int index); //located at srcs/get_request.cpp
+    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag = 0);
     void        get_cgi_read(Client &client, std::string &cgi_path, std::string &cgi_executor, std::string &file_path, std::string &pwd, int flag = 0, size_t n = 0);
     void        get_cgi_answer(Client &client);
     void        get_cgi(Client &client, Config &config, int flag = 0);
@@ -83,6 +83,7 @@ class Request {
     std::string key;
     std::string value;
     std::string boundary;
+
     std::string path_info;
     std::string query;
     std::string cgi;
@@ -156,6 +157,11 @@ class Client {
       _path = client._path;
       _files = client._files;
       _host = client._host;
+      _ip = client._ip;
+      _sport = client._sport;
+      _hostport = client._hostport;
+      _hostip = client._hostip;
+      //request = client.request;
       request.clear();
       return *this;
     }
@@ -178,9 +184,10 @@ class Client {
 
     bool  _log;
     bool _fav;
-    int _id;
+    uint32_t _id;
     int _sock;
     unsigned short  _port;
+    unsigned int    _myport;
     size_t  _request_count;
     std::string _cookie;
     std::string _addr;
@@ -189,6 +196,8 @@ class Client {
     std::string _lastname;
     std::string _path;
     std::string _host;
+    unsigned int _hostport;
+    std::string _hostip;
     std::string _ip;
     std::string _sport;
  //   std::map<std::string, std::vector<std::string>> _files;

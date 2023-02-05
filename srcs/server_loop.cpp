@@ -56,7 +56,7 @@ void	server_handler(Config &config, char **env) {
 
 	int curr_fd = 1;
 	int numclient = 0;
-	int	id = 1;
+	uint32_t	id = 1;
 	int save_index;
 	tmp.clear();
 	while (1) {
@@ -70,7 +70,7 @@ void	server_handler(Config &config, char **env) {
 			else if (events[i].events & EPOLLIN) {
 				client = events[i].data.fd;
 				save_index = i;
-				i = find_client_in_vector(clientlist, client, i);
+				i = find_client_in_vector(clientlist, client, i, events[i].data.u32);
 				status = clientlist[i].request.read_client(client, clientlist[i], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);

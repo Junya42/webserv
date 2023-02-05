@@ -22,6 +22,15 @@ bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t 
     return true;
   if (i == s.size())
     return false;
+  if (str[j] == '*') {  
+    j++;
+    while (s[i] && s[i] != str[j])
+      i++;
+    if (i == s.size())
+      return false;
+    if (s[i] != str[j])
+      return false;
+  }
   if ((c = is_alpha(*(s.begin() + i))) > 0) {
     if (c == str[j] || *(s.begin() + i) == str[j])
       return comp(s, str, pos, i + 1, j + 1, c, len);
@@ -147,10 +156,10 @@ void erase(std::string &s) {
 
 size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
   while (s[i]) {
-    if (count == iter)
-      return i;
     if (s[i] == c)
       count++;
+    if (count == iter)
+      return i;
     i++;
   }
   return i;

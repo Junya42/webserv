@@ -23,6 +23,8 @@ std::string trim(const std::string &s) {
 }
 
 Server::Server(void) {
+  _redirect = false;
+  _login = false;
   _port = -1;
 }
 
@@ -32,6 +34,8 @@ void  Server::clear(void) {
   _sport.clear();
   _index.clear();
   _methods.clear();
+  _redirect = false;
+  _login = false;
   _get = false;
   _post = false;
   _delete = false;
@@ -102,6 +106,14 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         _index = value;
       if (key == "method_accept")
         _methods = value;
+      if (key == "force_login") {
+        if (value == " true")
+          _login = true;
+      }
+      if (key == "enable_redirect") {
+        if (value == " true")
+          _redirect = true;
+      }
       if (key == "cgi") {
         erase(value, " ");
         std::istringstream cgiparser(value);
@@ -199,9 +211,10 @@ bool  Server::method_delete(void) {
 }
 
 std::ostream &operator<<(std::ostream &nstream, Server &server) {
-    nstream << "\033[36mname: \033[0m" << server._name << std::endl
+    nstream << std::boolalpha << "\033[36mname: \033[0m" << server._name << std::endl
     << "\033[36mindex: \033[0m" << server._index << std::endl
-    << "\033[36mmethods: \033[0m" << server._methods << std::endl
+    << "\033[36mforce login: \033[0m" << server._login << std::endl
+    << "\033[36menable redirect: \033[0m" << server._redirect << std::endl
     << "\033[36mport: \033[0m" << server._port << std::endl 
     << "\033[36mstring port: \033[0m" << server._sport << std::endl 
     << "\033[36mhost: \033[0m" << server._host << std::endl 

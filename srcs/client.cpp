@@ -48,7 +48,7 @@ std::ostream &operator<<(std::ostream &nstream, Client &client) {
     << "Address: " << inet_ntoa(client.addr.sin_addr) << std::endl
     << "Cookie: " << client._cookie << std::endl
     << "Name: " << client._name << std::endl
-    << "Last name: " << client._lastname << std::endl << std::endl
+    << "Query: " << client._lastname << std::endl << std::endl
     << "Files: " << std::endl;
 
   for (std::vector<std::string>::iterator it = client._files.begin(); it != client._files.end(); it++) {

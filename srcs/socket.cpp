@@ -46,7 +46,7 @@ int init_server_socket(int port) {
 	return server;
 }
 
-int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *id, int *numclient, int *curr_fd, std::string &hostname, std::string &port) {
+int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32_t *id, int *numclient, int *curr_fd, std::string &hostname, std::string &port) {
 	Client clientinfo;
 	char	ip[INET_ADDRSTRLEN];
 	struct epoll_event client_event;
@@ -64,6 +64,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *i
 	fcntl(client, F_SETFL, O_NONBLOCK);
 	client_event.events = EPOLLIN; 
 	client_event.data.fd = client;
+	//client_event.data.u32 = *id;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &client_event) < 0) {
 		std::cout << "Error: EPOLL_CTL Client" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
@@ -72,15 +73,33 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, int *i
 		exit(errno);
 	}
 	clientinfo._port = clientinfo.addr.sin_port;
+
+	/*********************************************/
+	struct	sockaddr_in my_addr;
+	unsigned int host_port;
+	char myIP[16];
+
+	bzero(&my_addr, sizeof(my_addr));
+	socklen_t	len = sizeof(my_addr);
+
+	getsockname(client, (struct sockaddr *)&my_addr, &len);
+	inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
+
+	host_port = ntohs(my_addr.sin_port);
+	/*********************************************/
+
 	clientinfo._id = *id;
 	clientinfo._sock = client;
 	clientinfo._sport = port;
 	erase(clientinfo._sport, " ");
 
+	clientinfo._hostip = to_string(myIP);
+	clientinfo._hostport = host_port;
 	inet_ntop(AF_INET, &clientinfo.addr.sin_addr, ip, sizeof(ip));
 	clientinfo._ip = to_string(ip);
 	clientinfo._host = hostname;
 	erase(clientinfo._host, " ");
+	PRINT_WIN("host: " + clientinfo._host);
 	PRINT_WIN("ip: " + clientinfo._ip);
 	PRINT_WIN("port: " + clientinfo._sport);
 	clientlist.push_back(clientinfo);
@@ -101,7 +120,7 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 		*curr_fd = *curr_fd - 1;
 		*numclient = *numclient - 1;
 	}
-	if (clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) {
+	if ((clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) && clientlist.size()) {
 		clientlist.erase(clientlist.begin() + i);
 	}
 	close(client);
@@ -145,6 +164,18 @@ int	init_epoll(std::vector<int> &server) {
 	return epoll_fd;
 }
 
+size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
+	for (size_t i = 0; i < serv.size(); i++) {
+		std::string tmp = serv[i]._name;
+		erase(tmp, " ");
+		if (client._host == tmp) {
+			PRINT_WIN("Found serv from client");
+			return i;
+		}
+	}
+	return 0;
+}
+
 void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	if (req.in_response == false) {
 		PRINT_FUNC();
@@ -153,14 +184,15 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 
 	//PRINT_FUNC();
 	(void)env;
-	if (comp(req.path, "download") == false && comp(req.path, "delete") == false) {
+	PRINT_WIN("Using cgi = " + to_string(req.using_cgi));
+	//if (comp(req.path, "download") == false && comp(req.path, "delete") == false) {
 		if (req.using_cgi == true)
 			req.get_cgi(client, config);
 		else
-			req.get_request(config._serv, client);
-	}
-	else
-		req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
+			req.get_request(config._serv, client, get_serv_from_client(client, config._serv));
+	//}
+	//else
+		//req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
 	if (req.complete_file == true) {
 		//if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
 		if (req.header_code != 0) {
@@ -173,9 +205,10 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			PRINT_ERR("Sent error page to client " + to_string(client._sock) + " " + client._name);
 		}
 		else if (req.header_code == 0) {
-			req.get_response(config._mime, client);
-			std::cout << req << std::endl;
-			std::cout << "ANSWER" << std::endl << req.answer << std::endl;
+			if (req.using_cgi == false)
+				req.get_response(config._mime, client);
+			//std::cout << req << std::endl;
+			//std::cout << "ANSWER" << std::endl << req.answer << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
@@ -186,66 +219,85 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 		req.clear();
 		//std::cout << client << std::endl;
 	}
-	}
+}
 
-	int find_client_in_vector(std::vector<Client> &clientlist, int client, int index) {
-		//PRINT_LOG("Current client socked: " + to_string(client));
+int find_client_in_vector(std::vector<Client> &clientlist, int client, int index, uint32_t id) {
+	PRINT_LOG("Current client socket: " + to_string(client));
+
+	struct	sockaddr_in my_addr;
+	unsigned int host_port;
+	char myIP[16];
+
+	bzero(&my_addr, sizeof(my_addr));
+	socklen_t	len = sizeof(my_addr);
+
+	getsockname(client, (struct sockaddr *)&my_addr, &len);
+	inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
+
+	host_port = ntohs(my_addr.sin_port);
+
+	int	x = -1;
+	for (size_t i = 0; i < clientlist.size(); i++) {
+		if (clientlist[i]._sock == client && clientlist[i]._hostport == host_port && clientlist[i]._hostip == to_string(myIP)) {
+			PRINT_WIN("Perfect match !!!");
+			return i;
+		}
+		else if (clientlist[i]._sock == client) {
+			if (x == -1)
+				x = i;
+		}
+	}
+	if (x != -1)
+		return x;
+	(void)id;
+	return index;
+}
+
+void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *curr_fd, int *numclient, int epoll) {
+	PRINT_FUNC();
+	std::string tmp_name;
+	if (clientlist[index]._name.size() > 1) {
+		tmp_name = clientlist[index]._name;
 		for (size_t i = 0; i < clientlist.size(); i++) {
-			if (clientlist[i]._sock == client) {
-				//PRINT_WIN("Found client in vector");
-				//std::cout << "\033[1;32m" << clientlist[i] << "\033[0m" << std::endl;
-				return i;
-			}
-		}
-		//PRINT_ERR("Couldn't find client in vector");
-		//std::cout << "\033[1;31m" << clientlist[index] << "\033[0m" << std::endl;
-		return index;
-	}
-
-	void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *curr_fd, int *numclient, int epoll) {
-		PRINT_FUNC();
-		std::string tmp_name;
-		if (clientlist[index]._name.size() > 1) {
-			tmp_name = clientlist[index]._name;
-			for (size_t i = 0; i < clientlist.size(); i++) {
-				if (i != index){
-					if (comp(clientlist[i]._name, clientlist[index]._name) == true){
-						//clientlist[index]._log = true;
-						std::cout << "\033[1;45m////////////////////////////////\033[0m" << std::endl;
-						std::cout << "new client: " << std::endl << clientlist[index] << std::endl;
-						std::cout << "removed client: " << std::endl << clientlist[i] << std::endl;
-						std::cout << "\033[1;45m////////////////////////////////\033[0m" << std::endl;
-						clientlist[index]._name = clientlist[i]._name;
-						clientlist[index]._lastname = clientlist[i]._lastname;
-						clientlist[index]._request_count += clientlist[i]._request_count;
-						clientlist[index]._files = clientlist[i]._files;
-						clientlist[index]._cookie = clientlist[i]._cookie;
-						PRINT_ERR("Trying to kick " + clientlist[i]._name + " from clientlist");
-						clientlist.erase(clientlist.begin() + i);
-						PRINT_ERR("Successfully kicked " + clientlist[i]._name + " from clientlist");
-						break ;
-					}
+			if (i != index){
+				if (comp(clientlist[i]._name, clientlist[index]._name) == true && comp(clientlist[i]._host, clientlist[index]._host) == true){
+					//clientlist[index]._log = true;
+					std::cout << "\033[1;45m////////////////////////////////\033[0m" << std::endl;
+					std::cout << "new client: " << std::endl << clientlist[index] << std::endl;
+					std::cout << "removed client: " << std::endl << clientlist[i] << std::endl;
+					std::cout << "\033[1;45m////////////////////////////////\033[0m" << std::endl;
+					clientlist[index]._name = clientlist[i]._name;
+					clientlist[index]._lastname = clientlist[i]._lastname;
+					clientlist[index]._request_count += clientlist[i]._request_count;
+					clientlist[index]._files = clientlist[i]._files;
+					clientlist[index]._cookie = clientlist[i]._cookie;
+					PRINT_ERR("Trying to kick " + clientlist[i]._name + " from clientlist");
+					clientlist.erase(clientlist.begin() + i);
+					PRINT_ERR("Successfully kicked " + clientlist[i]._name + " from clientlist");
+					break ;
 				}
 			}
 		}
-		size_t i = 0;
-		while (i < clientlist.size()) {
-			if (clientlist[i]._sock < 1)
-				clientlist[i]._log = false;
-
-			if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
-				PRINT_ERR("Removing client from vector");
-				if (*curr_fd > 1 && *numclient > 0) {
-					*curr_fd = *curr_fd - 1;
-					*numclient = *numclient - 1;
-				}
-				clientlist.erase(clientlist.begin() + i);
-			}
-			std::cout << std::endl;
-			i++;
-		}
-		(void)numclient;
-		(void)epoll;
-		(void)curr_fd;
 	}
+	size_t i = 0;
+	while (i < clientlist.size()) {
+		if (clientlist[i]._sock < 1)
+			clientlist[i]._log = false;
+
+		if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
+			//std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl << clientlist[i] << std::endl << "~~~~~~~~~~~~~~~~~~~~" << std::endl;
+			PRINT_ERR("Removing client from vector");
+			if (*curr_fd > 1 && *numclient > 0) {
+				*curr_fd = *curr_fd - 1;
+				*numclient = *numclient - 1;
+			}
+			clientlist.erase(clientlist.begin() + i);
+		}
+		std::cout << std::endl;
+		i++;
+	}
+	(void)numclient;
+	(void)epoll;
+	(void)curr_fd;
+}
 
