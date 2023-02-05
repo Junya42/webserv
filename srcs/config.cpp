@@ -66,9 +66,17 @@ void  Config::add_config(std::string &config) {
     //std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
   }
   for (std::vector<Server>::iterator it = _serv.begin(); it != _serv.end(); it++) {
+    if (it->_ip.compare("error") == 0)
+    {
+      PRINT_ERR("ip = error for : " + it->_name);
+      it->_valid = false;
+    }
     for (std::vector<Server>::iterator itn = it + 1; itn < _serv.end(); itn++) {
-      if (it->_host.compare(itn->_host) == 0)
+      if (it->_ip.compare(itn->_ip) == 0 && it->_sport.compare(itn->_sport) == 0) {
+        PRINT_ERR("Server:\033[1;31m" + it->_name + "\033[0m and server:\033[1;31m" + itn->_name + "\033[0m have the same ip and port");
+        PRINT_ERR("Removing" + it->_name);
         it->_valid = false;
+      }
     }
   }
   size_t i = 0;

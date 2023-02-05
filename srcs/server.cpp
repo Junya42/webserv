@@ -33,6 +33,7 @@ void  Server::clear(void) {
   _name.clear();
   _sport.clear();
   _index.clear();
+  _cgi.clear();
   _methods.clear();
   _redirect = false;
   _login = false;
@@ -115,6 +116,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
           _redirect = true;
       }
       if (key == "cgi") {
+        _cgi = value;
         erase(value, " ");
         std::istringstream cgiparser(value);
         std::string tmpkey;
@@ -123,18 +125,25 @@ void  Server::setup_server(std::vector<std::string> &vec) {
           std::getline(cgiparser, tmpvalue, ' ');
           cgi[tmpkey] = tmpvalue;
         }
-        if (cgi.size() % 2)
-          PRINT_ERR("CGI FAIL ?");
       }
       //else
       //std::cout << "Unknown key: " << key << " | value: " << value << std::endl;
     }
     i++;
   }
-  if (_port == -1 || !_name.size() || !_index.size()) {
+  //if (_port == -1 || !_name.size() || !_index.size()) {
+  if (_port == -1 || !_name.size()) {
     PRINT_ERR("Error server config");
     exit(1);
   }
+  struct in_addr a;
+  struct hostent *lh = gethostbyname(_name.substr(1).c_str());
+  if (lh) {
+    bcopy(*lh->h_addr_list, (char *)&a, sizeof(a));
+    _ip = to_string(inet_ntoa(a));
+  }
+  else
+    _ip = "error";
   _host = _name + ':' + _sport;
   _host.erase(std::remove(_host.begin(), _host.end(), ' '), _host.end());
   if (location_find != location_push) {
@@ -213,6 +222,7 @@ bool  Server::method_delete(void) {
 std::ostream &operator<<(std::ostream &nstream, Server &server) {
     nstream << std::boolalpha << "\033[36mname: \033[0m" << server._name << std::endl
     << "\033[36mindex: \033[0m" << server._index << std::endl
+    << "\033[36mcgi: \033[0m" << server._cgi << std::endl
     << "\033[36mforce login: \033[0m" << server._login << std::endl
     << "\033[36menable redirect: \033[0m" << server._redirect << std::endl
     << "\033[36mport: \033[0m" << server._port << std::endl 

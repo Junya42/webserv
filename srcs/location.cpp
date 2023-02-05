@@ -60,11 +60,6 @@ void  Location::create_map(std::string & config) {
       while (std::getline(methods, tmp, ' ')) {
         method[tmp] = true;
       }
-      PRINT_LOG("METHODS");
-      for (std::map<std::string, bool>::iterator it = method.begin(); it != method.end(); it++) {
-        std::cout << it->first << " ____ " << it->second << std::endl;
-      }
-      PRINT_LOG("END OF METHODS");
     }
   }
 }

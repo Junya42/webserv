@@ -6,6 +6,10 @@
 #include <sys/types.h>
 #include "location.hpp"
 #include "string.hpp"
+#include <cstdio>
+#include <netdb.h>
+#include <cstring>
+#include <arpa/inet.h>
 
 class Location;
 
@@ -31,6 +35,8 @@ class Server {
     std::string _sport;
     std::string _index;
     std::string _methods;
+    std::string _ip;
+    std::string _cgi;
     bool        _valid;
     bool        _get;
     bool        _post;

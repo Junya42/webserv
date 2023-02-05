@@ -62,18 +62,33 @@ char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
             args = new char*[4];
             if (!args)
                 return NULL;
-            args[0] = strdup(cgi_executor.c_str());
-            args[1] = strdup(cgi_path.c_str());
-            args[2] = strdup("replace");
-            args[3] = NULL;
+            if (cgi_executor.size()) {
+                args[0] = strdup(cgi_executor.c_str());
+                args[1] = strdup(cgi_path.c_str());
+                args[2] = strdup("replace");
+                args[3] = NULL;
+            }
+            else {
+                args[0] = strdup(cgi_path.c_str());
+                args[1] = strdup("replace");
+                args[2] = NULL;
+                args[3] = NULL;
+            }
             break;
         default:
             args = new char*[3];
             if (!args)
                 return NULL;
-            args[0] = strdup(cgi_executor.c_str());
-            args[1] = strdup(cgi_path.c_str());
-            args[2] = NULL;
+            if (cgi_executor.size()) {
+                args[0] = strdup(cgi_executor.c_str());
+                args[1] = strdup(cgi_path.c_str());
+                args[2] = NULL;
+            }
+            else {
+                args[0] = strdup(cgi_path.c_str());
+                args[1] = NULL;
+                args[2] = NULL;
+            }
             break;
     }
     for (size_t i = 0; args[i]; i++)

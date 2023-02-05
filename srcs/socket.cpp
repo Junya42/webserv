@@ -24,7 +24,13 @@ int init_server_socket(int port) {
 		close(server);
 		exit(errno);
 	}
+	if (setsockopt(server, SOL_SOCKET, SO_REUSEPORT, &my_bool, sizeof(my_bool)) == -1) {
 
+		std::cout << "Error : SETSOCKOPT" << std::endl;
+		std::cout << std::strerror(errno) << std::endl;
+		close(server);
+		exit(errno);
+	}
 	std::memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_family = AF_INET;
