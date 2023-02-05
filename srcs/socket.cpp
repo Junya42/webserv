@@ -6,7 +6,7 @@
 const int PORT = 8080;
 const int MAX_EVENTS = 10;
 
-int init_server_socket(int port) {
+int init_server_socket(int port, const char *ip) {
 	int server;
 	int my_bool = 1;
 	struct sockaddr_in server_addr;
@@ -32,8 +32,9 @@ int init_server_socket(int port) {
 		exit(errno);
 	}
 	std::memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_family = AF_INET;
+	//server_addr.sin_addr.s_addr = INADDR_ANY;
+	server_addr.sin_addr.s_addr = inet_addr(ip);
 	server_addr.sin_port = htons(port);
 
 	if (bind(server, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr)) == -1) {
@@ -59,6 +60,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	int	client;
 
 
+	PRINT_LOG("Server socket: " + to_string(server));
 	clientinfo.reset();
 	client = accept(server, reinterpret_cast<sockaddr*>(&clientinfo.addr), &clientinfo.addr_len);
 	if (client == -1) {
@@ -101,6 +103,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 
 	clientinfo._hostip = to_string(myIP);
 	clientinfo._hostport = host_port;
+	clientinfo._hostsport = to_string(host_port);
 	inet_ntop(AF_INET, &clientinfo.addr.sin_addr, ip, sizeof(ip));
 	clientinfo._ip = to_string(ip);
 	clientinfo._host = hostname;
@@ -172,9 +175,12 @@ int	init_epoll(std::vector<int> &server) {
 
 size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 	for (size_t i = 0; i < serv.size(); i++) {
-		std::string tmp = serv[i]._name;
-		erase(tmp, " ");
-		if (client._host == tmp) {
+		std::string tmpname = serv[i]._name;
+		std::string	tmpport = serv[i]._sport;
+		erase(tmpname, " ");
+		erase(tmpport, " ");
+		PRINT_LOG(tmpname + ":" + client._hostsport + "/" + tmpport);
+		if (client._host == tmpname && client._hostsport == tmpport) {
 			PRINT_WIN("Found serv from client");
 			return i;
 		}

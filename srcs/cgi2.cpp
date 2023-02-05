@@ -158,19 +158,21 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         }
         lseek(outFd, 0, SEEK_SET);
 
-        size_t  rbytes = 1;
+        int     rbytes = 1;
         char    buff[buff_size];
 
         while (rbytes) {
             memset(buff, 0, buff_size);
             rbytes = read(outFd, buff, buff_size - 1);
-            file_content += buff;
+            for (int i = 0; i < rbytes; i++)
+                file_content += buff[i];
         }
     }
     fclose(inFile);
     fclose(outFile);
-
-   // std::cout << "\033[1;32m" << file_content << "\033[0m" << std::endl;
+    std::cout << "end of cgi" << std::endl;
+    if (comp(cgi_executor, "python") == true)
+        std::cout << "\033[1;32m" << file_content << "\033[0m" << std::endl;
     complete_file = true;
 }
 
@@ -181,6 +183,8 @@ void    Request::get_cgi_answer(Client &client) {
     answer.clear();
     if (comp(path, "download") == false && comp(path, "delete") == false) {
         PRINT_ERR("ENTERING IF");
+        if (method == "POST")
+            status = "HTTP/1.1 201 Created\n";
         if (comp(query, "disconnect=true") == true) {
             PRINT_ERR("Redirect 0");
             redirect = true;

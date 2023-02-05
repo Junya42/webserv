@@ -23,7 +23,7 @@
 #include "../includes/client.hpp"
 #include "../includes/macro.hpp"
 
-int init_server_socket(int port);
+int init_server_socket(int port, const char *ip);
 int init_epoll(std::vector<int> &server);
 
 int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32_t *id, int *numclient, int *curr_fd, std::string &hostname, std::string &port);

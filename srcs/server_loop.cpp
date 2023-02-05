@@ -5,21 +5,56 @@ const int MAX_EVENTS = 100;
 
 
 std::vector<int> create_servers(std::vector<Server> &servconf) {
-	std::vector<int> server;
+	std::vector<int> server(servconf.size());
 
 	for (size_t i  = 0; i < servconf.size(); i++) {
-		server.push_back(init_server_socket(servconf[i]._port));
+		server[i] = init_server_socket(servconf[i]._port, servconf[i]._ip.c_str());
 		servconf[i]._sock = server[i];
+		PRINT_LOG("Server" + servconf[i]._name + " socket : " + to_string(server[i]));
 	}
+	std::cout << std::endl << std::endl << "********************************************************" << std::endl;
+	std::cout << "________________________________________________________" << std::endl << std::endl;
 	return server;
 }
 
-int	check_server_event(int fd, std::vector<int> &server) {
+int	check_server_event(int fd, std::vector<Server> &server) {
+	int save = -1;
+
+	struct	sockaddr_in my_addr;
+	unsigned int host_port;
+	char myIP[16];
+
+	bzero(&my_addr, sizeof(my_addr));
+	socklen_t	len = sizeof(my_addr);
+
+	getsockname(fd, (struct sockaddr *)&my_addr, &len);
+	inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
+
+	host_port = ntohs(my_addr.sin_port);
+
+	std::string _host = to_string(myIP);
+	std::string _port = to_string(host_port);
+	//PRINT_LOG("_host = " + _host);
+	//PRINT_LOG("_port = " + _port);
 	for (size_t i = 0; i < server.size(); i++) {
-		if (fd == server[i])
+		//PRINT_LOG("client socket: " + to_string(fd));
+		//PRINT_LOG("serv socket: " + to_string(server[i]._sock));
+		std::string tmpname = server[i]._ip;
+		std::string	tmpport = server[i]._sport;
+		//erase(tmpname, " ");
+		erase(tmpport, " ");
+		//PRINT_LOG(tmpname + ":" + _host + "/" + tmpport + ":" + _port);
+		if (_host == tmpname && _port == tmpport) {
+			PRINT_WIN("Found matching socket");
 			return i;
+		}
+		if (fd == server[i]._sock) {
+			PRINT_ERR("Found socket");
+			if (save == -1)
+				save = i;
+		}
 	}
-	return -1;
+	return save;
 }
 
 std::string &hostname(int server, Config &config) {
@@ -62,7 +97,7 @@ void	server_handler(Config &config, char **env) {
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
 		for (size_t i = 0; i < num_events; i++) {
-			index = check_server_event(events[i].data.fd, server);
+			index = check_server_event(events[i].data.fd, config._serv);
 			if (index != -1 && events[i].data.fd == server[index]) {
 				PRINT_WIN("Server event"); 
 				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));

@@ -197,6 +197,7 @@ class Client {
     std::string _path;
     std::string _host;
     unsigned int _hostport;
+    std::string _hostsport;
     std::string _hostip;
     std::string _ip;
     std::string _sport;

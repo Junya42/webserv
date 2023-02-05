@@ -28,6 +28,7 @@ void  Config::add_config(std::string &config) {
   Server serv;
 
   while (std::getline(stream, line)) {
+  //  std::cout << "\033[1;36m" << line << "\033[0m" << std::endl;
     //std::cout << "config line = " << line << std::endl;
       //std::cout << "line[0] = " << static_cast<int>(line[0]) << std::endl;
     if (line == "{" || line == "}" || line == "\n" || !line[0]) {

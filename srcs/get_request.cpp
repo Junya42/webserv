@@ -36,13 +36,15 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   //PRINT_LOG("path = " + path);
   PRINT_LOG("tmp path = " + tmp_path);
   size_t x = 0;
-  for (size_t i = 0; i < serv.size(); i++)
+  /*for (size_t i = 0; i < serv.size(); i++)
     if (comp(host, serv[i]._host) == true)
-      x = i;
+      x = i;*/
+  x = index;
   //PRINT_LOG("Found host");
   if (tmp_path.compare("/") == 0)
   {
    PRINT_LOG("Using default server index");
+   //std::cout << serv[x] << std::endl;
     file_path = serv[x]._index;
     PRINT_LOG("default index: " + file_path);
     while (file_path[0] == ' ' || file_path[0] == '\t')

@@ -48,6 +48,7 @@ void  Server::clear(void) {
 
 void  Server::setup_server(std::vector<std::string> &vec) {
 //  std::cout << config << std::endl << "______________________" << std::endl;
+//std::cout << std::endl << "__________________________________________" << std::endl;
   std::string location_conf;
   std::string line;
   Location loc;
@@ -58,7 +59,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
   long unsigned int i = 0;
   while (i < vec.size()) {
     line = vec[i];
-  //  std::cout << "LINE: " << line << std::endl;
+   // std::cout << "LINE: " << line << std::endl;
     std::istringstream line_stream(line);
     std::string key;
     std::string value;
@@ -133,6 +134,10 @@ void  Server::setup_server(std::vector<std::string> &vec) {
   }
   //if (_port == -1 || !_name.size() || !_index.size()) {
   if (_port == -1 || !_name.size()) {
+    if (_port == -1)
+      PRINT_ERR("Port error");
+    if (!_name.size())
+      PRINT_ERR("Name error");
     PRINT_ERR("Error server config");
     exit(1);
   }
@@ -151,6 +156,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         _loc.push_back(loc);
   }
   _valid = true;
+ // std::cout << "___________________________________________________" << std::endl;
 }
 
 Server::Server(std::string &config) {

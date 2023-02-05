@@ -1,5 +1,5 @@
 #!/bin/bash
->&2 echo "IN CGI SCRIPT"
+>&2 echo "In cgi script get.sh"
 
 replace_name="USERNAME"
 replace_link="LINK"

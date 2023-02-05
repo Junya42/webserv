@@ -33,8 +33,14 @@ std::string	get_config(char *str) {
 		std::cerr << "Can't open configuration file" << std::endl;
 		exit(1);
 	}
-	int bytes = read(fd, buffer, sizeof(buffer));
-	std::string	config_buff(buffer, bytes);
+	int bytes = 1;
+	std::string config_buff;
+	while (bytes) {
+		std::memset(&buffer, 0, sizeof(buffer));
+		bytes = read(fd, buffer, sizeof(buffer));
+		for (int i = 0; i < bytes; i++)
+			config_buff += buffer[i];
+	}
 
 	return config_buff;
 }
