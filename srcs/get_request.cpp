@@ -35,6 +35,11 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   }
   //PRINT_LOG("path = " + path);
   PRINT_LOG("tmp path = " + tmp_path);
+  if (flag != 0) {
+    found = true;
+    file_path = tmp_path;
+    return ;
+  }
   size_t x = 0;
   /*for (size_t i = 0; i < serv.size(); i++)
     if (comp(host, serv[i]._host) == true)
@@ -63,8 +68,21 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     //PRINT_LOG("Looking for path:" + path);
     for (size_t j = 0; j < serv[x]._loc.size(); j++) {
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
-        PRINT_LOG("Serv-path: " + serv[x]._loc[j]._path);
-        PRINT_LOG("Tmp-path: " + tmp_path);
+        if (serv[x]._loc[j]._redirect == true) {
+          link = serv[x]._loc[j]._link;
+          PRINT_WIN("Redirect to " + link);
+          auth_redirect = 3;
+          using_cgi = false;
+          return ;
+        }
+        if (flag == 0 && serv[x]._loc[j].method[method] != true) {
+          PRINT_ERR("SET ERROR 405");
+          for (std::map<std::string, bool>::iterator it = serv[x]._loc[j].method.begin(); it != serv[x]._loc[j].method.end(); it++)
+            std::cout << std::boolalpha << it->first << " : " << it->second << std::endl;
+          set_error(405);
+          complete_file = true;
+          return ;
+        }
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
         if (dir)
@@ -112,19 +130,13 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
   char buff[bsize];
   std::string ascii;
 
- // if (client._log == true && client._name.size() > 0) {
-    //if (comp(path, "download") == true || comp(path, "delete") == true) {
-     // auto_file_name(serv, client);
-     // complete_file = true;
-     // read_size = file_content.size();
-     // return ;
-   // }
- // }
-
   if (file_path.size() < 1)
     this->get_file(serv, client, path_info, file_path, index);
-  //else
-    //PRINT_WIN(file_path);
+  
+  if (auth_redirect == 3) {
+    complete_file = true;
+    return ;
+  }
   if (complete_file == true) {
     PRINT_WIN("File complete");
     return ;
@@ -243,6 +255,11 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     }
     else if (auth_redirect == 2) {
       status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
+    }
+    else if (auth_redirect == 3) {
+      answer = "HTTP/1.1 301 Moved Permanently\n";
+      answer += "Location: " + link + "\n\n";
+      return ;
     }
     //PRINT_WIN(file_path);
     this->set_content_type(_mime);

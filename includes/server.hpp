@@ -48,6 +48,7 @@ class Server {
     int         _sock;
     std::vector<Location> _loc;
     std::map<std::string, std::string> cgi;
+    std::map<int, std::string> errors;
 };
 
 std::ostream &operator<<(std::ostream &nstream, Server &server);

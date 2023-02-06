@@ -23,7 +23,7 @@ void  http_version_not_supported(int client); //505
 void  insufficient_storage(int client); //507
 
 //  Switch error
-void  send_error(int client, int code, Client &curr);
+void  send_error(int client, int code, Client &curr, std::string path);
 
 // Redirect to error page
 void  redirect_error(int client, int code);

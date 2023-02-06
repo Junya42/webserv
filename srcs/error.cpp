@@ -194,7 +194,7 @@ void  http_version_not_supported(int client) {
   error = "HTTP/1.1 505 HTTP Version Not Supported\n";
   error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
-error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
   // error += start;
   // error += "400 Bad Request";
@@ -219,10 +219,93 @@ error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   write(client, error.c_str(), error.size());
 }
 
-// Switch error
+int  send_custom_error(int client, int code, std::string path) {
+  std::string error;
 
-void  send_error(int client, int code, Client &curr) {
+  error = "HTTP/1.1 500 Internal Server Error\n";
+
+  switch (code) {
+    case 400:
+      error = "HTTP/1.1 400 Bad Request\n";
+      break;
+    case 401:
+      error = "HTTP/1.1 401 Unauthorized\n";
+      break;
+    case 403:
+      error = "HTTP/1.1 403 Forbidden\n";
+      break;
+    case 404:
+      error = "HTTP/1.1 404 Not Found\n";
+      break;
+    case 405:
+      error = "HTTP/1.1 405 Method Not Allowed\n";
+      break;
+    case 410:
+      error = "HTTP/1.1 410 Gone\n";
+      break;
+    case 411:
+      error = "HTTP/1.1 411 Length Required\n";
+      break;
+    case 414:
+      error = "HTTP/1.1 414 URI Too Long\n";
+      break;
+    case 415:
+      error = "HTTP/1.1 415 Unsupported Media Type\n";
+      break;
+    case 500:
+      error = "HTTP/1.1 500 Internal Server Error\n";
+      break;
+    case 501:
+      error = "HTTP/1.1 501 Not Implemented\n";
+      break;
+    case 505:
+      error = "HTTP/1.1 505 HTTP Version Not Supported\n";
+      break;
+    case 507:
+      error = "HTTP/1.1 507 Insufficient Storage\n";
+      break;
+  }
+  error += "Content-type: text/html\n\n";
+  
+  std::ifstream errfile;
+  std::string tmp;
+
+  errfile.open(path.c_str());
+  if (errfile.is_open()) {
+    while (std::getline(errfile, tmp))
+      error += tmp;
+    error += "\n\n";
+    PRINT_ERR("Sending custom error page");
+    write(client, error.c_str(), error.size());
+  }
+  else {
+    PRINT_ERR("Cannot access custom error page");
+    return -1;
+  }
+  return 0;
+}
+
+void  send_error(int client, int code, Client &curr, std::string path) {
   PRINT_ERR(code);
+  struct stat st;
+
+  if (path.size()) {
+    char  pwd[100];
+    if (getcwd(pwd, 100) != NULL) {
+      path = pwd + path;
+      PRINT_LOG(path);
+      if (stat(path.c_str(), &st) == 0) {
+        if (S_ISREG(st.st_mode) != 0) {
+          if (send_custom_error(client, code, path) == 0)
+             return ;
+        }
+        else
+          PRINT_ERR("Custom error page is a directory");
+      }
+      else
+        PRINT_ERR("Custom error page does not exist");
+    }
+  }
   switch (code) {
     case 400:
       bad_request(client);
@@ -263,6 +346,8 @@ void  send_error(int client, int code, Client &curr) {
     case 507:
       insufficient_storage(client);
       break;
+    default:
+      internal_server_error(client);
   }
   std::cout << curr << std::endl;
 }

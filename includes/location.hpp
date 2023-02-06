@@ -19,6 +19,9 @@ class Location {
     std::map<std::string, bool> method;
     std::string _path;
     std::string _root;
+    std::string _link;
+    bool  _redirect;
+
 
 };
 

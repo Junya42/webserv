@@ -83,6 +83,8 @@ class Request {
     std::string key;
     std::string value;
     std::string boundary;
+    
+    std::string link;
 
     std::string path_info;
     std::string query;

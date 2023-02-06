@@ -120,10 +120,9 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 }
 
 int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_fd, int *numclient, int epoll_fd) {
-	//PRINT_FUNC();
+
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client, 0) < 0) {
 		PRINT_ERR("Couldn't remove client socket from epoll instance");
-		//return 0;
 	}
 	if (*curr_fd > 1 && *numclient > 0) {
 		*curr_fd = *curr_fd - 1;
@@ -179,40 +178,45 @@ size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 		std::string	tmpport = serv[i]._sport;
 		erase(tmpname, " ");
 		erase(tmpport, " ");
-		PRINT_LOG(tmpname + ":" + client._hostsport + "/" + tmpport);
 		if (client._host == tmpname && client._hostsport == tmpport) {
 			PRINT_WIN("Found serv from client");
+			PRINT_WIN(tmpname + ":" + client._hostsport);
 			return i;
 		}
 	}
 	return 0;
 }
 
-void	answer_client(Client &client, Request &req, Config &config, char **env) {
-	if (req.in_response == false) {
-		PRINT_FUNC();
-	}
-	req.in_response = true;
+std::string	error_path(Server &serv, int code) {
+	std::string	path;
 
-	//PRINT_FUNC();
+	try {
+		std::string tmp;
+		tmp = serv.errors.at(code);
+		path = tmp;
+	}
+	catch (std::exception &e) {
+		PRINT_ERR("No default error pages for error " + to_string(code));
+	}
+	return path;
+}
+
+void	answer_client(Client &client, Request &req, Config &config, char **env) {
+	if (req.in_response == false)
+		PRINT_FUNC();
+	req.in_response = true;
 	(void)env;
+	size_t index;
+	
+	index = get_serv_from_client(client, config._serv);
 	PRINT_WIN("Using cgi = " + to_string(req.using_cgi));
-	//if (comp(req.path, "download") == false && comp(req.path, "delete") == false) {
-		if (req.using_cgi == true)
-			req.get_cgi(client, config);
-		else
-			req.get_request(config._serv, client, get_serv_from_client(client, config._serv));
-	//}
-	//else
-		//req.download_delete_cgi(client, config._serv[2], "/home/junya/serv/www/cgi-bin/download.py", env);
+	if (req.using_cgi == true)
+		req.get_cgi(client, config);
+	else
+		req.get_request(config._serv, client, index);
 	if (req.complete_file == true) {
-		//if (req.cookie.size() > 1 && req.cookie[0] == 'e') {
 		if (req.header_code != 0) {
-			PRINT_ERR("Sending error to client");
-			//std::string code(req.cookie, 6);
-			//req.header_code = atoi(code.c_str());
-			send_error(client._sock, req.header_code, client);
-			PRINT_ERR("After sending error to client");
+			send_error(client._sock, req.header_code, client, error_path(config._serv[index], req.header_code));
 			client._log = false;
 			PRINT_ERR("Sent error page to client " + to_string(client._sock) + " " + client._name);
 		}
@@ -224,12 +228,8 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
-		//else {
-		//	redirect_error(client._sock, req.header_code);
-		//}
 		close(client._sock);
 		req.clear();
-		//std::cout << client << std::endl;
 	}
 }
 

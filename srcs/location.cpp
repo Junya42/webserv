@@ -34,6 +34,9 @@ Location &Location::operator=(const Location &src) {
 void  Location::create_map(std::string & config) {
   _data.clear();
   method.clear();
+  _root.clear();
+  _path.clear();
+  _link.clear();
   std::istringstream stream(config);
   std::string line;
 
@@ -60,6 +63,13 @@ void  Location::create_map(std::string & config) {
       while (std::getline(methods, tmp, ' ')) {
         method[tmp] = true;
       }
+    }
+    else if (key.find("redirect") != std::string::npos) {
+      _redirect = true;
+      _link = value;
+      
+      while (_link.size() && (_link[0] == ' ' || _link[0] == '\t'))
+        _link.erase(0, 1);
     }
   }
 }

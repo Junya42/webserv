@@ -43,6 +43,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
     std::istringstream tmpstream(path, std::ios_base::binary | std::ios_base::out);
 
+    if (path.size() > 150)
+      set_error(414);
     std::getline(tmpstream, path, '?');
     std::getline(tmpstream, query);
     parent._path = path;
@@ -512,6 +514,7 @@ void  Request::clear(void) {
   query.clear();
   cgi.clear();
   cgi_path.clear();
+  link.clear();
   using_cgi = false;
   chunked = false;
   nread = 0;
@@ -596,6 +599,7 @@ Request::Request(void) {
   bytes = 0;
   current_bytes = 0;
   body_size = 0;
+  link.clear();
   file_content.clear();
   file_path.clear();
   file_type.clear();

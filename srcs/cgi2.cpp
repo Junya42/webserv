@@ -103,9 +103,10 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
 
     FILE    *inFile = tmpfile();
     FILE    *outFile = tmpfile();
-
+    FILE    *errFile = tmpfile();
     int     inFd = fileno(inFile);
     int     outFd = fileno(outFile);
+    int     errFd = fileno(errFile);
 
     int     status;
     int     ret;
@@ -129,8 +130,10 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
 
         dup2(inFd, 0);
         dup2(outFd, 1);
+        dup2(errFd, 2);
         close(inFd);
         close(outFd);
+        close(errFd);
 
         execve(args[0], args, env);
 
@@ -142,6 +145,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         for (size_t i = 0; env[i]; i++)
             delete[] env[i];
         delete[] env;
+        std::cerr << "500" << std::endl;
         exit(42);
     }
     else {
@@ -149,8 +153,18 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
             set_error(500);
         if (WIFEXITED(status)) {
             ret = WEXITSTATUS(status);
-            if (ret == 42) {
-                set_error(500);
+            if (ret != 0) {
+                int errBytes = 1;
+                char errbuff[buff_size];
+                
+                std::string errString;
+                while (errBytes) {
+                    memset(errbuff, 0, buff_size);
+                    errBytes = read(errFd, errbuff, buff_size - 1);
+                    for (int i = 0; i < errBytes; i++)
+                        errString += errbuff[i];
+                }
+                set_error(atoi(errString.c_str()));
             }
         }
         if (n == 0) {
@@ -244,8 +258,12 @@ void    Request::get_cgi(Client &client, Config &config, int flag) {
             this->set_content_type(config._mime, 1);
         }
         this->get_file(config._serv, client, path, cgi_path, index, 1);
-        cgi_path = config._pwd + cgi_path;
-        //cgi_path = "/home/junya/serv/www/cgi-bin/get.sh";
+        std::string tmp;
+
+        tmp = config._pwd;
+        tmp.pop_back();
+        //cgi_path = config._pwd + cgi_path;
+        cgi_path = tmp + cgi_path;
     }
     if (complete_file == true)
         return ;

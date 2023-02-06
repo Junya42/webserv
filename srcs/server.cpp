@@ -1,4 +1,5 @@
 #include "../includes/server.hpp"
+#include "../includes/overload.hpp"
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -34,6 +35,7 @@ void  Server::clear(void) {
   _sport.clear();
   _index.clear();
   _cgi.clear();
+  errors.clear();
   _methods.clear();
   _redirect = false;
   _login = false;
@@ -101,6 +103,18 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         }
         _port = atoi(value.c_str());
         _sport = value;
+      }
+      if (key == "error_pages") {
+        if (value.size() && value[0] == ' ')
+          erase(value, " ");
+        std::istringstream errorparser(value);
+        std::string errKey;
+        std::string errValue;
+        while (std::getline(errorparser, errKey, ' ')) {
+          std::getline(errorparser, errValue, ' ');
+          errors[atoi(errKey.c_str())] = errValue;
+        }
+        //std::cout << "Errors" << errors << std::endl;
       }
       if (key == "server_name")
         _name = value;
@@ -233,7 +247,8 @@ std::ostream &operator<<(std::ostream &nstream, Server &server) {
     << "\033[36menable redirect: \033[0m" << server._redirect << std::endl
     << "\033[36mport: \033[0m" << server._port << std::endl 
     << "\033[36mstring port: \033[0m" << server._sport << std::endl 
-    << "\033[36mhost: \033[0m" << server._host << std::endl 
+    << "\033[36mhost: \033[0m" << server._host << std::endl
+    << "\033[36merrors: \033[0m" << server.errors << std::endl
     << "_____________________________________" << std::endl << std::endl;
 
   int i = 1;
