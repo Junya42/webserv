@@ -257,7 +257,10 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
     }
     else if (auth_redirect == 3) {
-      answer = "HTTP/1.1 301 Moved Permanently\n";
+      if (method == "GET")
+        answer = "HTTP/1.1 307 Moved Temporary Redirect\n";
+      else
+        answer = "HTTP/1.1 303 See Other\n";
       answer += "Location: " + link + "\n\n";
       return ;
     }

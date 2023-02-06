@@ -37,6 +37,7 @@ void  Location::create_map(std::string & config) {
   _root.clear();
   _path.clear();
   _link.clear();
+  _redirect = false;
   std::istringstream stream(config);
   std::string line;
 
