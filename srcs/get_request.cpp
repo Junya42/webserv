@@ -242,8 +242,8 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   //std::cout << client << std::endl;
   std::ostringstream s;
   bool redirect = false;
-  //PRINT_WIN(path);
-  if (comp(path, "download") == false && comp(path, "delete") == false) {
+  PRINT_WIN(path);
+  if (comp(path, "download") == false) {
     //if (1 == 1) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
@@ -265,7 +265,15 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       return ;
     }
     //PRINT_WIN(file_path);
-    this->set_content_type(_mime);
+    if (comp(method, "delete") == false)
+      this->set_content_type(_mime);
+    else {
+      answer = "HTTP/1.1 200 OK\n";
+      answer += "Content-Type: text/html\n\n";
+      answer += file_content;
+      answer += "\n\n";
+      return ;
+    }
 
     s << read_size;
     answer = status;
@@ -296,7 +304,6 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     answer += "\r\n\r\n";
   }
   else {
-    PRINT_ERR("WHY ARE YOU GOING HERE MATE");
       answer.clear();
       answer = "HTTP/1.1 200 OK\n";
       answer += "Content-Lenght: " + to_string(file_content.size());

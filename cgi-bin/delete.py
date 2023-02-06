@@ -31,7 +31,7 @@ if exist == 1:
         if isdir == 1:
             x += "<a href=\"http://localhost:8080/cgi-bin/delete.py" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
         else:
-            y += "<a href=\"http://localhost:8080" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" +"Delete " + val + "</a>\n"
+            y += "<a href=\"http://localhost:8080/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" +"Delete " + val + "</a>\n"
     x += "</div><div class=\"glass-toolbar\">" + y + "</div></div></body></html>"
 else:
     x += "</div></div></body></html>"

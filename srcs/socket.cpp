@@ -200,6 +200,37 @@ std::string	error_path(Server &serv, int code) {
 	return path;
 }
 
+void	delete_file(Server &serv, Client &client) {
+	(void)serv;
+	PRINT_FUNC();
+	if (client.request.path_info.size()) {
+		struct stat st;
+
+    	if (stat(client.request.path_info.c_str(), &st) == 0) {
+        	if (S_ISREG(st.st_mode) != 0) {
+				int del = remove(client.request.path_info.c_str());
+				if (!del) {
+					PRINT_WIN("Deleting file");
+					client.request.file_content = "<html><head><title>Webserv</title></head><body><h1>The requested file has been deleted</h1></body></html>";
+				}
+				else {
+					PRINT_ERR("Couldnt delete file");
+					client.request.set_error(400);
+				}
+        	}
+        	else {
+				client.request.set_error(400);
+        		PRINT_ERR("Custom error page is a directory");
+			}
+      	}
+      	else {
+			client.request.set_error(404);
+        	PRINT_ERR("Custom error page does not exist");
+	  	}
+    }
+	client.request.complete_file = true;
+}
+
 void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	if (req.in_response == false)
 		PRINT_FUNC();
@@ -211,8 +242,10 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 	PRINT_WIN("Using cgi = " + to_string(req.using_cgi));
 	if (req.using_cgi == true)
 		req.get_cgi(client, config);
-	else
+	else if (comp(req.method, "delete") == false)
 		req.get_request(config._serv, client, index);
+	else
+		delete_file(config._serv[index], client);
 	if (req.complete_file == true) {
 		if (req.header_code != 0) {
 			send_error(client._sock, req.header_code, client, error_path(config._serv[index], req.header_code));

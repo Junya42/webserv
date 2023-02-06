@@ -121,7 +121,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   }
   
   std::cout << std::endl << "_____________________________" << std::endl;
-
+  if (comp(method, "delete"))
+    has_body = false;
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
@@ -365,7 +366,6 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename.pop_back();
           if ( parent._name.size())
           {
-            PRINT_LOG("parent name size");
             std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
 
             PRINT_LOG(file_path);
@@ -385,7 +385,6 @@ int  Request::parse_body(Client &parent) {
           }
           else
           {
-            PRINT_LOG("else name sizeeeeeeeeeeeeee");
             std::string file_path("/tmp/private_webserv/" + parent._host + "/" + "unknown");
             struct stat st;
 
@@ -548,8 +547,6 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
         request += buff[i];
     }
     if (int_bytes < 0) {
-      PRINT_ERR("WHYYY");
-      sleep(1);
       return -1;
     }
     else if (int_bytes == 0) {
