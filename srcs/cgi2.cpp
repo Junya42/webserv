@@ -46,8 +46,8 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
         i++;
     }
     env[i] = NULL;
-    for (size_t x = 0; env[x]; x++)
-        PRINT_LOG("ENV[" + to_string(x) + "] : " + env[x]);
+    /*for (size_t x = 0; env[x]; x++)
+        PRINT_LOG("ENV[" + to_string(x) + "] : " + env[x]);*/
     std::cout << std::endl;
     return env;
 }
@@ -91,8 +91,8 @@ char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
             }
             break;
     }
-    for (size_t i = 0; args[i]; i++)
-        PRINT_LOG("ARGS[" + to_string(i) + "] : " + args[i]);
+    /*for (size_t i = 0; args[i]; i++)
+        PRINT_LOG("ARGS[" + to_string(i) + "] : " + args[i]);*/
     std::cout << std::endl;
     return args;
 }
@@ -196,7 +196,6 @@ void    Request::get_cgi_answer(Client &client) {
     PRINT_FUNC();
     answer.clear();
     if (comp(path, "download") == false && comp(path, "delete") == false) {
-        PRINT_ERR("ENTERING IF");
         if (method == "POST")
             status = "HTTP/1.1 201 Created\n";
         if (comp(query, "disconnect=true") == true) {
@@ -235,7 +234,6 @@ void    Request::get_cgi_answer(Client &client) {
         //answer += "\n\n";
     }
     else {
-        PRINT_ERR("ENTERING ELSE");
         answer = "HTTP/1.1 200 OK\n";
         answer += file_content;
         //answer += "\n\n";

@@ -60,7 +60,6 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         path = path.substr(0, pos - 1);
         PRINT_WIN("header path info: " + path_info);
         PRINT_WIN("header path" + path);
-        PRINT_WIN("pathinfo size: " + to_string(path_info.size()));
       //}
     }
     else if (comp(path, "errors/style.css")) {
@@ -87,7 +86,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       set_error(400);
     }
     header[key] = value;
-    std::cout << key << ": " << value << std::endl;
+    //std::cout << key << ": " << value << std::endl;
     if (comp(key, "Content-Length") == true) {
       content_lenght = atoi(value.c_str());
       initial_lenght = content_lenght;
@@ -107,6 +106,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
     else if (comp(key, "Host") == true) {
       host = value;
+      PRINT_LOG(host);
     }
     else if (comp(key, "Cookie") == true && parent._fav == false) {
       auth = true;

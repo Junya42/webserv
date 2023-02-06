@@ -178,7 +178,6 @@ size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 		erase(tmpname, " ");
 		erase(tmpport, " ");
 		if (client._host == tmpname && client._hostsport == tmpport) {
-			PRINT_WIN("Found serv from client");
 			PRINT_WIN(tmpname + ":" + client._hostsport);
 			return i;
 		}

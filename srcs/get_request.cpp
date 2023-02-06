@@ -6,7 +6,6 @@
 
 void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag) {
 
-  PRINT_FUNC();
   PRINT_ERR("Path: " + path_info);
   PRINT_ERR("Log: " + to_string(client._log));
   PRINT_ERR("Username: " + client._name);
@@ -127,7 +126,6 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
 }
 
 void  Request::get_request(std::vector<Server> &serv, Client &client, int index) {
-  PRINT_FUNC();
   std::ifstream file;
   int bsize = buff_size * 2;
   char buff[bsize];
@@ -241,13 +239,10 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime, size_
 }
 
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
-  PRINT_FUNC();
-  //std::cout << client << std::endl;
   std::ostringstream s;
   bool redirect = false;
   PRINT_WIN(path);
   if (comp(path, "download") == false) {
-    //if (1 == 1) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
