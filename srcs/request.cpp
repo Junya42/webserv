@@ -63,6 +63,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         PRINT_WIN("pathinfo size: " + to_string(path_info.size()));
       //}
     }
+    else if (comp(path, "errors/style.css")) {
+      path = "/errors/style.css";
+      path_info = path;
+    }
 
   }
   PRINT_LOG(method);

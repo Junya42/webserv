@@ -87,9 +87,12 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         DIR *dir = opendir(file_path.c_str());
         if (dir)
           file_path += "/index.html";
-        found = true;
-        PRINT_WIN("Found filename");
-        PRINT_WIN(file_path);
+        struct stat st;
+        if (stat(file_path.c_str(), &st) == 0) {
+          found = true;
+          PRINT_WIN("Found filename");
+          PRINT_WIN(file_path);
+        }
         break ;
       }
     }
