@@ -3,7 +3,6 @@
 #include <arpa/inet.h>
 #include <cstdlib>
 
-const int PORT = 8080;
 const int MAX_EVENTS = 10;
 
 int init_server_socket(int port, const char *ip) {
