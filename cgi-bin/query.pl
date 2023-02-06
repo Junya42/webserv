@@ -95,7 +95,7 @@ print ("
       $val =~ s/\+/ /g;
       $val =~ s/%(\w\w)/sprintf("%c", hex($1))/ge;
       print($var, ' = ', $val, "<br/>\n");
-      if ($val eq "easyflag"){
+      if ($val eq "easyctf"){
          print("<a href=\"https://corgiorgy.com\" target=\"_self\" class=\"glass-button\">Success !</a>\n");
       }else{
          print("<button class=\"glass-button\">Failure</button>\n");

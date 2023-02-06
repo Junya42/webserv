@@ -17,10 +17,10 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);
   }
-  else if (serv[index]._redirect && name.size() && auth == true && (path_info== "/" || path_info == "/html" || path_info == "/html/login")) {
+  else if (serv[index]._redirect && name.size() && auth == true && (path_info== "/" || path_info == "/html" || comp(path, "/login") == true)) {
     auth_redirect = 1;
     tmp_path = "/user";
-    //PRINT_WIN("Auth redirect");
+    PRINT_WIN("Auth redirect");
   }
   else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
