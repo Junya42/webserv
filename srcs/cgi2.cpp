@@ -184,6 +184,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
     }
     fclose(inFile);
     fclose(outFile);
+    fclose(errFile);
     std::cout << "end of cgi" << std::endl;
     if (comp(cgi_executor, "python") == true)
         std::cout << "\033[1;32m" << file_content << "\033[0m" << std::endl;

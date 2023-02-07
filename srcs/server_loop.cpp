@@ -1,8 +1,21 @@
 #include "../includes/socket.hpp"
+#include <signal.h>
 
-//const int PORT = 8080;
 const int MAX_EVENTS = 100;
+int	signalcheck=0;
 
+void siginthandle(int sig) {
+	(void)sig;
+	signalcheck = 1;
+	PRINT_LOG("Caught SIG INT");
+	signal(SIGINT, SIG_IGN);
+}
+
+void	signalhandler(void) {
+	signal(SIGINT, siginthandle);
+	signal(SIGQUIT, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
+}
 
 std::vector<int> create_servers(std::vector<Server> &servconf) {
 	std::vector<int> server(servconf.size());
@@ -42,16 +55,10 @@ int	check_server_event(int fd, std::vector<Server> &server) {
 
 	std::string _host = to_string(myIP);
 	std::string _port = to_string(host_port);
-	//PRINT_LOG("_host = " + _host);
-	//PRINT_LOG("_port = " + _port);
 	for (size_t i = 0; i < server.size(); i++) {
-		//PRINT_LOG("client socket: " + to_string(fd));
-		//PRINT_LOG("serv socket: " + to_string(server[i]._sock));
 		std::string tmpname = server[i]._ip;
 		std::string	tmpport = server[i]._sport;
-		//erase(tmpname, " ");
 		erase(tmpport, " ");
-		//PRINT_LOG(tmpname + ":" + _host + "/" + tmpport + ":" + _port);
 		if (_host == tmpname && _port == tmpport) {
 			PRINT_WIN("Found matching socket");
 			return i;
@@ -92,6 +99,7 @@ void	server_handler(Config &config, char **env) {
 	Client tmp;
 	std::vector<Client> clientlist;
 
+	signalhandler();
 	server = create_servers(config._serv);
 	if (server.empty())
 		return ;
@@ -106,6 +114,10 @@ void	server_handler(Config &config, char **env) {
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		if (signalcheck == 1) {
+			PRINT_LOG("Exiting server");
+			break ;
+		}
 		for (size_t i = 0; i < num_events; i++) {
 			index = check_server_event(events[i].data.fd, config._serv);
 			if (index != -1 && events[i].data.fd == server[index]) {
@@ -143,7 +155,6 @@ void	server_handler(Config &config, char **env) {
 						std::cout << "##############################" << std::endl;
 				}
 				i = save_index;
-				//std::cout << std::endl;
 			}
 			else if (events[i].events & EPOLLOUT){
 				PRINT_WIN("EPOLLOUT Client event");

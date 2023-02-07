@@ -84,8 +84,10 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         }
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
-        if (dir)
+        if (dir) {
           file_path += "/index.html";
+          closedir(dir);
+        }
         struct stat st;
         if (stat(file_path.c_str(), &st) == 0) {
           found = true;

@@ -3,7 +3,7 @@
 #include <arpa/inet.h>
 #include <cstdlib>
 
-const int MAX_EVENTS = 10;
+const int MAX_EVENTS = 100;
 
 int init_server_socket(int port, const char *ip) {
 	int server;
@@ -64,6 +64,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 		exit(errno);
 	}
 	fcntl(client, F_SETFL, O_NONBLOCK);
+	std::memset(&client_event, 0, sizeof(client_event));
 	client_event.events = EPOLLIN; 
 	client_event.data.fd = client;
 	//client_event.data.u32 = *id;
@@ -142,6 +143,7 @@ int	init_epoll(std::vector<int> &server) {
 		}
 		exit(errno);
 	}
+	std::memset(&event, 0, sizeof(event));
 	event.events = EPOLLIN;
 	size_t check = 0;
 	for (size_t i = 0; i < server.size(); i++) {
