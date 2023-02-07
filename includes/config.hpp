@@ -13,12 +13,15 @@ class Config {
     Config(void);
     ~Config(void);
 
-    void  add_config(std::string &config);
-    void  init_mime(void);
+    int  add_config(std::string &config);
+    int  init_mime(void);
 
     std::vector<Server> _serv;
     std::map<std::string, std::string> _mime;
     std::string _pwd;
+
+    unsigned long long connection_count;
+	  unsigned long long request_count;
 };
 
 std::ostream &operator<<(std::ostream &nstream, Config &config);

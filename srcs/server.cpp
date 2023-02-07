@@ -27,6 +27,8 @@ Server::Server(void) {
   _redirect = false;
   _login = false;
   _port = -1;
+  _connection = 0;
+  _requests = 0;
 }
 
 void  Server::clear(void) {
@@ -48,7 +50,7 @@ void  Server::clear(void) {
   _loc.clear();
 }
 
-void  Server::setup_server(std::vector<std::string> &vec) {
+int  Server::setup_server(std::vector<std::string> &vec) {
 //  std::cout << config << std::endl << "______________________" << std::endl;
 //std::cout << std::endl << "__________________________________________" << std::endl;
   std::string location_conf;
@@ -92,13 +94,13 @@ void  Server::setup_server(std::vector<std::string> &vec) {
       if (key == "listen") {
         if (value.size() > 6 || value.size() < 1) {
           PRINT_ERR("Error Port size");
-          exit(0);
+          return -1;
         } 
         for (std::string::iterator it = value.begin(); it != value.end(); it++) {
           if (!isdigit(*it) && *it != ' ') {
             PRINT_ERR("Error Port does not contain only digits");
             PRINT_ERR(value);
-            exit(0);
+            return -1;
           }
         }
         _port = atoi(value.c_str());
@@ -153,7 +155,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
     if (!_name.size())
       PRINT_ERR("Name error");
     PRINT_ERR("Error server config");
-    exit(1);
+    return -1;
   }
   struct in_addr a;
   struct hostent *lh = gethostbyname(_name.substr(1).c_str());
@@ -170,6 +172,7 @@ void  Server::setup_server(std::vector<std::string> &vec) {
         _loc.push_back(loc);
   }
   _valid = true;
+  return 0;
  // std::cout << "___________________________________________________" << std::endl;
 }
 

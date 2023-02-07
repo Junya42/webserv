@@ -1,0 +1,2 @@
+http://localhost:8080
+http://webserv.42.com:65535

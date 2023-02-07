@@ -81,7 +81,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     if (line.size()) {
       std::istringstream line_stream(line);
       std::getline(line_stream, key, ':');
-      if (line_stream.rdbuf()->in_avail() < 1)
+      if (key.size() < 1 || line_stream.rdbuf()->in_avail() < 1)
         break;
       std::getline(line_stream, value);
     }
@@ -92,41 +92,44 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
     header[key] = value;
     //std::cout << key << ": " << value << std::endl;
-    if (comp(key, "Content-Length") == true) {
-      content_lenght = atoi(value.c_str());
-      initial_lenght = content_lenght;
-      body_size = content_lenght;
-      has_size = true;
-      has_body = true;
-    }
-    else if (comp(key, "Content-type") == true) {
-      std::istringstream value_stream(value);
-      std::getline(value_stream, type, ';');
-      std::getline(value_stream, boundary, '=');
-      std::getline(value_stream, boundary);
-      //type = value;
-      if (content_lenght < 1)
-        content_lenght = 1;
-      has_body = true;
-    }
-    else if (comp(key, "Host") == true) {
-      host = value;
-      PRINT_LOG(host);
-    }
-    else if (comp(key, "Cookie") == true && parent._fav == false) {
-      auth = true;
-      parent._cookie = value;
-      cookie = value;
-    }
-    else if (comp(key, "Content-Type: multipart/form-data") == true) {
-      std::istringstream bound(value);
-      std::getline(bound, key, '=');
-      if (bound.rdbuf()->in_avail() < 1)
-        break;
-      std::getline(bound, boundary);
-    }
-    else if (comp(key, "transfer-encoding") == true) {
-      transfer_encoding = value;
+    if (value.size()) {
+      if (comp(key, "Content-Length") == true) {
+        content_lenght = atoi(value.c_str());
+        initial_lenght = content_lenght;
+        body_size = content_lenght;
+        has_size = true;
+        has_body = true;
+      }
+      else if (comp(key, "Content-type") == true) {
+        std::istringstream value_stream(value);
+        std::getline(value_stream, type, ';');
+        std::getline(value_stream, boundary, '=');
+        std::getline(value_stream, boundary);
+        //type = value;
+        if (content_lenght < 1)
+          content_lenght = 1;
+        has_body = true;
+      }
+      else if (comp(key, "Host") == true) {
+        host.clear();
+        host = value;
+        PRINT_LOG(host);
+      }
+      else if (comp(key, "Cookie") == true && parent._fav == false) {
+        auth = true;
+        parent._cookie = value;
+        cookie = value;
+      }
+      else if (comp(key, "Content-Type: multipart/form-data") == true) {
+        std::istringstream bound(value);
+        std::getline(bound, key, '=');
+        if (bound.rdbuf()->in_avail() < 1)
+          break;
+        std::getline(bound, boundary);
+      }
+      else if (comp(key, "transfer-encoding") == true) {
+        transfer_encoding = value;
+      }
     }
     line_count++;
   }
@@ -287,7 +290,7 @@ void  Request::get_body(int client) {
 
     while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) { //DANGER EXIT
       if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
-        exit(0);
+        set_error(400);
       }
       tmp += buff[0];
       if (erase(tmp, "\r\n") == true)
@@ -295,13 +298,13 @@ void  Request::get_body(int client) {
       chunk_size++;
       if (chunk_size > 6) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
                             //PRINT_ERR("Excessive chunk size");
-        exit(0);
+        set_error(400);
       }
     }
     chunk_size = atoi(tmp.c_str());
     size_t  compchunk = chunk_size;
     if (compchunk >= buff_size - 1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
-      exit(0);
+      set_error(400);
     }
     tmp.clear(); //ADDITION WITH VECTOR BUFF
                  //if ((int_bytes = read(client, buff, chunk_size)) > 0)
@@ -310,7 +313,7 @@ void  Request::get_body(int client) {
         tmp += buff[i];
     if (int_bytes == -1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
                            //PRINT_ERR("Couldn't read from client");
-      exit(0);
+      set_error(400);
     }
     if (tmp == "\r\n") {
       complete_body = true;
@@ -337,6 +340,10 @@ std::string Request::check_method(std::string &method) {
 int Request::parse_header(void) {
   std::string method_buffer;
 
+  if (method.empty()) {
+    set_error(400);
+    return -1;
+  }
   method_buffer = check_method(method);
   status = method_buffer + "\n";
   if (method_buffer.size() > strlen("HTTP/1.1 200 OK ")) {
@@ -545,7 +552,8 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
   std::string request;
   int int_bytes = 0;
   //char buff[buff_size];
-  name = parent._name;
+  //if (parent._name)
+  //name = parent._name;
   std::vector<unsigned char> buff(buff_size);
 
   if (in_response == true) {
@@ -585,6 +593,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
   }
   if (parsed_body == true) {
     PRINT_ERR("return 1");
+    in_use = false;
     return 1;
   }
   PRINT_ERR("return 2");
@@ -611,7 +620,23 @@ Request::Request(void) {
   bytes = 0;
   current_bytes = 0;
   body_size = 0;
+
+  method.clear();
+  path.clear();
+  version.clear();
+  host.clear();
+  index.clear();
+  cookie.clear();
+  URI.clear();
+  transfer_encoding.clear();
+  type.clear();
+  key.clear();
+  value.clear();
+  boundary.clear();
   link.clear();
+  name.clear();
+  status.clear();
+  content_type.clear();
   file_content.clear();
   file_path.clear();
   file_type.clear();
@@ -629,6 +654,11 @@ Request::Request(void) {
   chunked = false;
   nread = 0;
   cgi_size = 0;
+  header.clear();
+  body.clear();
+  body_str.clear();
+  multi_body.clear();
+  answer.clear();
 }
 
 Request::~Request(void) {

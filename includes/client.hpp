@@ -174,13 +174,22 @@ class Client {
       _id = 0;
       _sock = 0;
       _port = 0;
+      _myport = 0;
+      _request_count = 0;
       _cookie.clear();
       _addr.clear();
       _name.clear();
       _lastname.clear();
       _oldname.clear();
       _path.clear();
+      _host.clear();
+      _hostsport.clear();
+      _hostip.clear();
+      _ip.clear();
+      _sport.clear();
+
       _files.clear();
+      _info.clear();
       request.clear();
     }
 
@@ -191,6 +200,7 @@ class Client {
     unsigned short  _port;
     unsigned int    _myport;
     size_t  _request_count;
+    
     std::string _cookie;
     std::string _addr;
     std::string _oldname;

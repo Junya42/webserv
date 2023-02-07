@@ -197,8 +197,9 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
       ascii = std::to_string(file_size - read_size);
       //PRINT_LOG("Filesize - readsize: " + ascii);
       file_content.clear();
-      for (size_t i = 0; i < read_size; i++)
-        file_content += buff[i];
+      for (size_t i = 0; i < read_size; i++) {
+        file_content.push_back(buff[i]);
+      }
       //file_content = buff; 
       /*if (found_user == false && comp(content_type, "html") == true) {
         found_user = replace(file_content, "$@", client._name);

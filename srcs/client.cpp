@@ -10,6 +10,13 @@ Client::Client(void) {
   _port = -1;
   _id = -1;
   _request_count = 0;
+  _addr.clear();
+  _name.clear();
+  _lastname.clear();
+  _cookie.clear();
+  _info.clear();
+  std::memset(&addr, 0, sizeof(addr));
+  request.clear();
   addr_len = sizeof(addr);
 };
 

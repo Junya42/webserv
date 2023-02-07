@@ -19,7 +19,7 @@ class Server {
     Server(std::string &config);
     ~Server(void);
     //void  setup_server(std::string & config);
-    void  setup_server(std::vector<std::string> &vec);
+    int  setup_server(std::vector<std::string> &vec);
     void  clear(void);
     std::string   &get_name(void);
     std::string   &get_index(void);
@@ -46,6 +46,8 @@ class Server {
     ssize_t     _bodysize;
     int         _port;
     int         _sock;
+    unsigned long long  _connection;
+    unsigned long long _requests;
     std::vector<Location> _loc;
     std::map<std::string, std::string> cgi;
     std::map<int, std::string> errors;

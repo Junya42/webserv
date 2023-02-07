@@ -11,6 +11,7 @@ int init_server_socket(int port, const char *ip) {
 	int my_bool = 1;
 	struct sockaddr_in server_addr;
 
+	PRINT_LOG(to_string(ip) + " : " + to_string(port));
 	server = socket(AF_INET, SOCK_STREAM, 0);
 	if (server == -1) {
 		std::cout << "Error : SOCKET" << std::endl;
@@ -21,12 +22,14 @@ int init_server_socket(int port, const char *ip) {
 
 		std::cout << "Error : SETSOCKOPT" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
+		close(server);
 		return -1;
 	}
 	if (setsockopt(server, SOL_SOCKET, SO_REUSEPORT, &my_bool, sizeof(my_bool)) == -1) {
 
 		std::cout << "Error : SETSOCKOPT" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
+		close(server);
 		return -1;
 	}
 	std::memset(&server_addr, 0, sizeof(server_addr));
@@ -37,12 +40,14 @@ int init_server_socket(int port, const char *ip) {
 	if (bind(server, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr)) == -1) {
 		std::cout << "Error : BIND" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
+		close(server);
 		return -1;
 	}
 
 	if (listen(server, 5) == -1) {
 		std::cout << "Error : LISTEN" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
+		close (server);
 		return -1;
 	}
 	return server;
@@ -141,7 +146,7 @@ int	init_epoll(std::vector<int> &server) {
 		for (size_t i = 0; i < server.size(); i++) {
 			close(server[i]);
 		}
-		exit(errno);
+		return -1;
 	}
 	std::memset(&event, 0, sizeof(event));
 	event.events = EPOLLIN;
@@ -151,19 +156,14 @@ int	init_epoll(std::vector<int> &server) {
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server[i], &event) == -1) {
 			std::cout << "Error : EPOLL_CTL" << std::endl;
 			std::cout << std::strerror(errno) << std::endl;
-			close(epoll_fd);
-			close(server[i]);
-			exit(errno);
+			return -1;
 		}
 		else
 			check++;
 	}
 	if (check == 0) {
-		close(epoll_fd);
-		for (size_t i = 0; i < server.size(); i++)
-			close(server[i]);
 		PRINT_ERR("Could't add any server socket to epoll instance");
-		exit(0);
+		return -1;
 	}
 	return epoll_fd;
 }
@@ -176,6 +176,7 @@ size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 		erase(tmpport, " ");
 		if (client._host == tmpname && client._hostsport == tmpport) {
 			PRINT_WIN(tmpname + ":" + client._hostsport);
+			serv[i]._requests++;
 			return i;
 		}
 	}

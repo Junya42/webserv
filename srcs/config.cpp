@@ -12,13 +12,18 @@ Config::Config(void) {
   getcwd(cwd, sizeof(cwd));
   _pwd = cwd;
   _pwd += "/";
+  connection_count = 0;
+  request_count = 0;
+  _serv.clear();
+  _mime.clear();
 }
 
 Config::~Config(void) {
 }
 
-void  Config::add_config(std::string &config) {
-  this->init_mime();
+int  Config::add_config(std::string &config) {
+  if (this->init_mime() == -1)
+    return -1;
   PRINT_FUNC();
   //std::cout << std::endl << "---------------" << std::endl;
   std::istringstream stream(config);
@@ -28,11 +33,7 @@ void  Config::add_config(std::string &config) {
   Server serv;
 
   while (std::getline(stream, line)) {
-  //  std::cout << "\033[1;36m" << line << "\033[0m" << std::endl;
-    //std::cout << "config line = " << line << std::endl;
-      //std::cout << "line[0] = " << static_cast<int>(line[0]) << std::endl;
     if (line == "{" || line == "}" || line == "\n" || !line[0]) {
-      //std::cout << "line[0] = " << static_cast<int>(line[0]) << std::endl;
       continue ;
     }
     if (line == "server") {
@@ -41,12 +42,10 @@ void  Config::add_config(std::string &config) {
         for (unsigned long int j = 0; j < vec.size(); j++) {
           vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
         }
-        //std::cout << "CONF: " << std::endl << conf << std::endl << "XXXXXXXXXXXXX" << std::endl << std::endl;
-        //serv.setup_server(conf);
-        serv.setup_server(vec);
+        if (serv.setup_server(vec) == -1)
+          return -1;
         _serv.push_back(serv);
         serv.clear();
-        //  std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
       }
       vec.clear();
       conf.clear();
@@ -60,11 +59,10 @@ void  Config::add_config(std::string &config) {
     conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
     for (unsigned long int j = 0; j < vec.size(); j++)
       vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
-    //serv.setup_server(conf);
-    serv.setup_server(vec);
+    if (serv.setup_server(vec) == -1)
+      return -1;
     _serv.push_back(serv);
     conf.clear();
-    //std::cout << std::endl << "CONFIGURATION:" << std::endl << conf << std::endl << std::endl;
   }
   for (std::vector<Server>::iterator it = _serv.begin(); it != _serv.end(); it++) {
     if (it->_ip.compare("error") == 0)
@@ -95,18 +93,19 @@ void  Config::add_config(std::string &config) {
       if (stat(tmp.c_str(), &st) == -1)
         if (mkdir(tmp.c_str(), 0777) == -1) {
           PRINT_ERR("Couldn't create server directory for : " + _serv[i]._host);
-          exit(0);
+          return -1;
         }
     }
     i++;
   }
   if (_serv.empty() == true) {
     PRINT_ERR("No functionnal server found");
-    exit(0);
+    return -1;
   }
+  return 0;
 }
 
-void  Config::init_mime(void) {
+int  Config::init_mime(void) {
   PRINT_FUNC();
   _mime.clear();
   std::ifstream mime_reader;
@@ -134,8 +133,9 @@ void  Config::init_mime(void) {
     PRINT_ERR("Can't handle requests");
     PRINT_ERR("Please make sure your mime_type file located at configs/ is readable");
     PRINT_ERR("Exiting server");
-    exit(0);
+    return -1;
   }
+  return 0;
  /* for (std::map<std::string, std::string>::iterator it = _mime.begin(); it != _mime.end(); it++) {
     std::cout << it->first << ":" << it->second << std::endl;
   }*/

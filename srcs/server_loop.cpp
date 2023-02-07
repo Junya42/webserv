@@ -29,8 +29,7 @@ std::vector<int> create_servers(std::vector<Server> &servconf) {
 				close(server[j]);
 			}
 			server.erase(server.begin(), server.end());
-			return server;
-			
+			return server;		
 		}
 		servconf[i]._sock = server[i];
 		PRINT_LOG("Server" + servconf[i]._name + " socket : " + to_string(server[i]));
@@ -76,9 +75,12 @@ int	check_server_event(int fd, std::vector<Server> &server) {
 
 std::string &hostname(int server, Config &config) {
 	for (std::vector<Server>::iterator it = config._serv.begin(); it != config._serv.end(); it++) {
-		if (server == it->_sock)
+		if (server == it->_sock) {
+			it->_connection++;
 			return it->_name;
+		}
 	}
+	config._serv[0]._connection++;
 	return config._serv[0]._name;
 }
 
@@ -88,6 +90,31 @@ std::string &port(int server, Config &config) {
 			return it->_sport;
 	}
 	return config._serv[0]._sport;
+}
+
+void	clear_server(std::vector<int> &server, int epoll_fd, Config &config) {
+	PRINT_LOG("Exiting server");
+	sleep(1);
+	PRINT_LOG("Remaining clients sockets: " + to_string(csocks.size()));
+	PRINT_LOG("Server socket list size: " + to_string(server.size()));
+	for (std::map<int, int>::iterator it = csocks.begin(); it != csocks.end(); it++)
+		if (it->second != 0)
+			close(it->second);
+	for (size_t j = 0; j < server.size(); j++)
+		close(server[j]);
+	close(epoll_fd);
+
+	std::cout << std::endl << " Total Requests count: \033[32m" << to_string(config.request_count)
+			<< "\033[0m" << std::endl << " Total connection count: \033[32m"
+			<< to_string(config.connection_count) << "\033[0m" << std::endl << std::endl;
+
+	for (size_t x = 0; x < config._serv.size(); x++) {
+		std::cout << "\t\033[1;37m" << config._serv[x]._host << "\033[0m" << std::endl
+			<< "\t\t" << "Connection count: \033[32m" << to_string(config._serv[x]._connection) << std::endl
+			<< "\t\t" << "\033[0mRequest count: \033[32m" << to_string(config._serv[x]._requests) << std::endl
+			<< "\033[0m____________________________________________"
+			<< std::endl << std::endl;
+	}
 }
 
 void	server_handler(Config &config, char **env) {
@@ -101,12 +128,14 @@ void	server_handler(Config &config, char **env) {
 	Client tmp;
 	std::vector<Client> clientlist;
 
+	clientlist.clear();
 	signalhandler();
 	server = create_servers(config._serv);
 	if (server.empty())
 		return ;
 	epoll_fd = init_epoll(server);
-
+	if (epoll_fd == -1)
+		return clear_server(server, epoll_fd, config);
 	struct epoll_event events[MAX_EVENTS];
 
 	int curr_fd = 1;
@@ -116,17 +145,17 @@ void	server_handler(Config &config, char **env) {
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
-		if (signalcheck == 1) {
-			PRINT_LOG("Exiting server");
+		if (signalcheck == 1)
 			break ;
-		}
 		for (size_t i = 0; i < num_events; i++) {
 			index = check_server_event(events[i].data.fd, config._serv);
 			if (index != -1 && events[i].data.fd == server[index]) {
+				config.connection_count++;
 				PRINT_WIN("Server event"); 
 				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));
 			}
 			else if (events[i].events & EPOLLIN) {
+				config.request_count++;
 				client = events[i].data.fd;
 				save_index = i;
 				i = find_client_in_vector(clientlist, client, i, events[i].data.u32);
@@ -174,12 +203,6 @@ void	server_handler(Config &config, char **env) {
 			}
 		}
 	}
-	PRINT_LOG("Client sockets size: " + to_string(csocks.size()));
-	PRINT_LOG("Serverlist size: " + to_string(server.size()));
-	for (std::map<int, int>::iterator it = csocks.begin(); it != csocks.end(); it++)
-		if (it->second != 0)
-			close(it->second);
-	for (size_t j = 0; j < server.size(); j++)
-		close(server[j]);
-	close(epoll_fd);
+	PRINT_LOG("Clientlistsize: " + to_string(clientlist.size()));
+	clear_server(server, epoll_fd, config);
 }

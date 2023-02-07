@@ -25,13 +25,15 @@ std::string	get_config(char *str) {
 	fd = -1;
 	if (stat(config_file.c_str(), &path) == -1) {
 		std::cerr << "Can't open configuration file" << std::endl;
-		exit(1);
+		config_file.clear();
+		return config_file;
 	}
 	if (S_ISREG(path.st_mode) != 0)
 		fd = open(config_file.c_str(), O_RDONLY);
 	if (fd < 0) {
 		std::cerr << "Can't open configuration file" << std::endl;
-		exit(1);
+		config_file.clear();
+		return config_file;
 	}
 	int bytes = 1;
 	std::string config_buff;
@@ -46,20 +48,16 @@ std::string	get_config(char *str) {
 }
 
 int main(int ac, char **av, char **env) {
-
-	std::string test;
 	Config	config;
 	std::string	config_buff;
 
 	switch (ac) {
 		case 1:
-			test = "Default configuration";
-			std::cout << "test: " << test << std::endl;
+			std::cout << "Running: Default configuration" << std::endl;
 			config_buff = get_config(NULL);
 			break;
 		case 2:
-			test = av[1];
-			std::cout << "test: " << test << std::endl;
+			std::cout << "Running: " << av[1] << std::endl;
 			config_buff = get_config(av[1]);
 			break;
 		default:
@@ -68,7 +66,8 @@ int main(int ac, char **av, char **env) {
 				<< "       ./webserv [configuration file]" << std::endl;
 			return 1;
 	}
-	std::cout << "add config" << std::endl;
+	if (config_buff.size() < 1)
+		return 1;
 	config.add_config(config_buff);
 	std::cout << config << std::endl;
 	int p_id;
