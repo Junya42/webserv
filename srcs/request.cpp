@@ -78,10 +78,15 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       complete_header = true;
       break ;
     }
-    std::istringstream line_stream(line);
-    std::getline(line_stream, key, ':');
-    std::getline(line_stream, value);
-
+    if (line.size()) {
+      std::istringstream line_stream(line);
+      std::getline(line_stream, key, ':');
+      if (line_stream.rdbuf()->in_avail() < 1)
+        break;
+      std::getline(line_stream, value);
+    }
+    else
+      break;
     if (header.find(key) != header.end()) {
       set_error(400);
     }
@@ -116,6 +121,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     else if (comp(key, "Content-Type: multipart/form-data") == true) {
       std::istringstream bound(value);
       std::getline(bound, key, '=');
+      if (bound.rdbuf()->in_avail() < 1)
+        break;
       std::getline(bound, boundary);
     }
     else if (comp(key, "transfer-encoding") == true) {
@@ -181,6 +188,8 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
       std::string key;
       std::string value;
       while (std::getline(line_stream, key, '=')) {
+        if (line_stream.rdbuf()->in_avail() < 1)
+            break;
         std::getline(line_stream, value, '&');
         body[key] = value;
         if (comp(key, "fname")) {
@@ -469,6 +478,8 @@ int  Request::parse_body(Client &parent) {
     while (std::getline(bodystream, line)) {
       std::istringstream line_stream(line);
       while (std::getline(line_stream, key, '=')) {
+        if (line_stream.rdbuf()->in_avail() < 1)
+          break ;
         std::getline(line_stream, value, '&');
         body[key] = value;
       }

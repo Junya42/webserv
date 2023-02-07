@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 const int MAX_EVENTS = 100;
+extern std::map<int, int> csocks;
 
 int init_server_socket(int port, const char *ip) {
 	int server;
@@ -60,8 +61,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	if (client == -1) {
 		std::cout << "Error : ACCEPT" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
+		return -1;
 	}
 	fcntl(client, F_SETFL, O_NONBLOCK);
 	std::memset(&client_event, 0, sizeof(client_event));
@@ -71,10 +71,9 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &client_event) < 0) {
 		std::cout << "Error: EPOLL_CTL Client" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(client);
-		close(server);
-		exit(errno);
+		return -1;
 	}
+	csocks[client] = client;
 	clientinfo._port = clientinfo.addr.sin_port;
 
 	/*********************************************/
@@ -126,6 +125,7 @@ int	remove_client(int client, std::vector<Client>& clientlist, int i, int *curr_
 	if ((clientlist[i]._name.size() < 1 || clientlist[i]._cookie.size() < 1) && clientlist.size()) {
 		clientlist.erase(clientlist.begin() + i);
 	}
+	csocks.erase(client);
 	close(client);
 	return 1;
 }
@@ -256,6 +256,7 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
+		csocks.erase(client._sock);
 		close(client._sock);
 		req.clear();
 	}

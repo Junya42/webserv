@@ -41,7 +41,7 @@ std::string	get_config(char *str) {
 		for (int i = 0; i < bytes; i++)
 			config_buff += buffer[i];
 	}
-
+	close(fd);
 	return config_buff;
 }
 
@@ -71,6 +71,10 @@ int main(int ac, char **av, char **env) {
 	std::cout << "add config" << std::endl;
 	config.add_config(config_buff);
 	std::cout << config << std::endl;
+	int p_id;
+
+	p_id = getpid();
+	PRINT_WIN("Process ID: " + to_string(p_id));
 	server_handler(config, env);
 	return 0;
 }

@@ -1,8 +1,10 @@
 #include "../includes/socket.hpp"
+#include "../includes/error.hpp"
 #include <signal.h>
 
 const int MAX_EVENTS = 100;
 int	signalcheck=0;
+std::map<int, int> csocks;
 
 void siginthandle(int sig) {
 	(void)sig;
@@ -156,15 +158,11 @@ void	server_handler(Config &config, char **env) {
 				}
 				i = save_index;
 			}
-			else if (events[i].events & EPOLLOUT){
-				PRINT_WIN("EPOLLOUT Client event");
-			}
 		}
 		for (size_t j = 0; j < clientlist.size(); j++)
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
-				//PRINT_LOG("Outside read : " + clientlist[j]._name);
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);
@@ -172,10 +170,16 @@ void	server_handler(Config &config, char **env) {
 				}
 			}
 			if (clientlist[j].request.in_response == true || status == 1) {
-				//PRINT_LOG("Outside answer");
 				answer_client(clientlist[j], clientlist[j].request, config, env);
 			}
 		}
 	}
-	//close(server);
+	PRINT_LOG("Client sockets size: " + to_string(csocks.size()));
+	PRINT_LOG("Serverlist size: " + to_string(server.size()));
+	for (std::map<int, int>::iterator it = csocks.begin(); it != csocks.end(); it++)
+		if (it->second != 0)
+			close(it->second);
+	for (size_t j = 0; j < server.size(); j++)
+		close(server[j]);
+	close(epoll_fd);
 }
