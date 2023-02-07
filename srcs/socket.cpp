@@ -76,6 +76,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &client_event) < 0) {
 		std::cout << "Error: EPOLL_CTL Client" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
+		close(client);
 		return -1;
 	}
 	csocks[client] = client;
