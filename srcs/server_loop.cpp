@@ -9,6 +9,14 @@ std::vector<int> create_servers(std::vector<Server> &servconf) {
 
 	for (size_t i  = 0; i < servconf.size(); i++) {
 		server[i] = init_server_socket(servconf[i]._port, servconf[i]._ip.c_str());
+		if (server[i] == -1) {
+			for (size_t j = 0; j < i; j++) {
+				close(server[j]);
+			}
+			server.erase(server.begin(), server.end());
+			return server;
+			
+		}
 		servconf[i]._sock = server[i];
 		PRINT_LOG("Server" + servconf[i]._name + " socket : " + to_string(server[i]));
 	}
@@ -85,6 +93,8 @@ void	server_handler(Config &config, char **env) {
 	std::vector<Client> clientlist;
 
 	server = create_servers(config._serv);
+	if (server.empty())
+		return ;
 	epoll_fd = init_epoll(server);
 
 	struct epoll_event events[MAX_EVENTS];

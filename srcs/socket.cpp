@@ -14,40 +14,35 @@ int init_server_socket(int port, const char *ip) {
 	if (server == -1) {
 		std::cout << "Error : SOCKET" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		exit(errno);
+		return -1;
 	}
 	if (setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &my_bool, sizeof(my_bool)) == -1) {
 
 		std::cout << "Error : SETSOCKOPT" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
+		return -1;
 	}
 	if (setsockopt(server, SOL_SOCKET, SO_REUSEPORT, &my_bool, sizeof(my_bool)) == -1) {
 
 		std::cout << "Error : SETSOCKOPT" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
+		return -1;
 	}
 	std::memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	//server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_addr.s_addr = inet_addr(ip);
 	server_addr.sin_port = htons(port);
 
 	if (bind(server, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr)) == -1) {
 		std::cout << "Error : BIND" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
+		return -1;
 	}
 
 	if (listen(server, 5) == -1) {
 		std::cout << "Error : LISTEN" << std::endl;
 		std::cout << std::strerror(errno) << std::endl;
-		close(server);
-		exit(errno);
+		return -1;
 	}
 	return server;
 }
