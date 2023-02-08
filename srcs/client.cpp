@@ -4,8 +4,11 @@
 #include <map>
 
 Client::Client(void) {
-  _log = true;
+  //_log = true; ------------> Temporary
+  _log = false;
+  _ready = false;
   _fav = false;
+  _index = -1;
   _sock = -1;
   _port = -1;
   _id = -1;

@@ -119,6 +119,7 @@ void	clear_server(std::vector<int> &server, int epoll_fd, Config &config) {
 
 void	server_handler(Config &config, char **env) {
 
+(void)env;
 	std::vector<int> server;
 	int	index;
 	int	client;
@@ -139,12 +140,17 @@ void	server_handler(Config &config, char **env) {
 	struct epoll_event events[MAX_EVENTS];
 
 	int curr_fd = 1;
+	int	c_index = 0;
 	int numclient = 0;
 	uint32_t	id = 1;
 	int save_index;
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		if (num_events == 1 && errno == EINTR) {
+			PRINT_ERR("ERRNO");
+			std::cout << std::strerror(errno) << std::endl;
+		}
 		if (signalcheck == 1)
 			break ;
 		for (size_t i = 0; i < num_events; i++) {
@@ -154,38 +160,52 @@ void	server_handler(Config &config, char **env) {
 				PRINT_WIN("Server event"); 
 				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));
 			}
-			else if (events[i].events & EPOLLIN) {
-				config.request_count++;
-				client = events[i].data.fd;
-				save_index = i;
-				i = find_client_in_vector(clientlist, client, i, events[i].data.u32);
-				status = clientlist[i].request.read_client(client, clientlist[i], tmp);
-				if (tmp._name.size()) {
-					clientlist.push_back(tmp);
-					tmp.clear();
+			else {
+				c_index = find_client_in_vector(clientlist, events[i].data.fd, i);
+				
+				if (events[i].events & EPOLLOUT) {
+					PRINT_WIN("EPOLLOUT");
+					int tmp;
+
+					tmp = events[i].data.fd;
+					clientlist[c_index]._ready = true;
+					events[i].events = EPOLLIN;
+					epoll_ctl(epoll_fd, EPOLL_CTL_MOD, tmp, &events[i]);
 				}
-				if (status == 1) {
-					PRINT_LOG("Status: 1");
-					answer_client(clientlist[i], clientlist[i].request, config, env);
+
+				if (events[i].events & EPOLLIN) {
+					config.request_count++;
+					client = events[i].data.fd;
+					save_index = i;
+					i = c_index;
+					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+					if (tmp._name.size()) {
+						clientlist.push_back(tmp);
+						tmp.clear();
+					}
+					if (status == 1) {
+						PRINT_LOG("Status: 1");
+						answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
+					}
+					else if (status == 0 && clientlist[i].request.in_use == false) {
+						PRINT_ERR("Client timed out or disconnected");
+						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+					}
+					else if (status == -1) {
+						PRINT_ERR("Error syscall read / write");
+						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+					}
+					reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
+					clientlist[i]._request_count++;
+					for (size_t x = 0; x < clientlist.size(); x++) {
+						std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
+						if (x == i)
+							std::cout << "\033[1;34m##############################\033[0m" << std::endl;
+						else
+							std::cout << "##############################" << std::endl;
+					}
+					i = save_index;
 				}
-				else if (status == 0 && clientlist[i].request.in_use == false) {
-					PRINT_ERR("Client timed out or disconnected");
-					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
-				}
-				else if (status == -1) {
-					PRINT_ERR("Error syscall read / write");
-					remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
-				}
-				reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
-				clientlist[i]._request_count++;
-				for (size_t x = 0; x < clientlist.size(); x++) {
-					std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
-					if (x == i)
-						std::cout << "\033[1;34m##############################\033[0m" << std::endl;
-					else
-						std::cout << "##############################" << std::endl;
-				}
-				i = save_index;
 			}
 		}
 		for (size_t j = 0; j < clientlist.size(); j++)
@@ -197,9 +217,17 @@ void	server_handler(Config &config, char **env) {
 					clientlist.push_back(tmp);
 					tmp.clear();
 				}
+				if (status == 0 && clientlist[j].request.in_use == false) {
+					PRINT_ERR("Client timed out or disconnected");
+					remove_client(clientlist[j]._sock, clientlist, j, &curr_fd, &numclient, epoll_fd);
+				}
+				else if (status == -1) {
+					PRINT_ERR("Error syscall read / write");
+					remove_client(clientlist[j]._sock, clientlist, j, &curr_fd, &numclient, epoll_fd);
+				}
 			}
 			if (clientlist[j].request.in_response == true || status == 1) {
-				answer_client(clientlist[j], clientlist[j].request, config, env);
+				answer_client(clientlist[j], clientlist[j].request, config, epoll_fd);
 			}
 		}
 	}

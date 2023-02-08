@@ -30,7 +30,7 @@ void  Request::set_error(int code) {
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
-  std::string line;
+  //std::string line;
   size_t  line_count = 0;
 
   std::cout << std::endl << "_____________________________" << std::endl
@@ -39,7 +39,9 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   parent._fav = false;
   if (method.size() < 1) {
-    stream >> method >> path >> version;
+    stream >> method;
+    stream >> path;
+    stream >> version;
 
     std::istringstream tmpstream(path, std::ios_base::binary | std::ios_base::out);
 
@@ -71,18 +73,19 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   PRINT_LOG(method);
   PRINT_LOG(path);
   PRINT_LOG(version);
-  while (std::getline(stream, line)) {
-    if (line == "\r" && line_count == 0)
+  while (std::getline(stream, sline)) {
+    if (sline == "\r" && line_count == 0)
       continue ;
-    else if (line == "\r") {
+    else if (sline == "\r") {
       complete_header = true;
       break ;
     }
-    if (line.size()) {
-      std::istringstream line_stream(line);
+    if (sline.size()) {
+      std::istringstream line_stream(sline);
       std::getline(line_stream, key, ':');
-      if (key.size() < 1 || line_stream.rdbuf()->in_avail() < 1)
+      if (key.size() < 1 || (key.size() >= sline.size() - 1))
         break;
+      //why
       std::getline(line_stream, value);
     }
     else
@@ -515,6 +518,7 @@ void  Request::clear(void) {
   complete_header = false;
   parsed_body = false;
   parsed_header = false;
+  sline.clear();
   method.clear();
   path.clear();
   version.clear();
@@ -621,6 +625,7 @@ Request::Request(void) {
   current_bytes = 0;
   body_size = 0;
 
+  sline.clear();
   method.clear();
   path.clear();
   version.clear();

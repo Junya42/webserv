@@ -19,7 +19,7 @@ std::string	get_config(char *str) {
 	struct stat path;
 
 	if (!str)
-		config_file = "configs/config";
+		config_file = "configs/base.config";
 	else
 		config_file = str;
 	fd = -1;

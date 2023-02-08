@@ -70,7 +70,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	}
 	fcntl(client, F_SETFL, O_NONBLOCK);
 	std::memset(&client_event, 0, sizeof(client_event));
-	client_event.events = EPOLLIN; 
+	client_event.events = EPOLLIN | EPOLLOUT; 
 	client_event.data.fd = client;
 	//client_event.data.u32 = *id;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &client_event) < 0) {
@@ -229,24 +229,26 @@ void	delete_file(Server &serv, Client &client) {
 	client.request.complete_file = true;
 }
 
-void	answer_client(Client &client, Request &req, Config &config, char **env) {
-	if (req.in_response == false)
-		PRINT_FUNC();
-	req.in_response = true;
-	(void)env;
-	size_t index;
-	
-	index = get_serv_from_client(client, config._serv);
-	PRINT_WIN("Using cgi = " + to_string(req.using_cgi));
-	if (req.using_cgi == true)
-		req.get_cgi(client, config);
-	else if (comp(req.method, "delete") == false)
-		req.get_request(config._serv, client, index);
-	else
-		delete_file(config._serv[index], client);
-	if (req.complete_file == true) {
+void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
+
+	if (client._index == -1)
+		client._index = get_serv_from_client(client, config._serv);
+	if (req.complete_file == false) {
+		if (req.in_response == false)
+			PRINT_FUNC();
+		req.in_response = true;
+
+		PRINT_WIN("Using cgi = " + to_string(req.using_cgi));
+		if (req.using_cgi == true)
+			req.get_cgi(client, config);
+		else if (comp(req.method, "delete") == false)
+			req.get_request(config._serv, client, client._index);
+		else
+			delete_file(config._serv[client._index], client);
+	}
+	if (req.complete_file == true && client._ready == true) {
 		if (req.header_code != 0) {
-			send_error(client._sock, req.header_code, client, error_path(config._serv[index], req.header_code));
+			send_error(client._sock, req.header_code, client, error_path(config._serv[client._index], req.header_code));
 			client._log = false;
 			PRINT_ERR("Sent error page to client " + to_string(client._sock) + " " + client._name);
 		}
@@ -258,13 +260,14 @@ void	answer_client(Client &client, Request &req, Config &config, char **env) {
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_WIN("Successfully sent response to client " + to_string(client._id) + " " + client._name);
 		}
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client._sock, NULL);
 		csocks.erase(client._sock);
 		close(client._sock);
 		req.clear();
 	}
 }
 
-int find_client_in_vector(std::vector<Client> &clientlist, int client, int index, uint32_t id) {
+void set_ready_client(std::vector<Client> &clientlist, int client, int index) {
 	PRINT_LOG("Current client socket: " + to_string(client));
 
 	struct	sockaddr_in my_addr;
@@ -282,7 +285,49 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 	int	x = -1;
 	for (size_t i = 0; i < clientlist.size(); i++) {
 		if (clientlist[i]._sock == client && clientlist[i]._hostport == host_port && clientlist[i]._hostip == to_string(myIP)) {
-			PRINT_WIN("Perfect match !!!");
+			PRINT_WIN("Perfect match: " + clientlist[i]._hostip + ":" + to_string(clientlist[i]._hostport));
+			clientlist[i]._ready = true;
+			return ;
+		}
+		else if (clientlist[i]._sock == client) {
+			if (x == -1)
+				x = i;
+		}
+	}
+	if (x != -1) {
+		PRINT_WIN("Only sockets matches: " + clientlist[x]._hostip + ":" + to_string(clientlist[x]._hostport));
+		clientlist[x]._ready = true;
+		return ;
+	}
+	size_t sdex = index;
+	if (sdex < clientlist.size()) {
+		PRINT_WIN("Index: " + clientlist[sdex]._hostip + ":" + to_string(clientlist[sdex]._hostport));
+		clientlist[sdex]._ready = true;
+	}
+	else {
+		PRINT_ERR("Index: " + to_string(index));
+	}
+}
+
+int find_client_in_vector(std::vector<Client> &clientlist, int client, int index) {
+	PRINT_LOG("Current client socket: " + to_string(client));
+
+	struct	sockaddr_in my_addr;
+	unsigned int host_port;
+	char myIP[16];
+
+	bzero(&my_addr, sizeof(my_addr));
+	socklen_t	len = sizeof(my_addr);
+
+	getsockname(client, (struct sockaddr *)&my_addr, &len);
+	inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
+
+	host_port = ntohs(my_addr.sin_port);
+
+	int	x = -1;
+	for (size_t i = 0; i < clientlist.size(); i++) {
+		if (clientlist[i]._sock == client && clientlist[i]._hostport == host_port && clientlist[i]._hostip == to_string(myIP)) {
+			PRINT_WIN("Perfect match: " + clientlist[i]._hostip + ":" + to_string(clientlist[i]._hostport));
 			return i;
 		}
 		else if (clientlist[i]._sock == client) {
@@ -290,9 +335,17 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 				x = i;
 		}
 	}
-	if (x != -1)
+	if (x != -1) {
+		PRINT_WIN("Only sockets matches: " + clientlist[x]._hostip + ":" + to_string(clientlist[x]._hostport));
 		return x;
-	(void)id;
+	}
+	size_t sdex = index;
+	if (sdex < clientlist.size()) {
+		PRINT_WIN("Index: " + clientlist[sdex]._hostip + ":" + to_string(clientlist[sdex]._hostport));
+	}
+	else {
+		PRINT_ERR("Index: " + to_string(index));
+	}
 	return index;
 }
 
@@ -323,11 +376,12 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 		}
 	}
 	size_t i = 0;
+
 	while (i < clientlist.size()) {
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
 
-		if (clientlist[i]._cookie.empty() || clientlist[i]._name.empty()) {
+		if ((clientlist[i].request.in_use == false && clientlist[i].request.in_response == false) && (clientlist[i]._cookie.empty() || clientlist[i]._name.empty())) {
 			//std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl << clientlist[i] << std::endl << "~~~~~~~~~~~~~~~~~~~~" << std::endl;
 			PRINT_ERR("Removing client from vector");
 			if (*curr_fd > 1 && *numclient > 0) {
@@ -336,8 +390,10 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 			}
 			clientlist.erase(clientlist.begin() + i);
 		}
+		else {
+			i++;
+		}
 		std::cout << std::endl;
-		i++;
 	}
 	(void)numclient;
 	(void)epoll;

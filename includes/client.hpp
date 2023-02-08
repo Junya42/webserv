@@ -121,7 +121,7 @@ class Request {
     std::string answer; //answer buffer after request is parsed
     
     /***************************************************************/
-
+    std::string         sline;
     std::string         content_type;
     std::string         file_content; //file buffer
     std::string         file_path;
@@ -171,6 +171,8 @@ class Client {
     void  clear(void) {
       _log = false;
       _fav = false;
+      _ready = false;
+      _index = -1;
       _id = 0;
       _sock = 0;
       _port = 0;
@@ -195,6 +197,8 @@ class Client {
 
     bool  _log;
     bool _fav;
+    bool  _ready;
+    int   _index;
     uint32_t _id;
     int _sock;
     unsigned short  _port;

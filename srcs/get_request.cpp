@@ -21,10 +21,13 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     tmp_path = "/user";
     PRINT_WIN("Auth redirect");
   }
-  else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
     tmp_path = "/login";
-    //PRINT_ERR("Redirect to log");
+    PRINT_ERR("Redirect to log");
+  }
+  else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+    set_error(401);
   }
   else
     tmp_path = path_info;
@@ -45,7 +48,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       x = i;*/
   x = index;
   //PRINT_LOG("Found host");
-  if (tmp_path.compare("/") == 0)
+  if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
    PRINT_LOG("Using default server index");
    //std::cout << serv[x] << std::endl;
