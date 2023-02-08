@@ -345,6 +345,11 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 	}
 	else {
 		std::cout << "\033[1;41mBIIIIG problem\033[0m" << std::endl;
+		PRINT_ERR("Current socket(" + to_string(client) + ") host = " + to_string(myIP) + ":" + to_string(host_port));
+		PRINT_ERR("Clientlist size: " + to_string(clientlist.size()));
+		for (size_t i = 0; i < clientlist.size(); i++) {
+			PRINT_ERR("Clientlist[" + to_string(i) + "].socket :" + to_string(clientlist[i]._sock));
+		}
 		PRINT_ERR("Index: " + to_string(index));
 	}
 	return index;
@@ -382,7 +387,7 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 		if (clientlist[i]._sock < 1)
 			clientlist[i]._log = false;
 
-		if ((clientlist[i].request.in_use == false && clientlist[i].request.in_response == false) && (clientlist[i]._cookie.empty() || clientlist[i]._name.empty())) {
+		if (clientlist[i]._request_count != 0 && (clientlist[i].request.in_use == false && clientlist[i].request.in_response == false) && (clientlist[i]._cookie.empty() || clientlist[i]._name.empty())) {
 			//std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl << clientlist[i] << std::endl << "~~~~~~~~~~~~~~~~~~~~" << std::endl;
 			PRINT_ERR("Removing client from vector");
 			if (*curr_fd > 1 && *numclient > 0) {
