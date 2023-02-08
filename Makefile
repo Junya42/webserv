@@ -28,7 +28,7 @@ OBJ_LIST = $(wildcard objs/*.o)
 DEPS = $(OBJS:%.o=%.d)
 
 CC = c++
-FLAGS = -Wall -Wextra -Werror -g3
+FLAGS = -Wall -Wextra -Werror -g3 -fsanitize=address
 
 all: $(NAME)
 

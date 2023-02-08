@@ -34,8 +34,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   size_t  line_count = 0;
 
   std::cout << std::endl << "_____________________________" << std::endl
-    << "\033[1;32mRequest: \033[0m" << std::endl << std::endl;
-    //<< request << std::endl;
+    << "\033[1;32mRequest: \033[0m" << std::endl << std::endl
+    << request << std::endl;
 
   parent._fav = false;
   if (method.size() < 1) {
@@ -74,12 +74,13 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   PRINT_LOG(path);
   PRINT_LOG(version);
   while (std::getline(stream, sline)) {
-    if (sline == "\r" && line_count == 0)
+    if (sline.compare("\r") == 0 && line_count == 0)
       continue ;
     else if (sline == "\r") {
       complete_header = true;
       break ;
     }
+    std::cout << "\033[1;32m[Current line in stream]: \033[0m" << sline << std::endl;
     if (sline.size()) {
       std::istringstream line_stream(sline);
       std::getline(line_stream, key, ':');
