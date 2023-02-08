@@ -73,9 +73,12 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   PRINT_LOG(method);
   PRINT_LOG(path);
   PRINT_LOG(version);
+
+  std::cout << "Request count: " << parent._request_count << std::endl;
   while (std::getline(stream, sline)) {
-    if (sline.compare("\r") == 0 && line_count == 0)
+    if (sline.size() == 1 && line_count == 0) {
       continue ;
+    }
     else if (sline == "\r") {
       complete_header = true;
       break ;
