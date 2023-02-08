@@ -344,6 +344,7 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 		PRINT_WIN("Index: " + clientlist[sdex]._hostip + ":" + to_string(clientlist[sdex]._hostport));
 	}
 	else {
+		std::cout << "\033[1;41mBIIIIG problem\033[0m" << std::endl;
 		PRINT_ERR("Index: " + to_string(index));
 	}
 	return index;

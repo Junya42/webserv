@@ -161,23 +161,26 @@ void	server_handler(Config &config, char **env) {
 				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));
 			}
 			else {
-				c_index = find_client_in_vector(clientlist, events[i].data.fd, i);
+				//c_index = find_client_in_vector(clientlist, events[i].data.fd, i);
 				
 				if (events[i].events & EPOLLOUT) {
 					PRINT_WIN("EPOLLOUT");
 					int tmp;
 
 					tmp = events[i].data.fd;
+					c_index = find_client_in_vector(clientlist, events[i].data.fd, i);
 					clientlist[c_index]._ready = true;
 					events[i].events = EPOLLIN;
 					epoll_ctl(epoll_fd, EPOLL_CTL_MOD, tmp, &events[i]);
 				}
 
 				if (events[i].events & EPOLLIN) {
+					std::cout << std::endl << "\033[1;41mXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\033[0m" << std::endl << std::endl;
 					config.request_count++;
 					client = events[i].data.fd;
 					save_index = i;
-					i = c_index;
+					//i = c_index;
+					i = find_client_in_vector(clientlist, client, i);
 					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
 					if (tmp._name.size()) {
 						clientlist.push_back(tmp);
