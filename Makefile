@@ -28,7 +28,11 @@ OBJ_LIST = $(wildcard objs/*.o)
 DEPS = $(OBJS:%.o=%.d)
 
 CC = c++
-FLAGS = -Wall -Wextra -Werror -g3
+FLAGS = -Wall -Wextra -Werror -std=c++98 -D DEBUG=0
+
+ifdef SET_DEBUG
+	FLAGS = -Wall -Wextra -Werror -g3 -std=c++98 -D DEBUG=1
+endif
 
 all: $(NAME)
 
@@ -42,6 +46,9 @@ $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
 
 $(OBJ_DIR):
 	@mkdir -p $@
+
+debug: fclean
+	$(MAKE) SET_BUG=1
 
 clean:
 	@echo "Removing objects and dependencies"

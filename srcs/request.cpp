@@ -74,7 +74,6 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   PRINT_LOG(path);
   PRINT_LOG(version);
 
-  std::cout << "Request count: " << parent._request_count << std::endl;
   while (std::getline(stream, sline)) {
     if (sline.size() == 1 && line_count == 0) {
       continue ;
@@ -83,13 +82,11 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       complete_header = true;
       break ;
     }
-    std::cout << "\033[1;32m[Current line in stream]: \033[0m" << sline << std::endl;
     if (sline.size()) {
       std::istringstream line_stream(sline);
       std::getline(line_stream, key, ':');
       if (key.size() < 1 || (key.size() >= sline.size() - 1))
         break;
-      //why
       std::getline(line_stream, value);
     }
     else
@@ -98,7 +95,6 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       set_error(400);
     }
     header[key] = value;
-    //std::cout << key << ": " << value << std::endl;
     if (value.size()) {
       if (comp(key, "Content-Length") == true) {
         content_lenght = atoi(value.c_str());
@@ -149,15 +145,12 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   }
  if (comp(host, parent._host) == false) {
    PRINT_ERR("HOST DIFFERENCE");
-    //swap_clients(parent, tmp);
-    //*this = tmp.request;
   }
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
 
 void  Request::get_body_stream(std::istringstream &stream, Client &parent, Client &tmp) {
-  //PRINT_FUNC();
   std::vector<unsigned char> buff(buff_size);
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
@@ -259,7 +252,6 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
 }
 
 void  Request::get_body(int client) {
-  //PRINT_FUNC();
   std::vector<unsigned char> buff(buff_size + 1);
 
   int int_bytes = 0;
@@ -377,7 +369,7 @@ int  Request::parse_body(Client &parent) {
     if ((pos = body_str.find(boundary)) != std::string::npos) {
       Body tmpbody;
       std::string cpy(body_str, pos);
-      cpy.pop_back();
+      cpy.erase(cpy.size() - 1, 1);
       std::istringstream bodystream(cpy, std::ios_base::binary | std::ios_base::out);
       body_str.clear();
       int boundary_count = 0;
@@ -390,7 +382,7 @@ int  Request::parse_body(Client &parent) {
           found = tmpbody.disposition.find_last_of('=');
           tmpbody.filename = tmpbody.disposition.substr(found + 1);
           erase(tmpbody.filename);
-          tmpbody.filename.pop_back();
+          tmpbody.filename.erase(tmpbody.filename.size() - 1, 1);
           if ( parent._name.size())
           {
             std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
@@ -453,7 +445,7 @@ int  Request::parse_body(Client &parent) {
           if (end == false)
             file << cpy << "\n";
           else {
-            cpy.pop_back();
+            cpy.erase(cpy.size() - 1, 1);
             file << cpy;
           }
           linecount++;

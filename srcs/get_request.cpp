@@ -31,11 +31,9 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   }
   else
     tmp_path = path_info;
-  //PRINT_ERR("tmp_path: " + tmp_path);
   if (comp(tmp_path, "user") == true) {
     client._log = true;
   }
-  //PRINT_LOG("path = " + path);
   PRINT_LOG("tmp path = " + tmp_path);
   if (flag != 0) {
     found = true;
@@ -43,15 +41,10 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     return ;
   }
   size_t x = 0;
-  /*for (size_t i = 0; i < serv.size(); i++)
-    if (comp(host, serv[i]._host) == true)
-      x = i;*/
   x = index;
-  //PRINT_LOG("Found host");
   if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
    PRINT_LOG("Using default server index");
-   //std::cout << serv[x] << std::endl;
     file_path = serv[x]._index;
     PRINT_LOG("default index: " + file_path);
     while (file_path[0] == ' ' || file_path[0] == '\t')
@@ -60,14 +53,11 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   }
   else if (tmp_path.find(".ico") != std::string::npos)
   {
-   //PRINT_LOG("Favicon Request");
     file_path = "./favicon.ico";
     found = true;
   }
   else
   {
-    //PRINT_LOG("Custom index");
-    //PRINT_LOG("Looking for path:" + path);
     for (size_t j = 0; j < serv[x]._loc.size(); j++) {
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
         if (serv[x]._loc[j]._redirect == true) {
@@ -101,10 +91,8 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       }
     }
   }
-  //PRINT_LOG("After series of if");
   if (found == false) {
     set_error(404);
-    //PRINT_ERR("404 Not found");
   }
   if (flag != 0)
     return ;
@@ -112,22 +100,15 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   std::string file_ext;
 
   PRINT_LOG(file_path);
-  //PRINT_LOG("extension pos");
   if (file_path.size()) {
     extpos = file_path.find_last_of(".");
     if (extpos >= file_path.size()){
       content_type = ".txt";
       return ;
     }
-    //PRINT_WIN(extpos);
-    //PRINT_LOG("file ext");
     file_ext = file_path.substr(extpos);
-    //PRINT_WIN(file_ext);
-    //PRINT_LOG("content_type");
     content_type = file_ext;
-    //PRINT_WIN(content_type);
   }
-  //PRINT_LOG("End of function");
 }
 
 void  Request::get_request(std::vector<Server> &serv, Client &client, int index) {
@@ -149,10 +130,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
   }
   if (file_size > 0) {
     read_count++;
-    ascii = std::to_string(read_count);
-    //PRINT_LOG(ascii + " time opening");
-    //PRINT_LOG("Read size: " + to_string(read_size));
-    //PRINT_LOG("File size: " + to_string(file_size));
+    ascii = to_string(read_count);
     file.open(file_path.c_str(), std::ios::in | std::ios::binary);
     file.seekg(read_size, file.beg);
     file.read(buff, bsize);
@@ -163,21 +141,15 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
       complete_file = true;
     }
     else
-      file_content.pop_back();
-    ascii = std::to_string(file_size - read_size);
-    //PRINT_LOG("Filesize - readsize: " + ascii);
+      file_content.erase(file_content.size() - 1, 1);
+    ascii = to_string(file_size - read_size);
     size_t curr_size = file_content.size();
     for (size_t i = 0; i < last_read; i++)
       file_content += buff[i];
-    /*if (found_user == false && comp(content_type, "html") == true) {
-      found_user = replace(file_content, "$@", client._name, curr_size);
-    }*/
     (void)curr_size;
     file.close();
   }
   else {
-    //PRINT_LOG("First file opening");
-    //PRINT_LOG(file_path);
     file.open(file_path.c_str(), std::ios::in | std::ios::binary);
     complete_file = false;
     if (file.is_open()) {
@@ -194,20 +166,12 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
         complete_file = true;
       }
       else
-        file_content.pop_back();
-      ascii = std::to_string(file_size);
-      //PRINT_LOG("Filesize: " + ascii);
-      ascii = std::to_string(file_size - read_size);
-      //PRINT_LOG("Filesize - readsize: " + ascii);
+        file_content.erase(file_content.size() - 1, 1);
+      ascii = to_string(file_size - read_size);
       file_content.clear();
       for (size_t i = 0; i < read_size; i++) {
         file_content.push_back(buff[i]);
       }
-      //file_content = buff; 
-      /*if (found_user == false && comp(content_type, "html") == true) {
-        found_user = replace(file_content, "$@", client._name);
-        //PRINT_LOG("Replaced: " + to_string(found_user));
-      }*/
       file.close();
     }
     else {
@@ -268,7 +232,6 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       answer += "Location: " + link + "\n\n";
       return ;
     }
-    //PRINT_WIN(file_path);
     if (comp(method, "delete") == false)
       this->set_content_type(_mime);
     else {
@@ -281,7 +244,6 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
 
     s << read_size;
     answer = status;
-    // answer += "Connection: keep-alive\n";.
 
     PRINT_LOG(file_path);
     if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {

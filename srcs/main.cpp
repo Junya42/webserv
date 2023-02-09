@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
+#include <fstream>
 #include "../includes/config.hpp"
 #include "../includes/header.hpp"
 
@@ -47,9 +48,62 @@ std::string	get_config(char *str) {
 	return config_buff;
 }
 
+int check_already_running_processes(std::string &p_id) {
+	struct stat path;
+
+	if (stat("/tmp/.webserv_process", &path) == -1) {
+		if (mkdir("/tmp/.webserv_process", 0777) == -1) {
+			std::cout << std::endl << "\033[32mWebserv is now running\033[0m" << std::endl << std::endl;
+			return 0;
+		}
+		std::ofstream file_out("/tmp/.webserv_process/process_checker", std::ios::out);
+
+		if (file_out.is_open()) {
+			file_out << p_id;
+			file_out.close();
+		}
+		std::cout << std::endl << "\033[32mWebserv is now running\033[0m" << std::endl << std::endl;
+		return 0;
+	}
+	std::memset(&path, 0, sizeof(path));
+	if (stat("/tmp/.webserv_process/process_checker", &path) == -1) {
+		std::ofstream file_out("/tmp/.webserv_process/process_checker", std::ios::out);
+
+		if (file_out.is_open()) {
+			file_out << p_id;
+			file_out.close();
+		}
+		std::cout << std::endl << "\033[32mWebserv is now running\033[0m" << std::endl << std::endl;
+		return 0;
+	}
+	std::ifstream file_in("/tmp/.webserv_process/process_checker", std::ios::in);
+
+	if (file_in.is_open()) {
+		std::string tmp;
+
+		file_in >> tmp;
+		tmp = "/proc/" + tmp;
+		std::memset(&path, 0, sizeof(path));
+		if (stat(tmp.c_str(), &path) == -1) {
+			std::cout << std::endl << "\033[32mWebserv is now running\033[0m" << std::endl << std::endl;
+			file_in.close();
+			return 0;
+		}
+		std::cerr << std::endl << "\033[31mAnother instance of Webserv is already running\033[0m" << std::endl << std::endl;
+		file_in.close();
+		return -1;
+	}
+	else {
+		std::cout << std::endl << "\033[32mWebserv is now running\033[0m" << std::endl << std::endl;
+		return 0;
+	}
+	return -1;
+}
+
 int main(int ac, char **av, char **env) {
 	Config	config;
 	std::string	config_buff;
+
 
 	switch (ac) {
 		case 1:
@@ -73,7 +127,11 @@ int main(int ac, char **av, char **env) {
 	int p_id;
 
 	p_id = getpid();
-	PRINT_WIN("Process ID: " + to_string(p_id));
+
+	std::string tmp_id = to_string(p_id);
+	PRINT_WIN("Process ID: " + tmp_id);
+	if (check_already_running_processes(tmp_id) != 0)
+		return 1;
 	server_handler(config, env);
 	return 0;
 }

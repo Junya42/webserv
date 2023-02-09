@@ -2,7 +2,7 @@
 # define SOCKET_HPP
 
 #include <asm-generic/socket.h>
-#include <cstdint>
+#include <stdint.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <ostream>

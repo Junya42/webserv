@@ -6,15 +6,35 @@ const int MAX_EVENTS = 100;
 int	signalcheck=0;
 std::map<int, int> csocks;
 
-void siginthandle(int sig) {
-	(void)sig;
-	signalcheck = 1;
-	PRINT_LOG("Caught SIG INT");
-	signal(SIGINT, SIG_IGN);
+void	sighandle(int sig) {
+	remove("/tmp/.webserv_process/process_checker");
+
+	switch (sig) {
+		case 2:
+			signalcheck = 1;
+			signal(SIGINT, SIG_IGN);
+			break;
+		case 6:
+			signal(SIGABRT, SIG_DFL);
+			break;
+		case 7:
+			signal(SIGBUS, SIG_DFL);
+			break;
+		case 11:
+			signal(SIGSEGV, SIG_DFL);
+			break;
+		case 15:
+			signal(SIGTERM, SIG_DFL);
+			break;
+	}
 }
 
 void	signalhandler(void) {
-	signal(SIGINT, siginthandle);
+	signal(SIGINT, sighandle);
+	signal(SIGABRT, sighandle);
+	signal(SIGBUS, sighandle);
+	signal(SIGSEGV, sighandle);
+	signal(SIGTERM, sighandle);
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGTSTP, SIG_IGN);
 }

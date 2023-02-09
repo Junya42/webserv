@@ -232,12 +232,10 @@ void    Request::get_cgi_answer(Client &client) {
         if (comp(content_type, "html") == false)
             answer += "Content-Transfer-Encoding: binary\n";
         answer += file_content;
-        //answer += "\n\n";
     }
     else {
         answer = "HTTP/1.1 200 OK\n";
         answer += file_content;
-        //answer += "\n\n";
     }
 }
 
@@ -260,8 +258,7 @@ void    Request::get_cgi(Client &client, Config &config, int flag) {
         std::string tmp;
 
         tmp = config._pwd;
-        tmp.pop_back();
-        //cgi_path = config._pwd + cgi_path;
+        tmp.erase(tmp.size() - 1, 1);
         cgi_path = tmp + cgi_path;
     }
     if (complete_file == true)
