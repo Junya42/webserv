@@ -55,14 +55,12 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     path_info = path;
     if (comp(path, "cgi")) {
       size_t pos = find(path, '/', 3);
-      //if (pos != path.size()) {
         using_cgi = true;
         pos++;
         path_info = path.substr(pos - 1);
         path = path.substr(0, pos - 1);
         PRINT_WIN("header path info: " + path_info);
         PRINT_WIN("header path" + path);
-      //}
     }
     else if (comp(path, "errors/style.css")) {
       path = "/errors/style.css";
@@ -143,6 +141,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
+  if (has_body == false)
+    complete_header = true;
  if (comp(host, parent._host) == false) {
    PRINT_ERR("HOST DIFFERENCE");
   }

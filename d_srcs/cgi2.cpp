@@ -13,7 +13,7 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     set_env.insert("SERVER_NAME=" + client._host);
     set_env.insert("GATEWAY_INTERFACE=" "CGI/1.1");
 
-    set_env.insert("SERVER_PROTOCOL=" "Webserv/1.0");
+    set_env.insert("SERVER_PROTOCOL=" "Webserv/1");
     set_env.insert("SERVER_PORT=" + client._sport);
     set_env.insert("REQUEST_METHOD=" + client.request.method);
     set_env.insert("PATH_INFO=" + client.request.path_info);
@@ -46,8 +46,8 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
         i++;
     }
     env[i] = NULL;
-    /*for (size_t x = 0; env[x]; x++)
-        PRINT_LOG("ENV[" + to_string(x) + "] : " + env[x]);*/
+    for (size_t x = 0; env[x]; x++)
+        PRINT_LOG("ENV[" + to_string(x) + "] : " + env[x]);
     std::cout << std::endl;
     return env;
 }
@@ -166,6 +166,20 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                 }
                 set_error(atoi(errString.c_str()));
             }
+            else {
+                int errBytes = 1;
+                char errbuff[buff_size];
+                
+                std::string errString;
+                while (errBytes) {
+                    memset(errbuff, 0, buff_size);
+                    errBytes = read(errFd, errbuff, buff_size - 1);
+                    for (int i = 0; i < errBytes; i++)
+                        errString += errbuff[i];
+                }
+                std::cerr << "Errors from CGI:" << std::endl
+                << errString << std::endl << std::endl;
+            }
         }
         if (n == 0) {
             (void)n;
@@ -260,16 +274,18 @@ void    Request::get_cgi(Client &client, Config &config, int flag) {
         tmp = config._pwd;
         tmp.erase(tmp.size() - 1, 1);
         cgi_path = tmp + cgi_path;
+        PRINT_LOG("Cgi_path :" + cgi_path);
     }
-    if (complete_file == true)
-        return ;
+    //if (complete_file == true)
+        //return ;
     if (comp(client.request.header["Referer"], "download") == false || client.request.path_info == "/user")
         flag = 1;
-
     size_t extension_pos = cgi_path.find_last_of('.');
-    std::string cgi_executor = cgi_path.substr(extension_pos);
-
-    get_executor(config._serv, client.request, cgi_executor);
+    std::string cgi_executor;
+    if (extension_pos != std::string::npos) {
+        cgi_executor = cgi_path.substr(extension_pos);
+        get_executor(config._serv, client.request, cgi_executor);
+    }
     get_cgi_read(client, cgi_path, cgi_executor, file_path, config._pwd, flag);
     get_cgi_answer(client);
 }

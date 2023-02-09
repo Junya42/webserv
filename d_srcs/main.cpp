@@ -122,7 +122,10 @@ int main(int ac, char **av, char **env) {
 	}
 	if (config_buff.size() < 1)
 		return 1;
-	config.add_config(config_buff);
+	if (config.add_config(config_buff) != 0) {
+		std::cerr << "\033[1;31mExiting Webserv\033[0m" << std::endl;
+		return 2;
+	}
 	std::cout << config << std::endl;
 	int p_id;
 
@@ -131,7 +134,7 @@ int main(int ac, char **av, char **env) {
 	std::string tmp_id = to_string(p_id);
 	PRINT_WIN("Process ID: " + tmp_id);
 	if (check_already_running_processes(tmp_id) != 0)
-		return 1;
+		return 3;
 	server_handler(config, env);
 	return 0;
 }

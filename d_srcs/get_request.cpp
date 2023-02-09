@@ -35,6 +35,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     client._log = true;
   }
   PRINT_LOG("tmp path = " + tmp_path);
+  PRINT_LOG("Flag = " + to_string(flag));
   if (flag != 0) {
     found = true;
     file_path = tmp_path;

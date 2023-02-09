@@ -126,6 +126,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
+  if (has_body == false)
+    complete_header = true;
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }

@@ -13,7 +13,7 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     set_env.insert("SERVER_NAME=" + client._host);
     set_env.insert("GATEWAY_INTERFACE=" "CGI/1.1");
 
-    set_env.insert("SERVER_PROTOCOL=" "Webserv/1.0");
+    set_env.insert("SERVER_PROTOCOL=" "Webserv/1");
     set_env.insert("SERVER_PORT=" + client._sport);
     set_env.insert("REQUEST_METHOD=" + client.request.method);
     set_env.insert("PATH_INFO=" + client.request.path_info);
@@ -247,9 +247,11 @@ void    Request::get_cgi(Client &client, Config &config, int flag) {
         flag = 1;
 
     size_t extension_pos = cgi_path.find_last_of('.');
-    std::string cgi_executor = cgi_path.substr(extension_pos);
-
-    get_executor(config._serv, client.request, cgi_executor);
+    std::string cgi_executor;
+    if (extension_pos != std::string::npos) {
+        cgi_executor = cgi_path.substr(extension_pos);
+        get_executor(config._serv, client.request, cgi_executor);
+    }
     get_cgi_read(client, cgi_path, cgi_executor, file_path, config._pwd, flag);
     get_cgi_answer(client);
 }
