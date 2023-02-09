@@ -48,7 +48,7 @@ class Request {
     void        set_content_type(std::map<std::string, std::string> &_mime, size_t flag = 0);
     void        get_response(std::map<std::string, std::string> &_mime, Client &client);
 
-    void        auto_file_name(std::vector<Server> &serv, Client & client);
+    void        auto_file_name(Client &client);
 
     void        post_request(std::vector<Server> &serv); //located at srcs/post_request.cpp
 
@@ -69,7 +69,7 @@ class Request {
 
     size_t              ncount;
     size_t              fpos;
-    size_t              initial_lenght;
+    long long int       initial_lenght;
 
     std::string method; //method string
     std::string path; //path string
@@ -103,6 +103,7 @@ class Request {
     bool        has_size;
     bool        auth;
     bool        in_response;
+    bool        auto_index;
     int         auth_redirect;
     int         header_code;
 

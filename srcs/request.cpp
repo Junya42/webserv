@@ -512,6 +512,7 @@ void  Request::clear(void) {
   in_response = false;
   read_count = 0;
   found_user = false;
+  auto_index = false;
 }
 
 int  Request::read_client(int client, Client &parent, Client &tmp) {
@@ -602,6 +603,7 @@ Request::Request(void) {
   file_content.clear();
   file_path.clear();
   file_type.clear();
+  auto_index = false;
   file_size = 0;
   read_size = 0;
   complete_file = false;
@@ -677,69 +679,3 @@ std::ostream &operator<<(std::ostream &n, Request &req) {
   // n << std::endl << "\033[1m\033[2mAnswer:\033[0m" << req.answer << std::endl << std::endl;
   return n;
 }
-/*
-Request &Request::operator=(const Request &req) {
-  bytes = req.bytes;
-  current_bytes = req.current_bytes;
-  body_size = req.body_size;
-  linecount = req.linecount;
-
-  ncount = req.ncount;
-  fpos = req.fpos;
-  initial_lenght = req.initial_lenght;
-
-  method = req.method;
-  path = req.path;
-  version = req.version;
-  host = req.host;
-  index = req.index;
-  cookie = req.cookie;
-  URI = req.URI;
-  transfer_encoding = req.transfer_encoding;
-  type = req.type;
-  key = req.key;
-  value = req.value;
-  boundary = req.boundary;
-
-  path_info = req.path_info;
-  query = req.query;
-  cgi = req.cgi;
-  cgi_path = req.cgi_path;
-
-  name = req.name;
-  status = req.status;
-  
-  complete_header = req.complete_header;
-  complete_body = req.complete_body;
-  parsed_header = req.parsed_header;
-  parsed_body = req.parsed_body;
-  has_body = req.has_body;
-  has_size = req.has_size;
-  auth = req.auth;
-  in_response = req.in_response;
-  auth_redirect = req.auth_redirect;
-  header_code = req.header_code;
-
-  using_cgi = req.using_cgi;
-  chunked = req.chunked;
-  nread = req.nread;
-  cgi_size = req.cgi_size;
-
-  content_lenght = req.content_lenght;
-  header = req.header;
-  body = req.body;
-  body_str = req.body_str;
-  multi_body = req.multi_body;
-  answer = req.answer;
-
-  content_type = req.content_type;
-  file_content = req.file_content;
-  file_path = req.file_path;
-  file_type = req.file_type;
-  file_size = req.file_size;
-  read_size = req.read_size;
-  read_count = req.read_count;
-  complete_file = req.complete_file;
-  found_user = req.found_user;
-  return *this;
-}*/

@@ -218,12 +218,12 @@ void	delete_file(Server &serv, Client &client) {
         	}
         	else {
 				client.request.set_error(400);
-        		PRINT_ERR("Custom error page is a directory");
+        		PRINT_ERR("The requested file is a directory");
 			}
       	}
       	else {
 			client.request.set_error(404);
-        	PRINT_ERR("Custom error page does not exist");
+        	PRINT_ERR("The requested file does not exist");
 	  	}
     }
 	client.request.complete_file = true;

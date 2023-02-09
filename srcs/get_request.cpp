@@ -13,7 +13,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);
   }
-  else if (serv[index]._redirect && name.size() && auth == true && (path_info== "/" || path_info == "/html" || comp(path, "/login") == true)) {
+  else if (serv[index]._redirect && name.size() && auth == true && (path_info == "/" || path_info == "/html" || comp(path, "/login") == true)) {
     auth_redirect = 1;
     tmp_path = "/user";
   }
@@ -63,10 +63,25 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
           complete_file = true;
           return ;
         }
+        if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
+          set_error(400);
+          complete_file = true;
+          return ;
+        }
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
         if (dir) {
-          file_path += "/index.html";
+          if (serv[x]._loc[j]._index.size())
+            file_path = serv[x]._loc[j]._index;
+          else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
+              auto_file_name(client);
+              auto_index = true;
+              complete_file = true;
+              closedir(dir);
+              return ;
+          }
+          else
+            file_path += "/index.html";
           closedir(dir);
         }
         struct stat st;
@@ -105,13 +120,11 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
   if (file_path.size() < 1)
     this->get_file(serv, client, path_info, file_path, index);
   
-  if (auth_redirect == 3) {
+  if (auth_redirect == 3 || complete_file == true || header_code != 0) {
     complete_file = true;
     return ;
   }
-  if (complete_file == true) {
-    return ;
-  }
+
   if (file_size > 0) {
     read_count++;
     ascii = to_string(read_count);
@@ -192,7 +205,7 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime, size_
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
   std::ostringstream s;
   bool redirect = false;
-  if (comp(path, "download") == false) {
+  if (comp(path, "download") == false && auto_index == false) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
@@ -250,6 +263,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       answer.clear();
       answer = "HTTP/1.1 200 OK\n";
       answer += "Content-Lenght: " + to_string(file_content.size());
+      answer += "\n\n";
       answer += file_content;
       answer += "\r\n\r\n";
   }

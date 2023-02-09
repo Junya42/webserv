@@ -4,6 +4,7 @@
 #include <ostream>
 #include <string>
 #include <sstream>
+#include <cstdlib>
 #include "string.hpp"
 #include <map>
 
@@ -17,9 +18,12 @@ class Location {
     
     std::map<std::string, std::string> _data;
     std::map<std::string, bool> method;
+    std::string _index;
     std::string _path;
     std::string _root;
     std::string _link;
+    long long int _mbsize;
+    bool  _autoindex;
     bool  _redirect;
 
 

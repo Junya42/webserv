@@ -39,6 +39,8 @@ CC = c++
 FLAGS = -Wall -Wextra -Werror -std=c++98
 
 all: $(NAME)
+	@rm -rf /tmp/private_webserv
+	@mkdir -p /tmp/private_webserv
 
 $(NAME): $(OBJS)
 	@$(CC) ${FLAGS} $(OBJS) -o $(NAME)

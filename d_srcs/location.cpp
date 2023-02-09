@@ -37,7 +37,10 @@ void  Location::create_map(std::string & config) {
   _root.clear();
   _path.clear();
   _link.clear();
+  _index.clear();
+  _mbsize = -1;
   _redirect = false;
+  _autoindex = false;
   std::istringstream stream(config);
   std::string line;
 
@@ -54,6 +57,16 @@ void  Location::create_map(std::string & config) {
     }
     if (key.find("root") != std::string::npos) {
       _root = value;
+    }
+    else if (key.find("set_index") != std::string::npos) {
+      _index = value;
+    }
+    else if (key.find("auto_index") != std::string::npos) {
+      if (value == "true")
+        _autoindex = true;
+    }
+    else if (key.find("max_body_size") != std::string::npos) {
+      _mbsize = strtoll(value.c_str(), NULL, 10);
     }
     else if (key.find("location") != std::string::npos) {
       _path = value;

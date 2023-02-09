@@ -75,10 +75,29 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
           complete_file = true;
           return ;
         }
+        if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
+          PRINT_ERR("SET ERROR 400");
+          set_error(400);
+          complete_file = true;
+          return ;
+        }
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
-        if (dir) {
-          file_path += "/index.html";
+        PRINT_LOG("file = " + file_path);
+         if (dir) {
+          PRINT_LOG("DIR");
+          PRINT_LOG(serv[x]._loc[j]._path);
+          if (serv[x]._loc[j]._index.size())
+            file_path = serv[x]._loc[j]._index;
+          else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
+              auto_file_name(client);
+              auto_index = true;
+              complete_file = true;
+              closedir(dir);
+              return ;
+          }
+          else
+            file_path += "/index.html";
           closedir(dir);
         }
         struct stat st;
@@ -120,14 +139,11 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
   if (file_path.size() < 1)
     this->get_file(serv, client, path_info, file_path, index);
   
-  if (auth_redirect == 3) {
+  if (auth_redirect == 3 || complete_file == true || header_code != 0) {
     complete_file = true;
     return ;
   }
-  if (complete_file == true) {
-    PRINT_WIN("File complete");
-    return ;
-  }
+ 
   if (file_size > 0) {
     read_count++;
     ascii = to_string(read_count);
@@ -212,7 +228,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
   std::ostringstream s;
   bool redirect = false;
   PRINT_WIN(path);
-  if (comp(path, "download") == false) {
+  if (comp(path, "download") == false && auto_index == false) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
@@ -273,6 +289,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       answer.clear();
       answer = "HTTP/1.1 200 OK\n";
       answer += "Content-Lenght: " + to_string(file_content.size());
+      answer += "\n\n";
       answer += file_content;
       answer += "\r\n\r\n";
   }
