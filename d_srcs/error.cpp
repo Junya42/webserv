@@ -14,9 +14,14 @@ void  bad_request(int client) {
   std::string content = start + "400 Bad Request" + end + "\n\n";
 
   error = "HTTP/1.1 400 Bad Request\n";
+  //error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -29,6 +34,10 @@ void  unauthorized(int client) {
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -41,6 +50,10 @@ void  forbidden(int client) {
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -49,9 +62,16 @@ void  not_found(int client) {
   std::string content = start + "404 Not Found" + end + "\n\n";
 
   error = "HTTP/1.1 404 Not Found\n";
+  //error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
+
+  std::cout << "[" << error << "]";
   write(client, error.c_str(), error.size());
 }
 
@@ -60,9 +80,14 @@ void  method_not_allowed(int client) {
   std::string content = start + "405 Method Not Allowed" + end + "\n\n";
 
   error = "HTTP/1.1 405 Method Not Allowed\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -71,10 +96,14 @@ void  gone(int client) {
   std::string content = start + "410 Gone" + end + "\n\n";
 
   error = "HTTP/1.1 410 Gone\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
-
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -83,9 +112,14 @@ void  length_required(int client) {
   std::string content = start + "411 Length Required" + end + "\n\n";
 
   error = "HTTP/1.1 411 Length Required\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -94,9 +128,14 @@ void  uri_too_long(int client) {
   std::string content = start + "414 URI Too Long" + end + "\n\n";
 
   error = "HTTP/1.1 414 URI Too Long\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -105,10 +144,14 @@ void  unsupported_media_type(int client) {
   std::string content = start + "415 Unsupported Media Type" + end + "\n\n";
 
   error = "HTTP/1.1 415 Unsupported Media Type\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
-  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+ error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
-
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -118,10 +161,14 @@ void  internal_server_error(int client) {
   std::string content = start + "500 Internal Server Error" + end + "\n\n";
 
   error = "HTTP/1.1 500 Internal Server Error\n";
+  error += "Set-Cookie: error=500; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
-  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+ error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
-
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -130,10 +177,14 @@ void  not_implemented(int client) {
   std::string content = start + "501 Not Implemented" + end + "\n\n";
 
   error = "HTTP/1.1 501 Not Implemented\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
-
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -142,10 +193,14 @@ void  http_version_not_supported(int client) {
   std::string content = start + "505 HTTP Version Not Supported" + end + "\n\n";
 
   error = "HTTP/1.1 505 HTTP Version Not Supported\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
-
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -154,10 +209,14 @@ void  insufficient_storage(int client) {
   std::string content = start + "507 Insufficient Storage" + end + "\n\n";
 
   error = "HTTP/1.1 507 Insufficient Storage\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
-  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
- 
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
   write(client, error.c_str(), error.size());
 }
 
@@ -217,15 +276,18 @@ int  send_custom_error(int client, int code, std::string path) {
     while (std::getline(errfile, tmp))
       error += tmp;
     error += "\n\n";
+    PRINT_ERR("Sending custom error page");
     write(client, error.c_str(), error.size());
   }
   else {
+    PRINT_ERR("Cannot access custom error page");
     return -1;
   }
   return 0;
 }
 
 void  send_error(int client, int code, Client &curr, std::string path) {
+  PRINT_ERR(code);
   struct stat st;
 
   if (path.size()) {
@@ -238,7 +300,11 @@ void  send_error(int client, int code, Client &curr, std::string path) {
           if (send_custom_error(client, code, path) == 0)
              return ;
         }
+        else
+          PRINT_ERR("Custom error page is a directory");
       }
+      else
+        PRINT_ERR("Custom error page does not exist");
     }
   }
   switch (code) {
@@ -288,9 +354,10 @@ void  send_error(int client, int code, Client &curr, std::string path) {
 }
 
 void  redirect_error(int client, int code) {
-
+  PRINT_ERR(code);
   std::string answer = "HTTP/1.1 307 Temporary Redirect\n";
               answer += "Location: http://localhost:8080/" + to_string(code) + "\r\n\r\n";
+ //             answer += "Set-Cookie: error=" + to_string(code) + "\r\n\r\n";
 
   write(client, answer.c_str(), answer.size());
 }

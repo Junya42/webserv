@@ -81,9 +81,11 @@ int	check_server_event(int fd, std::vector<Server> &server) {
 		std::string	tmpport = server[i]._sport;
 		erase(tmpport, " ");
 		if (_host == tmpname && _port == tmpport) {
+			PRINT_WIN("Found matching socket");
 			return i;
 		}
 		if (fd == server[i]._sock) {
+			PRINT_ERR("Found socket");
 			if (save == -1)
 				save = i;
 		}
@@ -165,16 +167,24 @@ void	server_handler(Config &config, char **env) {
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		if (num_events == 1 && errno == EINTR) {
+			PRINT_ERR("ERRNO");
+			std::cout << std::strerror(errno) << std::endl;
+		}
 		if (signalcheck == 1)
 			break ;
 		for (size_t i = 0; i < num_events; i++) {
 			index = check_server_event(events[i].data.fd, config._serv);
 			if (index != -1 && events[i].data.fd == server[index]) {
 				config.connection_count++;
+				PRINT_WIN("Server event"); 
 				add_client(server[index], epoll_fd, clientlist, &id, &numclient, &curr_fd, hostname(server[index], config), port(server[index], config));
 			}
-			else {				
+			else {
+				//c_index = find_client_in_vector(clientlist, events[i].data.fd, i);
+				
 				if (events[i].events & EPOLLOUT) {
+					PRINT_WIN("EPOLLOUT");
 					int tmp;
 
 					tmp = events[i].data.fd;
@@ -185,9 +195,11 @@ void	server_handler(Config &config, char **env) {
 				}
 
 				if (events[i].events & EPOLLIN) {
+					std::cout << std::endl << "\033[1;41mXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\033[0m" << std::endl << std::endl;
 					config.request_count++;
 					client = events[i].data.fd;
 					save_index = i;
+					//i = c_index;
 					i = find_client_in_vector(clientlist, client, i);
 					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
 					if (tmp._name.size()) {
@@ -195,16 +207,26 @@ void	server_handler(Config &config, char **env) {
 						tmp.clear();
 					}
 					if (status == 1) {
+						PRINT_LOG("Status: 1");
 						answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
 					}
 					else if (status == 0 && clientlist[i].request.in_use == false) {
+						PRINT_ERR("Client timed out or disconnected");
 						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 					}
 					else if (status == -1) {
+						PRINT_ERR("Error syscall read / write");
 						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 					}
 					reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 					clientlist[i]._request_count++;
+					for (size_t x = 0; x < clientlist.size(); x++) {
+						std::cout << clientlist[x] << std::endl << "path: " << clientlist[x]._path << std::endl;
+						if (x == i)
+							std::cout << "\033[1;34m##############################\033[0m" << std::endl;
+						else
+							std::cout << "##############################" << std::endl;
+					}
 					i = save_index;
 				}
 			}
@@ -219,9 +241,11 @@ void	server_handler(Config &config, char **env) {
 					tmp.clear();
 				}
 				if (status == 0 && clientlist[j].request.in_use == false) {
+					PRINT_ERR("Client timed out or disconnected");
 					remove_client(clientlist[j]._sock, clientlist, j, &curr_fd, &numclient, epoll_fd);
 				}
 				else if (status == -1) {
+					PRINT_ERR("Error syscall read / write");
 					remove_client(clientlist[j]._sock, clientlist, j, &curr_fd, &numclient, epoll_fd);
 				}
 			}
@@ -230,5 +254,6 @@ void	server_handler(Config &config, char **env) {
 			}
 		}
 	}
+	PRINT_LOG("Clientlistsize: " + to_string(clientlist.size()));
 	clear_server(server, epoll_fd, config);
 }

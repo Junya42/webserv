@@ -6,6 +6,9 @@
 
 void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag) {
 
+  PRINT_ERR("Path: " + path_info);
+  PRINT_ERR("Log: " + to_string(client._log));
+  PRINT_ERR("Username: " + client._name);
   std::string tmp_path;
   bool found = false;
   if (using_cgi == false && comp(path_info, "?disconnect") == true) {
@@ -16,10 +19,12 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   else if (serv[index]._redirect && name.size() && auth == true && (path_info== "/" || path_info == "/html" || comp(path, "/login") == true)) {
     auth_redirect = 1;
     tmp_path = "/user";
+    PRINT_WIN("Auth redirect");
   }
   else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
     tmp_path = "/login";
+    PRINT_ERR("Redirect to log");
   }
   else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     set_error(401);
@@ -29,6 +34,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   if (comp(tmp_path, "user") == true) {
     client._log = true;
   }
+  PRINT_LOG("tmp path = " + tmp_path);
   if (flag != 0) {
     found = true;
     file_path = tmp_path;
@@ -38,7 +44,9 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   x = index;
   if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
+   PRINT_LOG("Using default server index");
     file_path = serv[x]._index;
+    PRINT_LOG("default index: " + file_path);
     while (file_path[0] == ' ' || file_path[0] == '\t')
       file_path.erase(0, 1);
     found = true;
@@ -54,11 +62,15 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
         if (serv[x]._loc[j]._redirect == true) {
           link = serv[x]._loc[j]._link;
+          PRINT_WIN("Redirect to " + link);
           auth_redirect = 3;
           using_cgi = false;
           return ;
         }
         if (flag == 0 && serv[x]._loc[j].method[method] != true) {
+          PRINT_ERR("SET ERROR 405");
+          for (std::map<std::string, bool>::iterator it = serv[x]._loc[j].method.begin(); it != serv[x]._loc[j].method.end(); it++)
+            std::cout << std::boolalpha << it->first << " : " << it->second << std::endl;
           set_error(405);
           complete_file = true;
           return ;
@@ -72,6 +84,8 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         struct stat st;
         if (stat(file_path.c_str(), &st) == 0) {
           found = true;
+          PRINT_WIN("Found filename");
+          PRINT_WIN(file_path);
         }
         break ;
       }
@@ -85,6 +99,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   size_t extpos;
   std::string file_ext;
 
+  PRINT_LOG(file_path);
   if (file_path.size()) {
     extpos = file_path.find_last_of(".");
     if (extpos >= file_path.size()){
@@ -110,6 +125,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
     return ;
   }
   if (complete_file == true) {
+    PRINT_WIN("File complete");
     return ;
   }
   if (file_size > 0) {
@@ -121,6 +137,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
     size_t last_read = file.gcount();
     read_size += last_read;
     if (file_size - read_size <= 0) {
+      PRINT_WIN("File complete in : " + to_string(read_count) + " runs");
       complete_file = true;
     }
     else
@@ -145,6 +162,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
       file.read(buff, buff_size);
       read_size = file.gcount();
       if (file_size - read_size == 0) {
+        PRINT_WIN("File complete");
         complete_file = true;
       }
       else
@@ -158,6 +176,7 @@ void  Request::get_request(std::vector<Server> &serv, Client &client, int index)
     }
     else {
       set_error(404);
+      PRINT_ERR("404 Not Found");
       status = "HTTP/1.1 404 Not Found\n";
       file_content = "<html><head><title>Error 404</title></head><body><h1>ERROR 404</h1></body></html>";
       file_path = "error.html";
@@ -192,6 +211,7 @@ void  Request::set_content_type(std::map<std::string, std::string> &_mime, size_
 void  Request::get_response(std::map<std::string, std::string> &_mime, Client &client) {
   std::ostringstream s;
   bool redirect = false;
+  PRINT_WIN(path);
   if (comp(path, "download") == false) {
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
@@ -225,7 +245,9 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     s << read_size;
     answer = status;
 
+    PRINT_LOG(file_path);
     if (client._name.size() && comp(file_path, "/user/index.html") == true && client._fav == false) {
+      PRINT_WIN("Adding cookie to: " + client._name);
       client._log = true;
       client._cookie = "log=" + client._name;
       answer += "Set-Cookie: ";
@@ -233,6 +255,7 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       answer += "; Path=/; Expires= Fri, 5 Oct 2042 14:42:00 CMT;\n";
     }
     else if (redirect == true) {
+      PRINT_ERR("Remove cookie from: " + client._name);
       std::string tmp = "log=" + client._name + "; Path=/; Expires=Fri, 5 Oct 2018 14:42:00 GMT;\n";
       answer += "Set-Cookie: ";
       answer += tmp;

@@ -9,6 +9,8 @@ std::string get_mime(std::string &filename, std::map<std::string,std::string> &_
 
   extension_pos = filename.find_last_of(".");
   extension = filename.substr(extension_pos);
+  PRINT_LOG(extension);
   mimevalue = _mime[extension];
+  PRINT_LOG(mimevalue);
   return mimevalue;
 }

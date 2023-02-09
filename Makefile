@@ -1,9 +1,6 @@
 NAME = webserv
 
 OBJ_DIR = objs
-SRCS_DIR = $(shell find srcs -type d)
-
-vpath %.cpp $(foreach dir, $(SRCS_DIR), $(dir))
 
 SRCS = main.cpp \
 	   config.cpp \
@@ -21,24 +18,36 @@ SRCS = main.cpp \
 	   cgi.cpp	\
 	   cgi2.cpp
 
-SRCS_PATH = $(addprefix srcs/, $(SRCS))
+DEBUG = 0
+
+ifdef SET_DEBUG
+	DSRCS_DIR = $(shell find d_srcs -type d)
+	vpath %.cpp $(foreach dir, $(DSRCS_DIR), $(dir))
+	SRCS_PATH = $(addprefix d_srcs/, $(SRCS))
+	DEBUG = 1
+else
+	SRCS_DIR = $(shell find srcs -type d)
+	vpath %.cpp $(foreach dir, $(SRCS_DIR), $(dir))
+	SRCS_PATH = $(addprefix srcs/, $(SRCS))
+endif
 
 OBJS = $(addprefix $(OBJ_DIR)/, $(SRCS:%.cpp=%.o))
 OBJ_LIST = $(wildcard objs/*.o)
 DEPS = $(OBJS:%.o=%.d)
 
 CC = c++
-FLAGS = -Wall -Wextra -Werror -std=c++98 -D DEBUG=0
-
-ifdef SET_DEBUG
-	FLAGS = -Wall -Wextra -Werror -g3 -std=c++98 -D DEBUG=1
-endif
+FLAGS = -Wall -Wextra -Werror -std=c++98
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
 	@$(CC) ${FLAGS} $(OBJS) -o $(NAME)
 	@echo "Successfully built $(NAME)"
+	@VAR=$(DEBUG); \
+	ONE=1; \
+	if [ $$VAR = $$ONE ]; then \
+		echo "Debug version"; \
+	fi
 
 $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
 	@echo "Compiling $@"
@@ -48,7 +57,7 @@ $(OBJ_DIR):
 	@mkdir -p $@
 
 debug: fclean
-	$(MAKE) SET_BUG=1
+	$(MAKE) SET_DEBUG=1
 
 clean:
 	@echo "Removing objects and dependencies"

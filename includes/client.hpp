@@ -145,7 +145,6 @@ class Client {
     int addclient(int server, int epoll_fd, std::vector<Client> &clientlist);
 
     Client &operator=(Client const &client) {
-      PRINT_LOG("OPERATOR =");
       _fav = client._fav;
       _id = client._id + 1;
       _sock = client._sock;

@@ -46,12 +46,17 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
         i++;
     }
     env[i] = NULL;
+    /*for (size_t x = 0; env[x]; x++)
+        PRINT_LOG("ENV[" + to_string(x) + "] : " + env[x]);*/
+    std::cout << std::endl;
     return env;
 }
 
 char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
     char **args;
 
+
+    (void)cgi_executor;
     switch (flag) {
         case 1:
             args = new char*[4];
@@ -86,10 +91,14 @@ char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
             }
             break;
     }
+    /*for (size_t i = 0; args[i]; i++)
+        PRINT_LOG("ARGS[" + to_string(i) + "] : " + args[i]);*/
+    std::cout << std::endl;
     return args;
 }
 
 void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string &cgi_executor, std::string &file_path, std::string &pwd, int flag, size_t n) {
+    PRINT_FUNC();
     pid_t   pid;
 
     FILE    *inFile = tmpfile();
@@ -128,6 +137,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
 
         execve(args[0], args, env);
 
+        PRINT_ERR("After Execve");
         for(size_t i = 0; args[i]; i++)
             delete[] args[i];
         delete[] args;
@@ -175,29 +185,37 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
     fclose(inFile);
     fclose(outFile);
     fclose(errFile);
+    std::cout << "end of cgi" << std::endl;
+    if (comp(cgi_executor, "python") == true)
+        std::cout << "\033[1;32m" << file_content << "\033[0m" << std::endl;
     complete_file = true;
 }
 
 void    Request::get_cgi_answer(Client &client) {
     bool    redirect = false;
 
+    PRINT_FUNC();
     answer.clear();
     if (comp(path, "download") == false && comp(path, "delete") == false) {
         if (method == "POST")
             status = "HTTP/1.1 201 Created\n";
         if (comp(query, "disconnect=true") == true) {
+            PRINT_ERR("Redirect 0");
             redirect = true;
             client._log = false;
             status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
         }
         else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
+            PRINT_ERR("Redirect 1");
             status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
         }
         else if (auth_redirect == 2) {
+            PRINT_ERR("Redirect 2");
             status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
         }
         answer = status;
         if (client._name.size() && comp(file_path, "/user/*.html") == true && client._fav == false) {
+            PRINT_WIN("Adding cookie to: " + client._name);
             client._log = true;
             client._cookie = "log=" + client._name;
             answer += "Set-Cookie: ";
@@ -205,6 +223,7 @@ void    Request::get_cgi_answer(Client &client) {
             answer += "; Path=/; Expires= Fri, 5 Oct 2042 14:42:00 CMT;\n";
         }
         else if (redirect == true) {
+            PRINT_ERR("Removing cookie from: " + client._name);
             std::string tmp = "log=" + client._name + "; Path=/; Expires=Fri, 5 Oct 2018 14:42:00 GMT;\n";
             answer += "Set-Cookie: ";
             answer += tmp;
@@ -228,6 +247,7 @@ void    get_executor(std::vector<Server> &serv, Request &req, std::string &cgi_e
 }
 
 void    Request::get_cgi(Client &client, Config &config, int flag) {
+    PRINT_FUNC();
     if (file_path.size() < 1) {
         int index = get_serv_from_client(client, config._serv);
         if (path_info.size()) {

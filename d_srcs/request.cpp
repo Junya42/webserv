@@ -22,6 +22,7 @@ void  swap_clients(Client &a, Client &b) {
 
 void  Request::set_error(int code) {
   if (!header_code) {
+    PRINT_ERR("Error : " + to_string(code));
     header_code = code;
   }
 }
@@ -29,7 +30,12 @@ void  Request::set_error(int code) {
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
+  //std::string line;
   size_t  line_count = 0;
+
+  std::cout << std::endl << "_____________________________" << std::endl
+    << "\033[1;32mRequest: \033[0m" << std::endl << std::endl
+    << request << std::endl;
 
   parent._fav = false;
   if (method.size() < 1) {
@@ -49,10 +55,14 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     path_info = path;
     if (comp(path, "cgi")) {
       size_t pos = find(path, '/', 3);
+      //if (pos != path.size()) {
         using_cgi = true;
         pos++;
         path_info = path.substr(pos - 1);
         path = path.substr(0, pos - 1);
+        PRINT_WIN("header path info: " + path_info);
+        PRINT_WIN("header path" + path);
+      //}
     }
     else if (comp(path, "errors/style.css")) {
       path = "/errors/style.css";
@@ -60,6 +70,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
 
   }
+  PRINT_LOG(method);
+  PRINT_LOG(path);
+  PRINT_LOG(version);
+
   while (std::getline(stream, sline)) {
     if (sline.size() == 1 && line_count == 0) {
       continue ;
@@ -94,6 +108,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         std::getline(value_stream, type, ';');
         std::getline(value_stream, boundary, '=');
         std::getline(value_stream, boundary);
+        //type = value;
         if (content_lenght < 1)
           content_lenght = 1;
         has_body = true;
@@ -101,6 +116,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       else if (comp(key, "Host") == true) {
         host.clear();
         host = value;
+        PRINT_LOG(host);
       }
       else if (comp(key, "Cookie") == true && parent._fav == false) {
         auth = true;
@@ -121,10 +137,14 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     line_count++;
   }
   
+  std::cout << std::endl << "_____________________________" << std::endl;
   if (comp(method, "delete"))
     has_body = false;
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
+  }
+ if (comp(host, parent._host) == false) {
+   PRINT_ERR("HOST DIFFERENCE");
   }
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
@@ -178,6 +198,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
         if (comp(key, "fname")) {
           if (parent._name.size()) {
             tmp = parent;
+            //tmp.request.clear();
             tmp._sock = 0;
             parent._files.clear();
             parent._oldname = parent._name;
@@ -248,6 +269,7 @@ void  Request::get_body(int client) {
         }
         body_str.push_back(buff[i]);
       }
+      PRINT_WIN(to_string(static_cast<double>(body_str.size()) / static_cast<double>(initial_lenght) * 100) + "%");
       content_lenght -= current_bytes;
     }
     else if (has_body == true && has_size == false) {
@@ -265,7 +287,7 @@ void  Request::get_body(int client) {
     std::string tmp;
     int         chunk_size = 0;
 
-    while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) {
+    while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) { //DANGER EXIT
       if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
         set_error(400);
       }
@@ -273,20 +295,23 @@ void  Request::get_body(int client) {
       if (erase(tmp, "\r\n") == true)
         break ;
       chunk_size++;
-      if (chunk_size > 6) {
+      if (chunk_size > 6) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
+                            //PRINT_ERR("Excessive chunk size");
         set_error(400);
       }
     }
     chunk_size = atoi(tmp.c_str());
     size_t  compchunk = chunk_size;
-    if (compchunk >= buff_size - 1) {
+    if (compchunk >= buff_size - 1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
       set_error(400);
     }
-    tmp.clear();
+    tmp.clear(); //ADDITION WITH VECTOR BUFF
+                 //if ((int_bytes = read(client, buff, chunk_size)) > 0)
     if ((int_bytes = recv(client, &buff[0], chunk_size, 0)) > 0)
       for (size_t i = 0; i < buff.size(); i++)
         tmp += buff[i];
-    if (int_bytes == -1) {
+    if (int_bytes == -1) { //REALLY DANGEROUS NEED TO REMOVE THIS CONDITION
+                           //PRINT_ERR("Couldn't read from client");
       set_error(400);
     }
     if (tmp == "\r\n") {
@@ -338,6 +363,7 @@ int Request::parse_header(void) {
 }
 
 int  Request::parse_body(Client &parent) {
+  PRINT_FUNC();
   if (boundary.size()) {
     size_t pos;
     if ((pos = body_str.find(boundary)) != std::string::npos) {
@@ -360,10 +386,13 @@ int  Request::parse_body(Client &parent) {
           if ( parent._name.size())
           {
             std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
+
+            PRINT_LOG(file_path);
             struct stat st;
 
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
+                PRINT_ERR("MKDIR");
                 set_error(500);
                 parsed_body = true;
                 return -1;
@@ -380,6 +409,7 @@ int  Request::parse_body(Client &parent) {
 
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
+                PRINT_ERR("MKDIR");
                 set_error(500);
                 parsed_body = true;
                 return -1;
@@ -401,6 +431,8 @@ int  Request::parse_body(Client &parent) {
           bool  end = false;
           if (cpy[0] == 13 && linecount == 0)
             continue;
+          //if (bodystream.tellp() == std::streampos(0))
+          //PRINT_LOG("bodystream is empty");
           if (bodystream.peek() == 45) {
             std::string test;
             std::streampos  save = bodystream.tellg();
@@ -420,12 +452,14 @@ int  Request::parse_body(Client &parent) {
           tmpbody.data.push_back(cpy);
         }
         if (boundary_count == 2 && boundary_count != old_boundary_count) {
+          PRINT_WIN("PUSH");
           multi_body.push_back(tmpbody);
           file.close();
           parent._files.push_back(tmpbody.filename);
           tmpbody.clear();
         }
         else if (boundary_count > 2 && boundary_count % 2 == 1 && old_boundary_count != boundary_count) {
+          PRINT_WIN("PUSH 2");
           multi_body.push_back(tmpbody);
           file.close();
           parent._files.push_back(tmpbody.filename);
@@ -444,7 +478,7 @@ int  Request::parse_body(Client &parent) {
       return -1;
     }
   }
-  else if (comp(type, "form-urlencoded") == true) {
+  else if (comp(type, "form-urlencoded") == true) { //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER //DANGER DANGER
     std::istringstream bodystream(body_str);
     std::string line;
     while (std::getline(bodystream, line)) {
@@ -517,7 +551,9 @@ void  Request::clear(void) {
 int  Request::read_client(int client, Client &parent, Client &tmp) {
   std::string request;
   int int_bytes = 0;
-
+  //char buff[buff_size];
+  //if (parent._name)
+  //name = parent._name;
   std::vector<unsigned char> buff(buff_size);
 
   if (in_response == true) {
@@ -546,6 +582,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     get_body(client);
   if (complete_header && parsed_header == false)
     parse_header();
+  //if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
   if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
     parse_body(parent);
   if (complete_header && has_body == false)
@@ -555,9 +592,11 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     return 1;
   }
   if (parsed_body == true) {
+    PRINT_ERR("return 1");
     in_use = false;
     return 1;
   }
+  PRINT_ERR("return 2");
   return 2;
 }
 
