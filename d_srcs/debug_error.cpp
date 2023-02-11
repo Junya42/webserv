@@ -123,6 +123,22 @@ void  length_required(int client) {
   write(client, error.c_str(), error.size());
 }
 
+void  content_too_large(int client) {
+  std::string error;
+  std::string content = start + "413 Content Too Large" + end + "\n\n";
+
+  error = "HTTP/1.1 413 Content Too Large\n";
+  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
+  error += "Content-Type: text/html\n";
+  error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
+  error += content;
+  // error += start;
+  // error += "400 Bad Request";
+  // error += end;
+  // error += "\r\n";
+  write(client, error.c_str(), error.size());
+}
+
 void  uri_too_long(int client) {
   std::string error;
   std::string content = start + "414 URI Too Long" + end + "\n\n";
@@ -247,6 +263,9 @@ int  send_custom_error(int client, int code, std::string path) {
     case 411:
       error = "HTTP/1.1 411 Length Required\n";
       break;
+    case 413:
+      error = "HTTP/1.1 413 Content Too Large\n";
+      break;
     case 414:
       error = "HTTP/1.1 414 URI Too Long\n";
       break;
@@ -328,6 +347,9 @@ void  send_error(int client, int code, Client &curr, std::string path) {
       break;
     case 411:
       length_required(client);
+      break;
+    case 413:
+      content_too_large(client);
       break;
     case 414:
       uri_too_long(client);
