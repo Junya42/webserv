@@ -24,7 +24,10 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     set_env.insert("REMOTE_HOST=" "");
     set_env.insert("REMOTE_ADDR=" + client._ip);
     set_env.insert("AUTH_TYPE=" "");
-    set_env.insert("REMOTE_USER=" + client._name);
+    if (client._name.size() < 1)
+        set_env.insert("REMOTE_USER=" "unknown");
+    else
+        set_env.insert("REMOTE_USER=" + client._name);
     set_env.insert("REMOTE_IDENT=" "");
     set_env.insert("CONTENT_TYPE=" + client.request.content_type);
     set_env.insert("CONTENT_LENGTH=" + to_string(client.request.initial_lenght));
