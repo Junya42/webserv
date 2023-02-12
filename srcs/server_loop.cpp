@@ -1,5 +1,6 @@
 #include "../includes/socket.hpp"
 #include "../includes/error.hpp"
+#include <exception>
 #include <signal.h>
 
 const int MAX_EVENTS = 100;
@@ -15,15 +16,19 @@ void	sighandle(int sig) {
 			signal(SIGINT, SIG_IGN);
 			break;
 		case 6:
+			signalcheck = 2;
 			signal(SIGABRT, SIG_DFL);
 			break;
 		case 7:
+			signalcheck = 2;
 			signal(SIGBUS, SIG_DFL);
 			break;
 		case 11:
+			signalcheck = 2;
 			signal(SIGSEGV, SIG_DFL);
 			break;
 		case 15:
+			signalcheck = 2;
 			signal(SIGTERM, SIG_DFL);
 			break;
 	}
@@ -112,7 +117,6 @@ std::string &port(int server, Config &config) {
 
 void	clear_server(std::vector<int> &server, int epoll_fd, Config &config) {
 	PRINT_LOG("Exiting server");
-	sleep(1);
 	PRINT_LOG("Remaining clients sockets: " + to_string(csocks.size()));
 	PRINT_LOG("Server socket list size: " + to_string(server.size()));
 	for (std::map<int, int>::iterator it = csocks.begin(); it != csocks.end(); it++)
@@ -165,7 +169,7 @@ void	server_handler(Config &config, char **env) {
 	tmp.clear();
 	while (1) {
 		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
-		if (signalcheck == 1)
+		if (signalcheck >= 1)
 			break ;
 		for (size_t i = 0; i < num_events; i++) {
 			index = check_server_event(events[i].data.fd, config._serv);
@@ -189,13 +193,27 @@ void	server_handler(Config &config, char **env) {
 					client = events[i].data.fd;
 					save_index = i;
 					i = find_client_in_vector(clientlist, client, i);
+					try {
 					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+					}
+					catch (std::exception & e) {
+						std::cerr << e.what() << std::endl;
+						clientlist.clear();
+						return clear_server(server, epoll_fd, config);
+					}
 					if (tmp._name.size()) {
 						clientlist.push_back(tmp);
 						tmp.clear();
 					}
 					if (status == 1) {
-						answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
+						try {
+							answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
+						}
+						catch (std::exception & e) {
+							std::cerr << e.what() << std::endl;
+							clientlist.clear();
+							return clear_server(server, epoll_fd, config);
+						}
 					}
 					else if (status == 0 && clientlist[i].request.in_use == false) {
 						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
@@ -213,7 +231,14 @@ void	server_handler(Config &config, char **env) {
 		{
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
+				try {
 				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
+				}
+				catch (std::exception & e) {
+					std::cerr << e.what() << std::endl;
+					clientlist.clear();
+					return clear_server(server, epoll_fd, config);
+				}
 				if (tmp._name.size()) {
 					clientlist.push_back(tmp);
 					tmp.clear();
@@ -226,7 +251,14 @@ void	server_handler(Config &config, char **env) {
 				}
 			}
 			if (clientlist[j].request.in_response == true || status == 1) {
-				answer_client(clientlist[j], clientlist[j].request, config, epoll_fd);
+				try {
+					answer_client(clientlist[j], clientlist[j].request, config, epoll_fd);
+				}
+				catch (std::exception & e) {
+					std::cerr << e.what() << std::endl;
+					clientlist.clear();
+					return clear_server(server, epoll_fd, config);
+				}
 			}
 		}
 	}

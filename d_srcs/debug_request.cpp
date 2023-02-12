@@ -20,10 +20,10 @@ void  swap_clients(Client &a, Client &b) {
   b = tmp;
 }
 
-void  Request::set_error(int code) {
+void  Request::set_error(int code, const char *s1, int line) {
   if (!header_code) {
-    PRINT_ERR("Error : " + to_string(code));
     header_code = code;
+    PRINT_ERR(to_string(s1) + " : " + to_string(line));
   }
 }
 
@@ -129,7 +129,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         std::getline(bound, boundary);
       }
       else if (comp(key, "transfer-encoding") == true) {
-        transfer_encoding = value;
+        if (comp(value, "chunked") == true)
+          transfer_encoding = "chunked";
       }
     }
     line_count++;
@@ -146,6 +147,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
  if (comp(host, parent._host) == false) {
    PRINT_ERR("HOST DIFFERENCE");
   }
+ if (initial_lenght == 0 && has_body && transfer_encoding != "chunked")
+   set_error(400);
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }

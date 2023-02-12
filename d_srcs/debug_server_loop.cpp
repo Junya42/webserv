@@ -195,7 +195,7 @@ void	server_handler(Config &config, char **env) {
 				}
 
 				if (events[i].events & EPOLLIN) {
-					std::cout << std::endl << "\033[1;41mXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\033[0m" << std::endl << std::endl;
+					PRINT_WIN("EPOLLIN");
 					config.request_count++;
 					client = events[i].data.fd;
 					save_index = i;

@@ -26,6 +26,7 @@ std::string trim(const std::string &s) {
 Server::Server(void) {
   _redirect = false;
   _login = false;
+  _large = false;
   _port = -1;
   _connection = 0;
   _requests = 0;
@@ -47,6 +48,7 @@ void  Server::clear(void) {
   _bodysize = 0;
   _port = 0;
   _valid = false;
+  _large = false;
   _loc.clear();
 }
 
@@ -131,6 +133,10 @@ int  Server::setup_server(std::vector<std::string> &vec) {
       if (key == "enable_redirect") {
         if (value == " true")
           _redirect = true;
+      }
+      if (key == "allow_large_download") {
+        if (value == " true")
+          _large = true;
       }
       if (key == "cgi") {
         _cgi = value;

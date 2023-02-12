@@ -20,13 +20,17 @@ void  swap_clients(Client &a, Client &b) {
   b = tmp;
 }
 
-void  Request::set_error(int code) {
+void  Request::set_error(int code, const char *s1, int line) {
   if (!header_code) {
     header_code = code;
+    PRINT_ERR(to_string(s1) + " : " + to_string(line));
   }
+
 }
 
 void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
+
+  std::cout << "____________________________________________" << std::endl << std::endl;
 
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   size_t  line_count = 0;
@@ -36,7 +40,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     stream >> method;
     stream >> path;
     stream >> version;
-
+    
+    std::cout << method << " " << path << " " << version << std::endl;
     std::istringstream tmpstream(path, std::ios_base::binary | std::ios_base::out);
 
     if (path.size() > 150)
@@ -68,6 +73,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
       complete_header = true;
       break ;
     }
+    std::cout << sline << std::endl;
     if (sline.size()) {
       std::istringstream line_stream(sline);
       std::getline(line_stream, key, ':');
@@ -94,8 +100,8 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         std::getline(value_stream, type, ';');
         std::getline(value_stream, boundary, '=');
         std::getline(value_stream, boundary);
-        if (content_lenght < 1)
-          content_lenght = 1;
+        //if (content_lenght < 1)
+          //content_lenght = 1;
         has_body = true;
       }
       else if (comp(key, "Host") == true) {
@@ -115,17 +121,24 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         std::getline(bound, boundary);
       }
       else if (comp(key, "transfer-encoding") == true) {
-        transfer_encoding = value;
+        if (comp(value, "chunked") == true) {
+          PRINT_LOG("Chunked");
+          transfer_encoding = "chunked";
+        }
       }
     }
     line_count++;
   }
   
+  if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
+    set_error(411);
   if (comp(method, "delete"))
     has_body = false;
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
+  if (header_code != 0)
+    return ;
   if (has_body == false)
     complete_header = true;
   if (complete_header == true && has_body)
@@ -544,6 +557,14 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     }
     in_use = true;
     get_header(request, parent, tmp);
+    if (header_code != 0) {
+      in_use = false;
+      complete_header = true;
+      parsed_header = true;
+      parsed_body = true;
+      complete_file = true;
+      return 1;
+    }
   }
   if (complete_header == true && has_body)
     get_body(client);

@@ -36,7 +36,7 @@ class Request {
     void        get_body(int client);
 
     std::string check_method(std::string &method);
-    void        set_error(int code);
+    void        set_error(int code, const char *s1 = __builtin_FUNCTION(), int line = __builtin_LINE());
     int         parse_header(void);
     int         parse_body(Client &parent);
 

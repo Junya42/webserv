@@ -2,6 +2,7 @@
 #include "../includes/error.hpp"
 #include <arpa/inet.h>
 #include <cstdlib>
+#include <fcntl.h>
 
 const int MAX_EVENTS = 100;
 extern std::map<int, int> csocks;
@@ -224,15 +225,25 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 			delete_file(config._serv[client._index], client);
 	}
 	if (req.complete_file == true && client._ready == true) {
+		std::cout << std::endl;
 		if (req.header_code != 0) {
 			send_error(client._sock, req.header_code, client, error_path(config._serv[client._index], req.header_code));
+			PRINT_ERR("Sending error");
 			client._log = false;
 		}
 		else if (req.header_code == 0) {
 			if (req.using_cgi == false)
 				req.get_response(config._mime, client);
+			if (req.answer.size() > 100000 && config._serv[client._index]._large == true) {
+				int val = fcntl(client._sock, F_GETFL, 0);
+				int flags = O_NONBLOCK;
+				val &= ~flags;
+				fcntl(client._sock, F_SETFL, val);
+			}
 			write(client._sock, req.answer.c_str(), req.answer.size());
+			PRINT_LOG("Sending answer");
 		}
+		std::cout << std::endl;
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client._sock, NULL);
 		csocks.erase(client._sock);
 		close(client._sock);
