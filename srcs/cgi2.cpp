@@ -116,6 +116,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
     int     ret;
 
     file_content.clear();
+
     pid = fork();
 
     if (pid < 0)
@@ -152,7 +153,8 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         exit(42);
     }
     else {
-        if (waitpid(pid, &status, 0) == -1)
+        usleep(300000);
+        if (waitpid(pid, &status, WNOHANG) == -1)
             set_error(500);
         if (WIFEXITED(status)) {
             ret = WEXITSTATUS(status);

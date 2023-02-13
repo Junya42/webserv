@@ -153,19 +153,16 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   }
   else
     set_error(400);
-  if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
-    set_error(411);
   if (comp(method, "delete"))
     has_body = false;
+  if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
+    set_error(411);
   if (comp(method, "post") == false && has_body == true) {
       set_error(400);
   }
   if (header_code != 0)
     return ;
-  PRINT_LOG("phost:" + parent._host);
-  PRINT_LOG("host:" + host);
   if (parent._host.size() && parent._host != host) {
-    PRINT_ERR("DISCONNECTING USER: " + parent._name);
     parent._log = false;
     parent._lastname = "Each server has it's own login system, current client got disconnected";
   }

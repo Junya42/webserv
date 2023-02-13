@@ -285,6 +285,9 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 				val &= ~flags;
 				fcntl(client._sock, F_SETFL, val);
 			}
+			if (req.method == "DELETE") {
+				std::cout << "\033[1;33m" << req.answer << "\033[0m" << std::endl;
+			}
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_LOG("Sending answer");
 		}
