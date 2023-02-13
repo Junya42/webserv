@@ -105,8 +105,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         has_body = true;
       }
       else if (comp(key, "Host") == true) {
-        host.clear();
-        host = value;
+        host = trim(value);
       }
       else if (comp(key, "Cookie") == true && parent._fav == false) {
         auth = true;
@@ -129,7 +128,31 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     }
     line_count++;
   }
-  
+  if (host.size()) {
+    int hcount = 0;
+    for (size_t l = 0; l < host.size(); l++) {
+      if (host[l] == ':') {
+        hcount++;
+        if (l == host.size() - 1)
+            set_error(400);
+        if (hcount > 1)
+          break;
+      }
+      else if (hcount == 0 && !isalnum(host[l]) && host[l] != '.') {
+        set_error(400);
+        break;
+      }
+      else if (hcount == 1 && !isdigit(host[l])) {
+        set_error(400);
+        break;
+      }
+    }
+    if (hcount != 1)
+      set_error(400);
+    parent._host = host;
+  }
+  else
+    set_error(400);
   if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
     set_error(411);
   if (comp(method, "delete"))
@@ -139,6 +162,14 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   }
   if (header_code != 0)
     return ;
+  PRINT_LOG("phost:" + parent._host);
+  PRINT_LOG("host:" + host);
+  if (parent._host.size() && parent._host != host) {
+    PRINT_ERR("DISCONNECTING USER: " + parent._name);
+    parent._log = false;
+    parent._lastname = "Each server has it's own login system, current client got disconnected";
+  }
+  parent._host = host;
   if (has_body == false)
     complete_header = true;
   if (complete_header == true && has_body)
@@ -363,6 +394,7 @@ int  Request::parse_body(Client &parent) {
       body_str.clear();
       int boundary_count = 0;
       std::ofstream file;
+      std::string server_name = host.substr(0, host.find(":"));
       while (std::getline(bodystream, cpy)) {
         int old_boundary_count = boundary_count;
         if (cpy.find("Content-Disposition") != std::string::npos) {
@@ -374,7 +406,7 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename.erase(tmpbody.filename.size() - 1, 1);
           if ( parent._name.size())
           {
-            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
+            std::string file_path("/tmp/private_webserv/" + server_name + "/" + parent._name);
             struct stat st;
 
             if ( stat(file_path.c_str(), &st) == -1 )
@@ -390,7 +422,7 @@ int  Request::parse_body(Client &parent) {
           }
           else
           {
-            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + "unknown");
+            std::string file_path("/tmp/private_webserv/" + server_name + "/" + "unknown");
             struct stat st;
 
             if ( stat(file_path.c_str(), &st) == -1 )

@@ -10,23 +10,23 @@ std::string auto_middle = "<div class=\"glass-panel\"><div class=\"glass-toolbar
 
 std::string auto_end = "</div></div></body></html>";
 
-std::string create_folder_button(Client &client, const std::string & name)
+std::string create_folder_button(std::string &host, const std::string &name)
 {
   std::string ret;
 
     ret = "<a href=\"http://";
-    ret += client._host + ":" + client._sport + "/";
+    ret += host + "/";
     ret += name;
     ret += "\" target=\"_self\" class=\"glass-button-folder\">/" + name + "</a>\n";
     return ret;
 }
 
-std::string create_file_button(Client &client, const std::string & name)
+std::string create_file_button(std::string &host, const std::string &name)
 {
     std::string ret;
 
     ret = "<a href=\"http://";
-    ret += client._host + ":" + client._sport + "/";
+    ret += host + "/";
     ret += name;
     ret += "\" target=\"_self\" class=\"glass-button\">" + name + "</a>\n";
     return ret;
@@ -34,8 +34,9 @@ std::string create_file_button(Client &client, const std::string & name)
 
 void  Request::auto_file_name(Client &client) 
 {
+    (void)client;
     file_content = auto_begin;
-    file_content += client._name;
+    //file_content += client._name;
     file_content += auto_middle;
 
     DIR *dir;
@@ -64,13 +65,13 @@ void  Request::auto_file_name(Client &client)
         return ;
     }
     for (std::vector<std::string>::iterator it = dirnames.begin(); it != dirnames.end(); it++) {
-        file_content += create_folder_button(client, *it);
+        file_content += create_folder_button(host, *it);
     }
 
     file_content += "</div><div class=\"glass-toolbar\">";
 
     for (std::vector<std::string>::iterator it = filenames.begin(); it != filenames.end(); it++) {
-        file_content += create_file_button(client, *it);
+        file_content += create_file_button(host, *it);
     }
 
     file_content += auto_end;

@@ -3,7 +3,7 @@
 #include <exception>
 #include <signal.h>
 
-const int MAX_EVENTS = 100;
+const int MAX_EVENTS = 300;
 int	signalcheck=0;
 std::map<int, int> csocks;
 
@@ -168,7 +168,8 @@ void	server_handler(Config &config, char **env) {
 	int save_index;
 	tmp.clear();
 	while (1) {
-		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		//num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 100);
 		if (signalcheck >= 1)
 			break ;
 		for (size_t i = 0; i < num_events; i++) {
@@ -223,6 +224,13 @@ void	server_handler(Config &config, char **env) {
 					}
 					reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 					clientlist[i]._request_count++;
+					if (status == 1) {
+						for (size_t x = 0; x < clientlist.size(); x++) {
+							std::cout << clientlist[x] << std::endl;
+							std::cout << "\033[1;34mPath info: " << clientlist[x]._path << "\033[0m" << std::endl;
+							std::cout << "============" << std::endl;
+						}
+					}
 					i = save_index;
 				}
 			}

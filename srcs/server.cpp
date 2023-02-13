@@ -1,12 +1,14 @@
 #include "../includes/server.hpp"
 #include "../includes/overload.hpp"
+#include "../includes/string.hpp"
 #include <sstream>
 #include <iostream>
 #include <algorithm>
 #include <sys/types.h>
 
-const std::string WHITESPACE = " \n\r\t\f\v";
- 
+//const std::string WHITESPACE = " \n\r\t\f\v";
+
+/* 
 std::string ltrim(const std::string &s)
 {
     size_t start = s.find_first_not_of(WHITESPACE);
@@ -22,6 +24,7 @@ std::string rtrim(const std::string &s)
 std::string trim(const std::string &s) {
     return rtrim(ltrim(s));
 }
+*/
 
 Server::Server(void) {
   _redirect = false;
@@ -40,6 +43,9 @@ void  Server::clear(void) {
   _cgi.clear();
   errors.clear();
   _methods.clear();
+  _ip.clear();
+  _lpage.clear();
+  _upage.clear();
   _redirect = false;
   _login = false;
   _get = false;
@@ -138,6 +144,12 @@ int  Server::setup_server(std::vector<std::string> &vec) {
         if (value == " true")
           _large = true;
       }
+      if (key == "login_page" && _lpage.empty()) {
+        _lpage = trim(value);
+      }
+      if (key == "user_page" && _upage.empty()) {
+        _upage = trim(value);
+      }
       if (key == "cgi") {
         _cgi = value;
         erase(value, " ");
@@ -154,7 +166,12 @@ int  Server::setup_server(std::vector<std::string> &vec) {
     }
     i++;
   }
-  //if (_port == -1 || !_name.size() || !_index.size()) {
+  if (_upage.size() && _lpage.size()) {
+    if (_upage == _lpage) {
+      PRINT_ERR("Login page and user page can't be equals");
+      return -1;
+    }
+  }
   if (_port == -1 || !_name.size()) {
     if (_port == -1)
       PRINT_ERR("Port error");
@@ -255,7 +272,6 @@ std::ostream &operator<<(std::ostream &nstream, Server &server) {
     << "\033[36mforce login: \033[0m" << server._login << std::endl
     << "\033[36menable redirect: \033[0m" << server._redirect << std::endl
     << "\033[36mport: \033[0m" << server._port << std::endl 
-    << "\033[36mstring port: \033[0m" << server._sport << std::endl 
     << "\033[36mhost: \033[0m" << server._host << std::endl
     << "\033[36merrors: \033[0m" << server.errors << std::endl
     << "_____________________________________" << std::endl << std::endl;

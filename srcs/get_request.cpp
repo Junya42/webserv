@@ -8,18 +8,27 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
 
   std::string tmp_path;
   bool found = false;
+
   if (using_cgi == false && comp(path_info, "?disconnect") == true) {
     for (size_t i = 0; i < path_info.size(); i++)
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);
   }
-  else if (serv[index]._redirect && name.size() && auth == true && (path_info == "/" || path_info == "/html" || comp(path, "/login") == true)) {
+  else if (serv[index]._redirect && client._name.size() && auth == true && (path_info == "/" || path_info == "/html" || comp(path, "/login") == true)) {
     auth_redirect = 1;
-    tmp_path = "/user";
+    if (serv[index]._upage.size()) {
+      tmp_path = serv[index]._upage;
+    }
+    else
+      tmp_path = "/user";
   }
   else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
-    tmp_path = "/login";
+    if (serv[index]._lpage.size()) {
+      tmp_path = serv[index]._lpage;
+    }
+    else
+      tmp_path = "/login";
   }
   else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     set_error(401);
@@ -71,8 +80,11 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         file_path = serv[x]._loc[j]._root + tmp_path;
         DIR *dir = opendir(file_path.c_str());
         if (dir) {
-          if (serv[x]._loc[j]._index.size())
-            file_path = serv[x]._loc[j]._index;
+          if (serv[x]._loc[j]._index.size()) {
+            if (file_path[file_path.size() - 1] != '/')
+              file_path += "/";
+            file_path += serv[x]._loc[j]._index;
+          }
           else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
               auto_file_name(client);
               auto_index = true;
@@ -209,13 +221,13 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/html\n";
     }
     else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/user\n";
     }
     else if (auth_redirect == 2) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/login\n";
     }
     else if (auth_redirect == 3) {
       if (method == "GET")
@@ -229,7 +241,8 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       this->set_content_type(_mime);
     else {
       answer = "HTTP/1.1 200 OK\n";
-      answer += "Content-Type: text/html\n\n";
+      answer += "Content-Type: text/html\n";
+      answer += "Content-Length: " + to_string(file_content.size() + 2) + "\n\n";
       answer += file_content;
       answer += "\n\n";
       return ;

@@ -17,6 +17,7 @@ toolbar = "<div class=\"glass-panel\"><div class=\"glass-toolbar\">\n"
 
 folder_back = "<a href =\"" + str(os.environ.get('HTTP_REFERER')) + "\" target=\"_self\" class=\"glass-button-return\"> .. </a>\n"
 
+
 path = "/tmp/private_webserv/" + server + "/" + user
 
 exist = os.path.exists(path)
@@ -31,7 +32,7 @@ if exist == 1:
         if isdir == 1:
             x += "<a href=\"http://localhost:8080/cgi-bin/delete.py" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
         else:
-            y += "<a href=\"http://localhost:8080/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" +"Delete " + val + "</a>\n"
+            y += "<a href=\"http://localhost:8080/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" +"Delete " + path + val + "</a>\n"
     x += "</div><div class=\"glass-toolbar\">" + y + "</div></div></body></html>"
 else:
     x += "</div></div></body></html>"

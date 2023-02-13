@@ -6,15 +6,24 @@
 char **create_env(Client &client, std::string &pwd, std::string &script, std::string &path) {
     std::set<std::string> set_env;
 
+    std::string server_name;
+    std::string server_port;
+
+    size_t spos = client.request.host.find(":");
+    if (spos != std::string::npos) {
+        server_name = client.request.host.substr(0, spos);
+        server_port = client.request.host.substr(spos + 1);
+    }
+    PRINT_ERR(server_name);
     set_env.insert("PATH=" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
     set_env.insert("PWD=" + pwd);
 
     set_env.insert("SERVER_SOFTWARE=" "HTTP/1.1");
-    set_env.insert("SERVER_NAME=" + client._host);
+    set_env.insert("SERVER_NAME=" + server_name);
     set_env.insert("GATEWAY_INTERFACE=" "CGI/1.1");
 
     set_env.insert("SERVER_PROTOCOL=" "Webserv/1");
-    set_env.insert("SERVER_PORT=" + client._sport);
+    set_env.insert("SERVER_PORT=" + server_port);
     set_env.insert("REQUEST_METHOD=" + client.request.method);
     set_env.insert("PATH_INFO=" + client.request.path_info);
     set_env.insert("PATH_TRANSLATED=" + path);
@@ -46,6 +55,7 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     for (std::set<std::string>::iterator it = set_env.begin(); it != set_env.end(); it++) {
         env[i] = new char[(*it).size() + 1];
         env[i] = strcpy(env[i], (*it).c_str());
+        //PRINT_LOG(env[i]);
         i++;
     }
     env[i] = NULL;
@@ -159,6 +169,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                 }
                 set_error(atoi(errString.c_str()));
             }
+            (void)ret;
         }
         if (n == 0) {
             (void)n;
@@ -175,6 +186,7 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                 file_content += buff[i];
         }
     }
+    //std::cout << file_content << std::endl;
     fclose(inFile);
     fclose(outFile);
     fclose(errFile);
@@ -191,13 +203,13 @@ void    Request::get_cgi_answer(Client &client) {
         if (comp(query, "disconnect=true") == true) {
             redirect = true;
             client._log = false;
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/html\n";
         }
         else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/user\n";
         }
         else if (auth_redirect == 2) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/login\n";
         }
         answer = status;
         if (client._name.size() && comp(file_path, "/user/*.html") == true && client._fav == false) {
