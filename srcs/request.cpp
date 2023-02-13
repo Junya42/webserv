@@ -32,6 +32,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
 
   std::cout << "____________________________________________" << std::endl << std::endl;
 
+  std::cout << request << std::endl << std::endl;
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   size_t  line_count = 0;
 

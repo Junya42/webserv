@@ -195,7 +195,8 @@ void	server_handler(Config &config, char **env) {
 					save_index = i;
 					i = find_client_in_vector(clientlist, client, i);
 					try {
-					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+						status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+						clientlist[i]._request_count++;
 					}
 					catch (std::exception & e) {
 						std::cerr << e.what() << std::endl;
@@ -217,13 +218,17 @@ void	server_handler(Config &config, char **env) {
 						}
 					}
 					else if (status == 0 && clientlist[i].request.in_use == false) {
-						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+						(void)status;
+						//clientlist.erase(clientlist.begin() + i);
+						//remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 					}
 					else if (status == -1) {
-						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+						//clientlist.erase(clientlist.begin() + i);
+						(void)status;
+						//remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
 					}
-					reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
-					clientlist[i]._request_count++;
+					if (status == 1)
+						reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
 					if (status == 1) {
 						for (size_t x = 0; x < clientlist.size(); x++) {
 							std::cout << clientlist[x] << std::endl;

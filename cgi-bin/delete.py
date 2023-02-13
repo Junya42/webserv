@@ -12,18 +12,22 @@ user = str(os.environ.get('REMOTE_USER'))
 server = str(os.environ.get('SERVER_NAME'))
 port = str(os.environ.get('SERVER_PORT'))
 
-return_button = "<a href = \"http://" + server + ":" + port + "/cgi-bin/get.sh/user\" target=\"_self\" class=\"glass-button-return\"> Return</a>\n"
+return_button = "<a href=\"http://" + server + ":" + port + "/cgi-bin/get.sh/user\" target=\"_self\" class=\"glass-button-return\"> Return</a>\n"
 
 toolbar = "<div class=\"glass-panel\"><div class=\"glass-toolbar\">\n"
 
 folder_back = "<a href =\"" + str(os.environ.get('HTTP_REFERER')) + "\" target=\"_self\" class=\"glass-button-return\"> .. </a>\n"
 
+#deletescript = "<script> function myFunction() {  console.log(\"Sended DELETE request\"); fetch( \"http://localhost:8080/tmp/private_webserv/localhost/Anis/print.c\", { method: \"DELETE\", headers: { 'Content-type': 'application/json' } }); } </script>" 
+#deletebutton = "<button onclick=\"myFunction()\">DELETE</button>"
 
 path = "/tmp/private_webserv/" + server + "/" + user
 
 exist = os.path.exists(path)
 
-x = start + user + "</a>" + return_button + toolbar + folder_back
+deletescript = "<script>function myFunction(lol) {  console.log(\"Sent DELETE request\"); fetch( lol, { method: \"DELETE\", headers: { 'Content-type': 'application/json' } }); } </script>" 
+x = start + user + "</a>" + return_button + toolbar + folder_back + deletescript
+
 if exist == 1:
     listing = os.listdir(path)
     path += "/"
@@ -33,8 +37,10 @@ if exist == 1:
         if isdir == 1:
             x += "<a href=\"http://" + server + ":" + port + "/cgi-bin/delete.py" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
         else:
-            #y += "<div class=\"glass-button\">" + "http://" + server + ":" + port + path + val + "</div>\n"
-            y += "<a href=\"http://" + server + ":" + port + "/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" + "Delete " + val + "</a>\n"
+            link = "http://" + server + ":" + port + path + val
+            deletebutton = "<button class=\"glass-button\" onclick=\"myFunction('" + link + "')\">Delete " + val + "</button>\n"
+            y += deletebutton
+            #y += "<a href=\"http://" + server + ":" + port + "/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" + "Delete " + val + "</a>\n"
     x += "</div><div class=\"glass-toolbar\">" + y + "</div></div></body></html>"
 else:
     x += "</div></div></body></html>"
