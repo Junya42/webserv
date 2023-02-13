@@ -10,8 +10,9 @@ start = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Webserv</titl
 
 user = str(os.environ.get('REMOTE_USER'))
 server = str(os.environ.get('SERVER_NAME'))
+port = str(os.environ.get('SERVER_PORT'))
 
-return_button = "<a href = \"http://localhost:8080/cgi-bin/get.sh/user\" target=\"_self\" class=\"glass-button-return\"> Return</a>\n"
+return_button = "<a href = \"http://" + server + ":" + port + "/cgi-bin/get.sh/user\" target=\"_self\" class=\"glass-button-return\"> Return</a>\n"
 
 toolbar = "<div class=\"glass-panel\"><div class=\"glass-toolbar\">\n"
 
@@ -30,9 +31,9 @@ if exist == 1:
     for val in listing:
         isdir = os.path.isdir(path + val)
         if isdir == 1:
-            x += "<a href=\"http://localhost:8080/cgi-bin/delete.py" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
+            x += "<a href=\"http://" + server + ":" + port + "/cgi-bin/delete.py" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
         else:
-            y += "<a href=\"http://localhost:8080/cgi-bin/delete_request.py" + path + val + "\" data-method=\"delete\" class=\"glass-button\">" +"Delete " + path + val + "</a>\n"
+            y += "<div class=\"glass-button\">" + "http://" + server + ":" + port + path + val + "</div>\n"
     x += "</div><div class=\"glass-toolbar\">" + y + "</div></div></body></html>"
 else:
     x += "</div></div></body></html>"
