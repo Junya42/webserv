@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "client.hpp"
 
+void    expect_continue(int client); //100
+
 // Client side errors
 void  bad_request(int client); //400
 void  unauthorized(int client); //401

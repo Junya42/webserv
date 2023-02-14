@@ -8,13 +8,16 @@ int     Request::state_0(int client) {
     chunk_size = 0;
     int_bytes = read(client, &c, 1);
 
-    if (int_bytes < 1)
+    if (int_bytes < 1) {
         return -1;
+    }
 
     if (!(isalnum(c) || c == '\r' || c == '\n')) {
 
         set_error(400);
         fclose(cfile);
+        complete_chunk = true;
+        state = 3;
         return -1;
     }
 

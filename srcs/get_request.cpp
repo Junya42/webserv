@@ -9,7 +9,8 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   std::string tmp_path;
   bool found = false;
 
-  if (using_cgi == false && comp(path_info, "?disconnect") == true) {
+  if (using_cgi == false && comp(query, "disconnect=true") == true) {
+    std::cout << std::boolalpha << "Using CGI: " << using_cgi << std::endl;
     for (size_t i = 0; i < path_info.size(); i++)
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);

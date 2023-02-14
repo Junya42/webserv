@@ -166,6 +166,7 @@ void	server_handler(Config &config, char **env) {
 	int numclient = 0;
 	uint32_t	id = 1;
 	int save_index;
+	std::string continue_str = "HTTP/1.1 100 Continue\n\n";
 	tmp.clear();
 	while (1) {
 		//num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
@@ -217,15 +218,10 @@ void	server_handler(Config &config, char **env) {
 							return clear_server(server, epoll_fd, config);
 						}
 					}
-					else if (status == 0 && clientlist[i].request.in_use == false) {
-						(void)status;
-						//clientlist.erase(clientlist.begin() + i);
-						//remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
-					}
-					else if (status == -1) {
-						//clientlist.erase(clientlist.begin() + i);
-						(void)status;
-						//remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+					else if (clientlist[i]._ready && clientlist[i].request.expect_continue == true) {
+						write(clientlist[i]._sock, continue_str.c_str(), continue_str.size());
+						clientlist[i].request.limit = 0;
+						clientlist[i].request.expect_continue = false;
 					}
 					if (status == 1)
 						reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
@@ -272,6 +268,11 @@ void	server_handler(Config &config, char **env) {
 					clientlist.clear();
 					return clear_server(server, epoll_fd, config);
 				}
+			}
+			else if (clientlist[j]._ready && clientlist[j].request.expect_continue == true) {
+				write(clientlist[j]._sock, continue_str.c_str(), continue_str.size());
+				clientlist[j].request.expect_continue = false;
+				clientlist[j].request.limit = 0;
 			}
 		}
 	}

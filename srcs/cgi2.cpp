@@ -55,7 +55,7 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     for (std::set<std::string>::iterator it = set_env.begin(); it != set_env.end(); it++) {
         env[i] = new char[(*it).size() + 1];
         env[i] = strcpy(env[i], (*it).c_str());
-        PRINT_LOG(env[i]);
+        //PRINT_LOG(env[i]);
         i++;
     }
     env[i] = NULL;
@@ -65,28 +65,8 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
 char **create_args(std::string &path, std::string &cgi_path, std::string &cgi_executor, int flag) {
     char **args;
 
+
     switch (flag) {
-        case 1:
-            if (cgi_executor.size()) {
-                args = new char*[5];
-                if (!args)
-                    return NULL;
-                args[0] = strdup(cgi_executor.c_str());
-                args[1] = strdup(cgi_path.c_str());
-                args[2] = strdup(path.c_str());
-                args[3] = strdup("replace");
-                args[4] = NULL;
-            }
-            else {
-                args = new char*[4];
-                if (!args)
-                    return NULL;
-                args[0] = strdup(cgi_path.c_str());
-                args[1] = strdup(path.c_str());
-                args[2] = strdup("replace");
-                args[3] = NULL;
-            }
-            break;
         default:
             if (cgi_executor.size()) {
                 args = new char*[4];
@@ -217,13 +197,13 @@ void    Request::get_cgi_answer(Client &client) {
         if (comp(query, "disconnect=true") == true) {
             redirect = true;
             client._log = false;
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/html\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/html\n";
         }
         else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/user\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/user\n";
         }
         else if (auth_redirect == 2) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/login\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/login\n";
         }
         answer = status;
         if (client._name.size() && comp(file_path, "/user/*.html") == true && client._fav == false) {

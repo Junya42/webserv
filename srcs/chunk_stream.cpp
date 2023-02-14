@@ -6,6 +6,9 @@ int Request::state_0(std::istringstream &stream) {
 
     chunk_size = 0;
     stream.get(c);
+    if (stream.gcount() == 0) {
+        return 0;
+    }
     if (!(isalnum(c) || c == '\r' || c == '\n')) {
 
         set_error(400);
@@ -22,7 +25,6 @@ int Request::state_0(std::istringstream &stream) {
     temp0 += c;
     if (temp0.size() > 2 && temp0[temp0.size() - 1] == '\n' && temp0[temp0.size() - 2] == '\r') {
 
-        std::cout << std::endl;
         sscanf(temp0.c_str(), "%x", &chunk_size);
         temp0.clear();
         if (chunk_size) {
@@ -152,4 +154,5 @@ void    Request::state_func(std::istringstream &stream) {
                 return ;
         }
     }
+    PRINT_LOG("OUT OF WHILE");
 }

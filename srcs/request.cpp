@@ -22,7 +22,7 @@ void  swap_clients(Client &a, Client &b) {
 }
 
 void  Request::set_error(int code, const char *s1, int line) {
-  if (!header_code) {
+  if (!header_code || header_code == 100) {
     header_code = code;
     PRINT_ERR(to_string(s1) + " : " + to_string(line));
   }
@@ -126,6 +126,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
           transfer_encoding = "chunked";
         }
       }
+      else if (comp(key, "Expect") == true) {
+        if (comp(value, "100-continue") == true)
+          expect_continue = true;
+      }
     }
     line_count++;
   }
@@ -161,7 +165,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   if (comp(method, "post") == false && has_body == true) {
     set_error(400);
   }
-  if (header_code != 0)
+  if (header_code != 0 && header_code != 100)
     return ;
   if (parent._host.size() && parent._host != host) {
     parent._log = false;
@@ -502,6 +506,7 @@ void  Request::clear(void) {
   state = 0;
   to_skip = 0;
   limit = 0;
+  expect_continue = false;
 }
 
 int  Request::read_client(int client, Client &parent, Client &tmp) {
@@ -634,6 +639,7 @@ Request::Request(void) {
   temp2.clear();
   cname.clear();
   limit = 0;
+  expect_continue = false;
 }
 
 Request::~Request(void) {

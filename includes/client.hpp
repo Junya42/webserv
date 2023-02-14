@@ -106,6 +106,7 @@ class Request {
 
   
     bool          complete_chunk;
+    bool          expect_continue;
     int           limit;
     int           chunk_left;
     int           chunk_size;
