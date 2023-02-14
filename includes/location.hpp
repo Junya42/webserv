@@ -22,6 +22,7 @@ class Location {
     std::string _path;
     std::string _root;
     std::string _link;
+    std::string _upload;
     long long int _mbsize;
     bool  _autoindex;
     bool  _redirect;

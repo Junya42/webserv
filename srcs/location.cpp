@@ -38,6 +38,7 @@ void  Location::create_map(std::string & config) {
   _path.clear();
   _link.clear();
   _index.clear();
+  _upload.clear();
   _mbsize = -1;
   _redirect = false;
    _autoindex = false;
@@ -71,6 +72,9 @@ void  Location::create_map(std::string & config) {
     else if (key.find("location") != std::string::npos) {
       _path = value;
     }
+    else if (key.find("set_upload") != std::string::npos) {
+      _upload = value;
+    }
     else if (key.find("method_accept") != std::string::npos) {
       std::istringstream methods(value);
       std::string tmp;
@@ -90,7 +94,8 @@ void  Location::create_map(std::string & config) {
 
 std::ostream &operator<<(std::ostream &nstream, Location &loc) {
   for (std::map<std::string, std::string>::iterator it = loc._data.begin(); it != loc._data.end(); it++) {
-    nstream << "  " << it->first << "_::::_" << it->second << std::endl;
+    if (it->first != "location")
+      nstream << "  " << it->first << " :::: " << it->second << std::endl;
   }
   return nstream;
 }

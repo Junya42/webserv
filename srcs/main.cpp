@@ -135,6 +135,7 @@ int main(int ac, char **av, char **env) {
 	PRINT_WIN("Process ID: " + tmp_id);
 	if (check_already_running_processes(tmp_id) != 0)
 		return 3;
+	std::srand(time(0));
 	server_handler(config, env);
 	return 0;
 }

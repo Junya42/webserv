@@ -278,7 +278,8 @@ std::ostream &operator<<(std::ostream &nstream, Server &server) {
 
   int i = 1;
   for (unsigned long j = 0; j < server._loc.size(); j++) {
-    nstream << "\033[38;5;49mLocation " << i++ << "\033[0m" << std::endl;
+    nstream << "\033[38;5;49mLocation " << i++ << ": \033[0m\033[1;37m"
+      << server._loc[j]._data["location"] << "\033[0m" << std::endl;
     nstream << server._loc[j] << std::endl;
     if (j + 1 < server._loc.size())
       nstream << "---------------" << std::endl;

@@ -18,11 +18,11 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     set_env.insert("PATH=" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
     set_env.insert("PWD=" + pwd);
 
-    set_env.insert("SERVER_SOFTWARE=" "HTTP/1.1");
+    set_env.insert("SERVER_SOFTWARE=" "Webserv/1");
     set_env.insert("SERVER_NAME=" + server_name);
     set_env.insert("GATEWAY_INTERFACE=" "CGI/1.1");
 
-    set_env.insert("SERVER_PROTOCOL=" "Webserv/1");
+    set_env.insert("SERVER_PROTOCOL=" "HTTP/1.1");
     set_env.insert("SERVER_PORT=" + server_port);
     set_env.insert("REQUEST_METHOD=" + client.request.method);
     set_env.insert("PATH_INFO=" + client.request.path_info);
@@ -55,46 +55,54 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     for (std::set<std::string>::iterator it = set_env.begin(); it != set_env.end(); it++) {
         env[i] = new char[(*it).size() + 1];
         env[i] = strcpy(env[i], (*it).c_str());
-        //PRINT_LOG(env[i]);
+        PRINT_LOG(env[i]);
         i++;
     }
     env[i] = NULL;
     return env;
 }
 
-char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
+char **create_args(std::string &path, std::string &cgi_path, std::string &cgi_executor, int flag) {
     char **args;
 
     switch (flag) {
         case 1:
-            args = new char*[4];
-            if (!args)
-                return NULL;
             if (cgi_executor.size()) {
+                args = new char*[5];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_executor.c_str());
                 args[1] = strdup(cgi_path.c_str());
-                args[2] = strdup("replace");
-                args[3] = NULL;
+                args[2] = strdup(path.c_str());
+                args[3] = strdup("replace");
+                args[4] = NULL;
             }
             else {
+                args = new char*[4];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_path.c_str());
-                args[1] = strdup("replace");
-                args[2] = NULL;
+                args[1] = strdup(path.c_str());
+                args[2] = strdup("replace");
                 args[3] = NULL;
             }
             break;
         default:
-            args = new char*[3];
-            if (!args)
-                return NULL;
             if (cgi_executor.size()) {
+                args = new char*[4];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_executor.c_str());
                 args[1] = strdup(cgi_path.c_str());
-                args[2] = NULL;
+                args[2] = strdup(path.c_str());
+                args[3] = NULL;
             }
             else {
+                args = new char*[3];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_path.c_str());
-                args[1] = NULL;
+                args[1] = strdup(path.c_str());
                 args[2] = NULL;
             }
             break;
@@ -122,7 +130,11 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
     if (pid < 0)
         return set_error(500);
     else if (pid == 0) {
-        char **args = create_args(cgi_path, cgi_executor, flag);
+        char **args;
+        if (client.request.complete_chunk == true)
+            args = create_args(client.request.query, cgi_path, cgi_executor, flag);
+        else
+            args = create_args(client.request.path_info, cgi_path, cgi_executor, flag);
         if (!args)
             exit(42);
         char **env = create_env(client, pwd, cgi_path, file_path);

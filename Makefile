@@ -17,7 +17,9 @@ SRCS = main.cpp \
 	   server_loop.cpp \
 	   auto_index.cpp \
 	   cgi.cpp \
-	   cgi2.cpp
+	   cgi2.cpp \
+	   chunk_stream.cpp \
+	   chunk.cpp
 
 DEBUG = 0
 

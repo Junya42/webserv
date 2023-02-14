@@ -20,6 +20,7 @@
 #include "macro.hpp"
 #include "config.hpp"
 #include "mime.hpp"
+#include <algorithm>
 
 class Client;
 
@@ -56,13 +57,21 @@ class Request {
     
     void        download_delete_cgi(Client &client, Server &serv, const char *path, char **env);
 
+    void        state_func(std::istringstream &stream);
+    int         state_0(std::istringstream &stream);
+    int         state_1(std::istringstream &stream);
+    int         state_2(std::istringstream &stream);
+
+    void        state_func(int client);
+    int        state_0(int client);
+    int         state_1(int client);
+    int         state_2(int client);
+
     bool  in_use;
 
-    //Default 4096
-    char                buffer[4096]; //Reading buffer
-   // static const int    buff_size = 16000;
-   static const int    buff_size = 16000;
-    size_t              bytes; //bytes read
+    char                buffer[4096];
+    static const int    buff_size = 16000;
+    size_t              bytes;
     size_t              current_bytes;
     size_t              body_size;
     size_t              linecount;
@@ -94,6 +103,18 @@ class Request {
     std::string name;
 
     std::string status;
+
+  
+    bool          complete_chunk;
+    int           limit;
+    int           chunk_left;
+    int           chunk_size;
+    int           state;
+    int           to_skip;
+    FILE          *cfile;
+    std::string   cname;
+    std::string   temp0;
+    std::string   temp2;
 
     bool        complete_header;
     bool        complete_body;
