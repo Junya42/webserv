@@ -62,7 +62,7 @@ void  Location::create_map(std::string & config) {
     else if (key.find("set_index") != std::string::npos) {
       _index = value;
     }
-     else if (key.find("auto_index") != std::string::npos) {
+    else if (key.find("auto_index") != std::string::npos) {
       if (value == "true")
         _autoindex = true;
     }

@@ -52,7 +52,7 @@ void  Server::clear(void) {
   _post = false;
   _delete = false;
   _bodysize = 0;
-  _port = 0;
+  _port = -1;
   _valid = false;
   _large = false;
   _loc.clear();
@@ -166,6 +166,12 @@ int  Server::setup_server(std::vector<std::string> &vec) {
     }
     i++;
   }
+  if (_name.empty())
+    _name = "localhost";
+  if (_port == -1)
+    _port = 80;
+  if (_sport.empty())
+    _sport = "80";
   if (_upage.size() && _lpage.size()) {
     if (_upage == _lpage) {
       PRINT_ERR("Login page and user page can't be equals");

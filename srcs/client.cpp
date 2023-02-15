@@ -21,6 +21,7 @@ Client::Client(void) {
   std::memset(&addr, 0, sizeof(addr));
   request.clear();
   addr_len = sizeof(addr);
+  _ldx = -1;
 };
 
 Client::~Client(void) {
@@ -39,6 +40,7 @@ void  Client::reset(void) {
   _info.clear();
   std::memset(&addr, 0, sizeof(addr));
   request.clear();
+  _ldx = -1;
 }
 
 std::ostream &operator<<(std::ostream &nstream, Client &client) {

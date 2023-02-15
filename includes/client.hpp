@@ -22,9 +22,10 @@
 #include "mime.hpp"
 #include <algorithm>
 
-std::string generate_random_filename(void);
-
 class Client;
+
+std::string generate_random_filename(void);
+size_t	get_serv_from_client(Client &client, std::vector<Server> &serv);
 
 class Request {
   public:
@@ -33,8 +34,8 @@ class Request {
     Request(std::string &request); //parse request using get_header and get_body
     //Request &operator=(const Request &req);
     void        clear(void); //clear all request variables
-    int         read_client(int client, Client &parent, Client &tmp);
-    void        get_header(std::string &request, Client &parent, Client &tmp);
+    int         read_client(int client, Client &parent, Client &tmp, std::vector<Server> &servs);
+    void        get_header(std::string &request, Client &parent, Client &tmp, std::vector<Server> &servs);
     void        get_body_stream(std::istringstream &stream, Client &parent, Client &tmp);
     void        get_body(int client);
 
@@ -44,7 +45,7 @@ class Request {
     int         parse_body(Client &parent);
 
     void        get_request(std::vector<Server> &serv, Client &client, int index); //located at srcs/get_request.cpp
-    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag = 0);
+    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag = 0, bool checkonly = false);
     void        get_cgi_read(Client &client, std::string &cgi_path, std::string &cgi_executor, std::string &file_path, std::string &pwd, int flag = 0, size_t n = 0);
     void        get_cgi_answer(Client &client);
     void        get_cgi(Client &client, Config &config, int flag = 0);
@@ -71,6 +72,8 @@ class Request {
 
     bool  in_use;
 
+
+
     char                buffer[4096];
     static const int    buff_size = 16000;
     size_t              bytes;
@@ -94,6 +97,8 @@ class Request {
     std::string key;
     std::string value;
     std::string boundary;
+
+    std::string upload_dir; ///////////////////////
     
     std::string filename;
     std::string link;
@@ -224,6 +229,7 @@ class Client {
     bool _fav;
     bool  _ready;
     int   _index;
+    int   _ldx;
     uint32_t _id;
     int _sock;
     unsigned short  _port;

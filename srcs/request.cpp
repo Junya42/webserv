@@ -29,7 +29,7 @@ void  Request::set_error(int code, const char *s1, int line) {
 
 }
 
-void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
+void  Request::get_header(std::string &request, Client &parent, Client &tmp, std::vector<Server> &servs) {
 
   std::cout << "____________________________________________" << std::endl << std::endl;
 
@@ -165,7 +165,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   if (comp(method, "post") == false && has_body == true) {
     set_error(400);
   }
-  if (header_code != 0 && header_code != 100)
+  if (header_code != 0)
     return ;
   if (parent._host.size() && parent._host != host) {
     parent._log = false;
@@ -174,6 +174,9 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
   parent._host = host;
   if (has_body == false)
     complete_header = true;
+  if (parent._index == -1)
+    parent._index = get_serv_from_client(parent, servs);
+  get_file(servs, parent, path_info, file_path, parent._index, 0, true);
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
@@ -344,7 +347,7 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename.erase(tmpbody.filename.size() - 1, 1);
           if ( parent._name.size())
           {
-            std::string file_path("/tmp/private_webserv/" + server_name + "/" + parent._name);
+            std::string file_path(upload_dir + server_name + "/" + parent._name);
             struct stat st;
 
             if ( stat(file_path.c_str(), &st) == -1 )
@@ -364,7 +367,7 @@ int  Request::parse_body(Client &parent) {
           }
           else
           {
-            std::string file_path("/tmp/private_webserv/" + server_name + "/" + "unknown");
+            std::string file_path(upload_dir + server_name + "/" + "unknown");
             struct stat st;
 
             if ( stat(file_path.c_str(), &st) == -1 )
@@ -451,12 +454,16 @@ int  Request::parse_body(Client &parent) {
     }
   }
   else if (body_str.size()) {
-    filename = "POST_" + generate_random_filename();
+    filename = upload_dir + "POST_" + generate_random_filename();
     std::ofstream file;
 
     file.open(filename.c_str(), std::ios::binary);
-    file << body_str;
-    file.close();
+    if (file) {
+      file << body_str;
+      file.close();
+    }
+    else
+      set_error(500);
   }
   parsed_body = true;
   return 0;
@@ -525,9 +532,10 @@ void  Request::clear(void) {
   limit = 0;
   expect_continue = false;
   filename.clear();
+  upload_dir = "/tmp/private_webserv/";
 }
 
-int  Request::read_client(int client, Client &parent, Client &tmp) {
+int  Request::read_client(int client, Client &parent, Client &tmp, std::vector<Server> &servs) {
   std::string request;
   int int_bytes = 0;
 
@@ -553,7 +561,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
       return 0;
     }
     in_use = true;
-    get_header(request, parent, tmp);
+    get_header(request, parent, tmp, servs);
     if (header_code != 0) {
       in_use = false;
       complete_header = true;
@@ -659,6 +667,7 @@ Request::Request(void) {
   limit = 0;
   expect_continue = false;
   filename.clear();
+  upload_dir = "/tmp/private_webserv/";
 }
 
 Request::~Request(void) {

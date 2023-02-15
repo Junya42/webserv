@@ -196,7 +196,7 @@ void	server_handler(Config &config, char **env) {
 					save_index = i;
 					i = find_client_in_vector(clientlist, client, i);
 					try {
-						status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+						status = clientlist[i].request.read_client(client, clientlist[i], tmp, config._serv);
 						clientlist[i]._request_count++;
 					}
 					catch (std::exception & e) {
@@ -241,7 +241,7 @@ void	server_handler(Config &config, char **env) {
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
 				try {
-				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
+				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp, config._serv);
 				}
 				catch (std::exception & e) {
 					std::cerr << e.what() << std::endl;

@@ -4,7 +4,7 @@
 #include <string>
 #include <unistd.h>
 
-void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag) {
+void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag, bool checkonly) {
 
   std::string tmp_path;
   bool found = false;
@@ -31,7 +31,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     else
       tmp_path = "/login";
   }
-  else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (checkonly == false && serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     set_error(401);
   }
   else
@@ -39,7 +39,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   if (comp(tmp_path, "user") == true) {
     client._log = true;
   }
-  if (flag != 0) {
+  if (flag > 0) {
     found = true;
     file_path = tmp_path;
     return ;
@@ -66,6 +66,20 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   if (j == -1 && slash_idx > -1)
     j = slash_idx;
 
+  client._ldx = j;
+  if (checkonly == true) {
+    if (serv[x]._loc[j]._upload.size()) {
+      DIR *loc = opendir(serv[x]._loc[j]._upload.c_str());
+      if (loc) {
+        upload_dir = serv[x]._loc[j]._upload;
+        if (upload_dir[upload_dir.size() - 1] != '/')
+          upload_dir += "/";
+        closedir(loc);
+      }
+      return ;
+    }
+    return ;
+  }
   /*if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
     file_path = serv[x]._index;
@@ -91,8 +105,10 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         complete_file = true;
         return ;
       }
-      if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
-        set_error(400);
+      if (flag == 0 && serv[x]._loc[j]._mbsize > 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
+        set_error(413);
+        if (filename.size())
+          remove(filename.c_str());
         complete_file = true;
         return ;
       }
