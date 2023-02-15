@@ -237,6 +237,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
           parent._lastname = value;
         }
       }
+      body_str.clear();
     }
   }
   else { //chunked
@@ -355,6 +356,10 @@ int  Request::parse_body(Client &parent) {
 
             file_path += "/";
             file_path += tmpbody.filename.c_str();
+            if ( stat(file_path.c_str(), &st) == 0 ) {
+              int del = remove(file_path.c_str());
+              (void)del;
+            }
             file.open(file_path.c_str(), std::ios::binary);
           }
           else
@@ -370,6 +375,10 @@ int  Request::parse_body(Client &parent) {
               }
             file_path += "/";
             file_path += tmpbody.filename;
+            if ( stat(file_path.c_str(), &st) == 0 ) {
+              int del = remove(file_path.c_str());
+              (void)del;
+            }
             file.open(file_path.c_str(), std::ios::binary);
           }
           continue;
@@ -441,6 +450,14 @@ int  Request::parse_body(Client &parent) {
       }
     }
   }
+  else if (body_str.size()) {
+    filename = "POST_" + generate_random_filename();
+    std::ofstream file;
+
+    file.open(filename.c_str(), std::ios::binary);
+    file << body_str;
+    file.close();
+  }
   parsed_body = true;
   return 0;
 }
@@ -507,6 +524,7 @@ void  Request::clear(void) {
   to_skip = 0;
   limit = 0;
   expect_continue = false;
+  filename.clear();
 }
 
 int  Request::read_client(int client, Client &parent, Client &tmp) {
@@ -640,6 +658,7 @@ Request::Request(void) {
   cname.clear();
   limit = 0;
   expect_continue = false;
+  filename.clear();
 }
 
 Request::~Request(void) {

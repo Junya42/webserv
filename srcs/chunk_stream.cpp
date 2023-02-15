@@ -124,7 +124,7 @@ std::string generate_random_filename(void) {
 
 void    Request::state_func(std::istringstream &stream) {
     
-    cname = generate_random_filename();
+    cname = "CHUNK_" + generate_random_filename();
     cfile = fopen(cname.c_str(), "w+b");
     
     if (!cfile) {

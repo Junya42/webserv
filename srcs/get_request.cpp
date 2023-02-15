@@ -46,64 +46,79 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   }
   size_t x = 0;
   x = index;
-  if (tmp_path.compare("/") == 0 && serv[x]._index.size())
+
+  int j = -1;
+  int slash_idx = -1;
+  std::string dir_path = tmp_path.substr(0, tmp_path.find('/', 1));
+
+  for (size_t idx = 0; idx < serv[x]._loc.size(); idx++) {
+      if (serv[x]._loc[idx]._path == "/")
+        slash_idx = idx;
+      if (serv[x]._loc[idx]._path != "/" && comp(dir_path, serv[x]._loc[idx]._path) == true) {
+          j = idx;
+          break ;
+      }
+  }
+  if (j == -1 && slash_idx == -1) {
+    set_error(404);
+    return ;
+  }
+  if (j == -1 && slash_idx > -1)
+    j = slash_idx;
+
+  /*if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
     file_path = serv[x]._index;
     while (file_path[0] == ' ' || file_path[0] == '\t')
       file_path.erase(0, 1);
     found = true;
-  }
-  else if (tmp_path.find(".ico") != std::string::npos)
+  }*/
+  if (tmp_path.find(".ico") != std::string::npos)
   {
     file_path = "./favicon.ico";
     found = true;
   }
   else
   {
-    for (size_t j = 0; j < serv[x]._loc.size(); j++) {
-      if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
-        if (serv[x]._loc[j]._redirect == true) {
-          link = serv[x]._loc[j]._link;
-          auth_redirect = 3;
-          using_cgi = false;
-          return ;
-        }
-        if (flag == 0 && serv[x]._loc[j].method[method] != true) {
-          set_error(405);
-          complete_file = true;
-          return ;
-        }
-        if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
-          set_error(400);
-          complete_file = true;
-          return ;
-        }
-        file_path = serv[x]._loc[j]._root + tmp_path;
-        DIR *dir = opendir(file_path.c_str());
-        if (dir) {
-          if (serv[x]._loc[j]._index.size()) {
-            if (file_path[file_path.size() - 1] != '/')
-              file_path += "/";
-            file_path += serv[x]._loc[j]._index;
-          }
-          else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
-              auto_file_name(client);
-              auto_index = true;
-              complete_file = true;
-              closedir(dir);
-              return ;
-          }
-          else
-            file_path += "/index.html";
-          closedir(dir);
-        }
-        struct stat st;
-        if (stat(file_path.c_str(), &st) == 0) {
-          found = true;
-        }
-        break ;
+      if (serv[x]._loc[j]._redirect == true) {
+        link = serv[x]._loc[j]._link;
+        auth_redirect = 3;
+        using_cgi = false;
+        return ;
       }
-    }
+      if (flag == 0 && serv[x]._loc[j].method[method] != true) {
+        set_error(405);
+        complete_file = true;
+        return ;
+      }
+      if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
+        set_error(400);
+        complete_file = true;
+        return ;
+      }
+      file_path = serv[x]._loc[j]._root + tmp_path;
+      DIR *dir = opendir(file_path.c_str());
+      if (dir) {
+        if (serv[x]._loc[j]._index.size()) {
+          if (file_path[file_path.size() - 1] != '/')
+            file_path += "/";
+          file_path += serv[x]._loc[j]._index;
+        }
+        else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
+          auto_file_name(client);
+          auto_index = true;
+          complete_file = true;
+          closedir(dir);
+          return ;
+        }
+        else
+          file_path += "/index.html";
+        closedir(dir);
+      }
+      struct stat st;
+      if (stat(file_path.c_str(), &st) == 0) {
+        found = true;
+      }
   }
   if (found == false) {
     set_error(404);

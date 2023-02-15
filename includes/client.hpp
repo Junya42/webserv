@@ -22,6 +22,8 @@
 #include "mime.hpp"
 #include <algorithm>
 
+std::string generate_random_filename(void);
+
 class Client;
 
 class Request {
@@ -93,6 +95,7 @@ class Request {
     std::string value;
     std::string boundary;
     
+    std::string filename;
     std::string link;
 
     std::string path_info;

@@ -113,6 +113,8 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         char **args;
         if (client.request.complete_chunk == true)
             args = create_args(client.request.query, cgi_path, cgi_executor, flag);
+        else if (client.request.filename.size())
+            args = create_args(client.request.filename, cgi_path, cgi_executor, flag);
         else
             args = create_args(client.request.path_info, cgi_path, cgi_executor, flag);
         if (!args)
