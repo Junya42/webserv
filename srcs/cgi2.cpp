@@ -14,7 +14,6 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
         server_name = client.request.host.substr(0, spos);
         server_port = client.request.host.substr(spos + 1);
     }
-    PRINT_ERR(server_name);
     set_env.insert("PATH=" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
     set_env.insert("PWD=" + pwd);
 
@@ -163,7 +162,15 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                     for (int i = 0; i < errBytes; i++)
                         errString += errbuff[i];
                 }
-                set_error(atoi(errString.c_str()));
+                if (errString.size())
+                    set_error(atoi(errString.c_str()));
+                else {
+                    if (header_code == 0) {
+                        PRINT_ERR("CGI exit code was different than 0 but didn't provide the error status code in stderr");
+                        PRINT_ERR("Sending 500 Internal Server Error instead");
+                    }
+                    set_error(500);
+                }
             }
             (void)ret;
         }

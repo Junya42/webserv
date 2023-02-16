@@ -1,7 +1,25 @@
-<html>
+#!/bin/bash
+filename=$QUERY_STRING
+
+#	Check if file is a directory
+if [ -d "$filename" ]
+then
+	#echo "400" >/dev/stderr
+	exit 42
+fi
+
+# Check if file exist
+if [ ! -f "$filename" ]
+then
+	#echo "404" >/dev/stderr
+	exit 42
+fi
+html_start="Content-Type: text/html\n\n"
+html_start+="
+   <html>
 	<head>
 		<title>Webserv</title>
-		<link rel="icon" type="image/x-icon" href="/favicon.ico">
+		<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\">
 		<style>
 .glass-panel {
 	color: #fff;
@@ -81,18 +99,24 @@
 		</style>
 	</head>
 	<body>
-		<h1>WEBSERV : Local</h1>
-		<div class="glass-panel">
-			<h1><a href="https://www.youtube.com/" target="_blank">Currently in development</a></h1>
-			<p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."</p>
-			<div class="glass-toolbar">
-				<a href="http://localhost:8080/cgi-bin/get.sh/html" target="_self" class="glass-button">Get started</a>
-			</div>
-		</div>
-		<form action="http://localhost:8080/cgi-bin/print.sh" name="messageForm" method="POST">
-		<textarea id="messageText" name="messageText" rows="4" cols="50">
-		</textarea>
-		<input type="submit" value="message">
-		</form>
-	</body>
-</html>
+		<h1>POST</h1>
+		<div class=\"glass-panel\">"
+
+html_start+="<div class=\"glass-toolbar\"><p>"
+
+html_end="</p></div></div></html></body>\n"
+
+size=$(wc -c $filename | awk '{print $1}')
+size=$(expr $size + ${#html_start})
+size=$(expr $size + ${#html_end})
+#size+=${#html_start}
+#size+=${#html_end}
+
+echo -ne "Content-Lenght: $size\n\n"
+
+echo $html_start
+cat $filename
+echo $html_end
+
+
+exit 0

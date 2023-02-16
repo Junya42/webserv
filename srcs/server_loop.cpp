@@ -191,13 +191,13 @@ void	server_handler(Config &config, char **env) {
 				}
 
 				if (events[i].events & EPOLLIN) {
-					config.request_count++;
 					client = events[i].data.fd;
 					save_index = i;
 					i = find_client_in_vector(clientlist, client, i);
 					try {
 						status = clientlist[i].request.read_client(client, clientlist[i], tmp, config._serv);
 						clientlist[i]._request_count++;
+						config.request_count++;
 					}
 					catch (std::exception & e) {
 						std::cerr << e.what() << std::endl;

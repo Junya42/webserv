@@ -24,7 +24,7 @@ void  swap_clients(Client &a, Client &b) {
 void  Request::set_error(int code, const char *s1, int line) {
   if (!header_code || header_code == 100) {
     header_code = code;
-    PRINT_ERR(to_string(s1) + " : " + to_string(line));
+    PRINT_ERR(to_string(s1) + " : " + to_string(code) + " : line " + to_string(line));
   }
 
 }
@@ -33,6 +33,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp, std
 
   std::cout << "____________________________________________" << std::endl << std::endl;
 
+  std::cout << std::endl << request << std::endl << std::endl;
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   size_t  line_count = 0;
 

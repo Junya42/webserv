@@ -14,7 +14,7 @@ class Location {
     Location(std::string &config);
     Location &operator=(const Location &src);
     ~Location(void);
-    void  create_map(std::string &config);
+    int  create_map(std::string &config);
     
     std::map<std::string, std::string> _data;
     std::map<std::string, bool> method;

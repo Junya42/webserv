@@ -10,14 +10,14 @@ host=$SERVER_NAME:$SERVER_PORT
 #	Check if file is a directory
 if [ -d "$filename" ]
 then
-	>$2 echo "Bad Request"
+	echo "400" >/dev/stderr
 	exit 42
 fi
 
 # Check if file exist
 if [ ! -f "$filename" ]
 then
-	>$2 echo "Not Found"
+	echo "404" >/dev/stderr
 	exit 42
 fi
 

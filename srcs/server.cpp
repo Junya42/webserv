@@ -80,13 +80,14 @@ int  Server::setup_server(std::vector<std::string> &vec) {
     std::getline(line_stream, value);
 
     if (value.size())
-      trim(value);
+      value = trim(value);
     //value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
     if (key == "location") {
       location_find++;
       if (location == true) {
         location_push++;
-        loc.create_map(location_conf);
+        if (loc.create_map(location_conf) < 0)
+          return -1;
         _loc.push_back(loc);
         // std::cout << std::endl << "LOCATION CONF" << std::endl << location_conf << "END OF LOCATION CONF" <<std::endl;
       }
@@ -100,12 +101,12 @@ int  Server::setup_server(std::vector<std::string> &vec) {
     else {
      // std::cout << "key: " << key << std::endl;
       if (key == "listen") {
-        if (value.size() > 6 || value.size() < 1) {
+        if (value.size() > 5 || value.size() < 1) {
           PRINT_ERR("Error Port size");
           return -1;
         } 
         for (std::string::iterator it = value.begin(); it != value.end(); it++) {
-          if (!isdigit(*it) && *it != ' ') {
+          if (!isdigit(*it)) {
             PRINT_ERR("Error Port does not contain only digits");
             PRINT_ERR(value);
             return -1;
@@ -115,8 +116,6 @@ int  Server::setup_server(std::vector<std::string> &vec) {
         _sport = value;
       }
       if (key == "error_pages") {
-        if (value.size() && value[0] == ' ')
-          erase(value, " ");
         std::istringstream errorparser(value);
         std::string errKey;
         std::string errValue;
@@ -145,14 +144,13 @@ int  Server::setup_server(std::vector<std::string> &vec) {
           _large = true;
       }
       if (key == "login_page" && _lpage.empty()) {
-        _lpage = trim(value);
+        _lpage = value;
       }
       if (key == "user_page" && _upage.empty()) {
-        _upage = trim(value);
+        _upage = value;
       }
       if (key == "cgi") {
         _cgi = value;
-        erase(value, " ");
         std::istringstream cgiparser(value);
         std::string tmpkey;
         std::string tmpvalue;
@@ -187,7 +185,7 @@ int  Server::setup_server(std::vector<std::string> &vec) {
     return -1;
   }
   struct in_addr a;
-  struct hostent *lh = gethostbyname(_name.substr(1).c_str());
+  struct hostent *lh = gethostbyname(_name.c_str());
   if (lh) {
     bcopy(*lh->h_addr_list, (char *)&a, sizeof(a));
     _ip = to_string(inet_ntoa(a));
@@ -195,9 +193,10 @@ int  Server::setup_server(std::vector<std::string> &vec) {
   else
     _ip = "error";
   _host = _name + ':' + _sport;
-  _host.erase(std::remove(_host.begin(), _host.end(), ' '), _host.end());
+  //_host.erase(std::remove(_host.begin(), _host.end(), ' '), _host.end());
   if (location_find != location_push) {
-        loc.create_map(location_conf);
+        if (loc.create_map(location_conf) < 0)
+          return -1;
         _loc.push_back(loc);
   }
   _valid = true;
