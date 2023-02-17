@@ -346,11 +346,16 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename = tmpbody.disposition.substr(found + 1);
           erase(tmpbody.filename);
           tmpbody.filename.erase(tmpbody.filename.size() - 1, 1);
+          PRINT_LOG("NAME:" + parent._name);
+          std::string file_path;
           if ( parent._name.size())
           {
-            std::string file_path(upload_dir + server_name + "/" + parent._name);
+            if (upload_dir == "/tmp/private_webserv/")
+              file_path = upload_dir + server_name + "/" + parent._name;
+            else
+              file_path = upload_dir + parent._name;
             struct stat st;
-
+            PRINT_LOG("name.Filepath:" + file_path);
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
                 set_error(500);
@@ -368,9 +373,13 @@ int  Request::parse_body(Client &parent) {
           }
           else
           {
-            std::string file_path(upload_dir + server_name + "/" + "unknown");
+            if (upload_dir == "/tmp/private_webserv/")
+              file_path = upload_dir + server_name + "/" + "unknown";
+            else
+              file_path = upload_dir + "unknown";
             struct stat st;
 
+            PRINT_LOG("unknown.Filepath:" + file_path);
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
                 set_error(500);
