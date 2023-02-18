@@ -132,15 +132,15 @@ int  Server::setup_server(std::vector<std::string> &vec) {
       if (key == "method_accept")
         _methods = value;
       if (key == "force_login") {
-        if (value == " true")
+        if (value == "true")
           _login = true;
       }
       if (key == "enable_redirect") {
-        if (value == " true")
+        if (value == "true")
           _redirect = true;
       }
       if (key == "allow_large_download") {
-        if (value == " true")
+        if (value == "true")
           _large = true;
       }
       if (key == "login_page" && _lpage.empty()) {

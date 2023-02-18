@@ -54,7 +54,8 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     for (std::set<std::string>::iterator it = set_env.begin(); it != set_env.end(); it++) {
         env[i] = new char[(*it).size() + 1];
         env[i] = strcpy(env[i], (*it).c_str());
-        //PRINT_LOG(env[i]);
+        if (comp(script, "cgi_file_tester"))
+            PRINT_LOG(env[i]);
         i++;
     }
     env[i] = NULL;
@@ -86,6 +87,10 @@ char **create_args(std::string &path, std::string &cgi_path, std::string &cgi_ex
             }
             break;
     }
+    if (comp(cgi_path, "file_tester")) {
+        for (size_t i = 0; args[i]; i++)
+            std::cout << args[i] << std::endl;
+    }
     return args;
 }
 
@@ -110,12 +115,24 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         return set_error(500);
     else if (pid == 0) {
         char **args;
-        if (client.request.complete_chunk == true)
+        if (client.request.complete_chunk == true) {
             args = create_args(client.request.query, cgi_path, cgi_executor, flag);
-        else if (client.request.filename.size())
+            if (file_path.empty())
+                file_path = client.request.query;
+        }
+        else if (client.request.filename.size()) {
             args = create_args(client.request.filename, cgi_path, cgi_executor, flag);
-        else
+            if (file_path.empty())
+                file_path = client.request.filename;
+        }
+        else {
             args = create_args(client.request.path_info, cgi_path, cgi_executor, flag);
+            if (file_path.empty())
+                file_path = client.request.path_info;
+        }
+        PRINT_LOG(client.request.query);
+        PRINT_LOG(client.request.filename);
+        PRINT_LOG(client.request.path_info);
         if (!args)
             exit(42);
         char **env = create_env(client, pwd, cgi_path, file_path);
@@ -189,7 +206,8 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                 file_content += buff[i];
         }
     }
-    //std::cout << file_content << std::endl;
+    if (comp(cgi_path, "file_tester") == true)
+        std::cout << file_content << std::endl;
     fclose(inFile);
     fclose(outFile);
     fclose(errFile);

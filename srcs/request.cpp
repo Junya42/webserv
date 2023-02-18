@@ -33,7 +33,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp, std
 
   std::cout << "____________________________________________" << std::endl << std::endl;
 
-  std::cout << std::endl << request << std::endl << std::endl;
+  //std::cout << std::endl << request << std::endl << std::endl;
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   size_t  line_count = 0;
 
@@ -255,6 +255,7 @@ void  Request::get_body(int client) {
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
+    PRINT_LOG("Getting body");
     if (content_lenght > 0 && has_size == true) {
       int_bytes = recv(client, &buff[0], buff_size - 1, 0);
       if (int_bytes < 1)
@@ -279,6 +280,8 @@ void  Request::get_body(int client) {
       for (int i = 0; i < int_bytes; i++)
         body_str.push_back(buff[i]);
     }
+    if (body_str.size())
+      std::cout << std::endl << body_str << std::endl << std::endl;
   }
   else { //chunked
     state_func(client);
@@ -393,6 +396,7 @@ int  Request::parse_body(Client &parent) {
               (void)del;
             }
             file.open(file_path.c_str(), std::ios::binary);
+            filename = file_path;
           }
           continue;
         }

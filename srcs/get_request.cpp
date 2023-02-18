@@ -8,6 +8,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
 
   std::string tmp_path;
   bool found = false;
+  bool kicked = false;
 
   if (using_cgi == false && comp(query, "disconnect=true") == true) {
     std::cout << std::boolalpha << "Using CGI: " << using_cgi << std::endl;
@@ -25,6 +26,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
   }
   else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
     auth_redirect = 2;
+    kicked = true;
     if (serv[index]._lpage.size()) {
       tmp_path = serv[index]._lpage;
     }
@@ -32,11 +34,12 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
       tmp_path = "/login";
   }
   else if (checkonly == false && serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+    kicked = true;
     set_error(401);
   }
   else
     tmp_path = path_info;
-  if (comp(tmp_path, "user") == true) {
+  if (comp(tmp_path, "user") == true && kicked == false) {
     client._log = true;
   }
   if (flag > 0) {

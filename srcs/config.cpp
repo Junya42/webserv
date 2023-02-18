@@ -93,7 +93,6 @@ int  Config::add_config(std::string &config) {
     }
     else {
       std::string tmpname = _serv[i]._name;
-      erase(tmpname, " ");
       std::string tmp = "/tmp/private_webserv/" + tmpname;
       struct stat st;
 

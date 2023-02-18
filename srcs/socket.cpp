@@ -167,7 +167,6 @@ int	init_epoll(std::vector<int> &server) {
 size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 	for (size_t i = 0; i < serv.size(); i++) {
 		if (client.request.host == serv[i]._host) {
-			serv[i]._requests++;
 			return i;
 		}
 	}
@@ -270,6 +269,7 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 			delete_file(config._serv[client._index], client);
 	}
 	if (req.complete_file == true && client._ready == true) {
+		config._serv[client._index]._requests++;
 		std::cout << std::endl;
 		if (req.header_code != 0) {
 			send_error(client._sock, req.header_code, client, error_path(config._serv[client._index], req.header_code));
@@ -288,6 +288,7 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 			if (req.method == "DELETE") {
 				std::cout << "\033[1;33m" << req.answer << "\033[0m" << std::endl;
 			}
+			//std::cout << "\033[1;33m" << req.answer << "\033[0m" << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_LOG("Sending answer");
 		}
@@ -350,6 +351,8 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 	(void)index;
 	for (size_t i = 0; i < clientlist.size(); i++) {
 		if (clientlist[i]._sock == client && clientlist[i]._hostport == host_port && clientlist[i]._hostip == to_string(myIP)) {
+			//if (clientlist[i]._name.size() && clientlist[i]._log == false)
+				//continue;
 			return i;
 		}
 	}

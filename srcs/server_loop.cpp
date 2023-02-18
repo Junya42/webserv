@@ -132,8 +132,8 @@ void	clear_server(std::vector<int> &server, int epoll_fd, Config &config) {
 
 	for (size_t x = 0; x < config._serv.size(); x++) {
 		std::cout << "\t\033[1;37m" << config._serv[x]._host << "\033[0m" << std::endl
-			<< "\t\t" << "Connection count: \033[32m" << to_string(config._serv[x]._connection) << std::endl
 			<< "\t\t" << "\033[0mRequest count: \033[32m" << to_string(config._serv[x]._requests) << std::endl
+			<< "\t\t" << "\033[0mConnection count: \033[32m" << to_string(config._serv[x]._connection) << std::endl
 			<< "\033[0m____________________________________________"
 			<< std::endl << std::endl;
 	}
@@ -196,8 +196,6 @@ void	server_handler(Config &config, char **env) {
 					i = find_client_in_vector(clientlist, client, i);
 					try {
 						status = clientlist[i].request.read_client(client, clientlist[i], tmp, config._serv);
-						clientlist[i]._request_count++;
-						config.request_count++;
 					}
 					catch (std::exception & e) {
 						std::cerr << e.what() << std::endl;
@@ -210,6 +208,9 @@ void	server_handler(Config &config, char **env) {
 					}
 					if (status == 1) {
 						try {
+							std::cout << "*****************" << std::endl << clientlist[i] << std::endl << "****************" << std::endl;
+							clientlist[i]._request_count++;
+							config.request_count++;
 							answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
 						}
 						catch (std::exception & e) {
