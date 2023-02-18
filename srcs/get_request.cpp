@@ -24,7 +24,7 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     else
       tmp_path = "/user";
   }
-  else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true) {
     auth_redirect = 2;
     kicked = true;
     if (serv[index]._lpage.size()) {
@@ -33,13 +33,13 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
     else
       tmp_path = "/login";
   }
-  else if (checkonly == false && serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (checkonly == false && serv[index]._login && (client._log == false || client._name.size() < 1) && serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true) {
     kicked = true;
     set_error(401);
   }
   else
     tmp_path = path_info;
-  if (comp(tmp_path, "user") == true && kicked == false) {
+  if (serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true && kicked == false && checkonly == false) {
     client._log = true;
   }
   if (flag > 0) {
@@ -115,7 +115,16 @@ void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &
         complete_file = true;
         return ;
       }
-      file_path = serv[x]._loc[j]._root + tmp_path;
+      if (!serv[x]._loc[j]._root.empty()) {
+        size_t slash_finder;
+        if (serv[x]._loc[j]._path != "/") {
+          slash_finder = find(tmp_path, '/', 2);
+          tmp_path = serv[x]._loc[j]._root + tmp_path.substr(slash_finder);
+        }
+        else
+          tmp_path = serv[x]._loc[j]._root + tmp_path;
+      }
+      file_path = tmp_path;
       DIR *dir = opendir(file_path.c_str());
       if (dir) {
         if (serv[x]._loc[j]._index.size()) {

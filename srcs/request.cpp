@@ -280,8 +280,6 @@ void  Request::get_body(int client) {
       for (int i = 0; i < int_bytes; i++)
         body_str.push_back(buff[i]);
     }
-    if (body_str.size())
-      std::cout << std::endl << body_str << std::endl << std::endl;
   }
   else { //chunked
     state_func(client);

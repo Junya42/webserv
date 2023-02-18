@@ -130,9 +130,6 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
             if (file_path.empty())
                 file_path = client.request.path_info;
         }
-        PRINT_LOG(client.request.query);
-        PRINT_LOG(client.request.filename);
-        PRINT_LOG(client.request.path_info);
         if (!args)
             exit(42);
         char **env = create_env(client, pwd, cgi_path, file_path);

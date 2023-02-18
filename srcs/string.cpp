@@ -172,12 +172,23 @@ void erase(std::string &s) {
       s.erase(i, 1);
 }
 
-size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
+bool count(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
   while (s[i]) {
     if (s[i] == c)
       count++;
     if (count == iter)
+      return true;
+  }
+  return false;
+}
+
+size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
+  while (s[i]) {
+    if (s[i] == c)
+      count++;
+    if (count == iter) {
       return i;
+    }
     i++;
   }
   return i;
