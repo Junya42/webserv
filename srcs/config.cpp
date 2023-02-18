@@ -30,18 +30,25 @@ int  Config::add_config(std::string &config) {
   std::string line;
   std::string conf;
   std::vector<std::string> vec;
+  bool  servcheck = false;
   Server serv;
 
   while (std::getline(stream, line)) {
+    if (line != "server" && servcheck == false) {
+      PRINT_ERR("Invalid config");
+      return -1;
+    }
     if (line == "{" || line == "}" || line == "\n" || !line[0]) {
       continue ;
     }
+   line = trim(line);
     if (line == "server") {
+      servcheck = true;
       if (conf.size()) {
-        conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
+        /*conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
         for (unsigned long int j = 0; j < vec.size(); j++) {
           vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
-        }
+        }*/
         if (serv.setup_server(vec) == -1)
           return -1;
         _serv.push_back(serv);
@@ -56,9 +63,9 @@ int  Config::add_config(std::string &config) {
     conf += "\n";
   }
   if (conf.size()) {
-    conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
+    /*conf.erase(std::remove(conf.begin(), conf.end(), '\t'), conf.end());
     for (unsigned long int j = 0; j < vec.size(); j++)
-      vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());
+      vec[j].erase(std::remove(vec[j].begin(), vec[j].end(), '\t'), vec[j].end());*/
     if (serv.setup_server(vec) == -1)
       return -1;
     _serv.push_back(serv);
@@ -86,7 +93,6 @@ int  Config::add_config(std::string &config) {
     }
     else {
       std::string tmpname = _serv[i]._name;
-      erase(tmpname, " ");
       std::string tmp = "/tmp/private_webserv/" + tmpname;
       struct stat st;
 

@@ -4,93 +4,149 @@
 #include <string>
 #include <unistd.h>
 
-void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag) {
+void  Request::get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag, bool checkonly) {
 
   std::string tmp_path;
   bool found = false;
-  if (using_cgi == false && comp(path_info, "?disconnect") == true) {
+  bool kicked = false;
+
+  if (using_cgi == false && comp(query, "disconnect=true") == true) {
+    std::cout << std::boolalpha << "Using CGI: " << using_cgi << std::endl;
     for (size_t i = 0; i < path_info.size(); i++)
       if (path_info[i] == '?')
         tmp_path = path_info.substr(0, i);
   }
-  else if (serv[index]._redirect && name.size() && auth == true && (path_info == "/" || path_info == "/html" || comp(path, "/login") == true)) {
+  else if (serv[index]._redirect && client._name.size() && auth == true && (path_info == "/" || path_info == "/html" || comp(path, "/login") == true)) {
     auth_redirect = 1;
-    tmp_path = "/user";
+    if (serv[index]._upage.size()) {
+      tmp_path = serv[index]._upage;
+    }
+    else
+      tmp_path = "/user";
   }
-  else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (serv[index]._login && serv[index]._redirect && (client._log == false || client._name.size() < 1) && serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true) {
     auth_redirect = 2;
-    tmp_path = "/login";
+    kicked = true;
+    if (serv[index]._lpage.size()) {
+      tmp_path = serv[index]._lpage;
+    }
+    else
+      tmp_path = "/login";
   }
-  else if (serv[index]._login && (client._log == false || client._name.size() < 1) && comp(path_info, "user") == true) {
+  else if (checkonly == false && serv[index]._login && (client._log == false || client._name.size() < 1) && serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true) {
+    kicked = true;
     set_error(401);
   }
   else
     tmp_path = path_info;
-  if (comp(tmp_path, "user") == true) {
+  if (serv[index]._upage.size() && comp(path_info, serv[index]._upage) == true && kicked == false && checkonly == false) {
     client._log = true;
   }
-  if (flag != 0) {
+  if (flag > 0) {
     found = true;
     file_path = tmp_path;
     return ;
   }
   size_t x = 0;
   x = index;
-  if (tmp_path.compare("/") == 0 && serv[x]._index.size())
+
+  int j = -1;
+  int slash_idx = -1;
+  std::string dir_path = tmp_path.substr(0, tmp_path.find('/', 1));
+
+  for (size_t idx = 0; idx < serv[x]._loc.size(); idx++) {
+      if (serv[x]._loc[idx]._path == "/")
+        slash_idx = idx;
+      if (serv[x]._loc[idx]._path != "/" && comp(dir_path, serv[x]._loc[idx]._path) == true) {
+          j = idx;
+          break ;
+      }
+  }
+  if (j == -1 && slash_idx == -1) {
+    set_error(404);
+    return ;
+  }
+  if (j == -1 && slash_idx > -1)
+    j = slash_idx;
+
+  client._ldx = j;
+  if (checkonly == true) {
+    if (serv[x]._loc[j]._upload.size()) {
+      DIR *loc = opendir(serv[x]._loc[j]._upload.c_str());
+      if (loc) {
+        upload_dir = serv[x]._loc[j]._upload;
+        if (upload_dir[upload_dir.size() - 1] != '/')
+          upload_dir += "/";
+        closedir(loc);
+      }
+      return ;
+    }
+    return ;
+  }
+  /*if (tmp_path.compare("/") == 0 && serv[x]._index.size())
   {
     file_path = serv[x]._index;
     while (file_path[0] == ' ' || file_path[0] == '\t')
       file_path.erase(0, 1);
     found = true;
-  }
-  else if (tmp_path.find(".ico") != std::string::npos)
+  }*/
+  if (tmp_path.find(".ico") != std::string::npos)
   {
     file_path = "./favicon.ico";
     found = true;
   }
   else
   {
-    for (size_t j = 0; j < serv[x]._loc.size(); j++) {
-      if (comp(tmp_path, serv[x]._loc[j]._path) == true) {
-        if (serv[x]._loc[j]._redirect == true) {
-          link = serv[x]._loc[j]._link;
-          auth_redirect = 3;
-          using_cgi = false;
-          return ;
-        }
-        if (flag == 0 && serv[x]._loc[j].method[method] != true) {
-          set_error(405);
-          complete_file = true;
-          return ;
-        }
-        if (flag == 0 && serv[x]._loc[j]._mbsize >= 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
-          set_error(400);
-          complete_file = true;
-          return ;
-        }
-        file_path = serv[x]._loc[j]._root + tmp_path;
-        DIR *dir = opendir(file_path.c_str());
-        if (dir) {
-          if (serv[x]._loc[j]._index.size())
-            file_path = serv[x]._loc[j]._index;
-          else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
-              auto_file_name(client);
-              auto_index = true;
-              complete_file = true;
-              closedir(dir);
-              return ;
-          }
-          else
-            file_path += "/index.html";
-          closedir(dir);
-        }
-        struct stat st;
-        if (stat(file_path.c_str(), &st) == 0) {
-          found = true;
-        }
-        break ;
+      if (serv[x]._loc[j]._redirect == true) {
+        link = serv[x]._loc[j]._link;
+        auth_redirect = 3;
+        using_cgi = false;
+        return ;
       }
-    }
+      if (flag == 0 && serv[x]._loc[j].method[method] != true) {
+        set_error(405);
+        complete_file = true;
+        return ;
+      }
+      if (flag == 0 && serv[x]._loc[j]._mbsize > 0 && initial_lenght > serv[x]._loc[j]._mbsize) {
+        set_error(413);
+        if (filename.size())
+          remove(filename.c_str());
+        complete_file = true;
+        return ;
+      }
+      if (!serv[x]._loc[j]._root.empty()) {
+        size_t slash_finder;
+        if (serv[x]._loc[j]._path != "/") {
+          slash_finder = find(tmp_path, '/', 2);
+          tmp_path = serv[x]._loc[j]._root + tmp_path.substr(slash_finder);
+        }
+        else
+          tmp_path = serv[x]._loc[j]._root + tmp_path;
+      }
+      file_path = tmp_path;
+      DIR *dir = opendir(file_path.c_str());
+      if (dir) {
+        if (serv[x]._loc[j]._index.size()) {
+          if (file_path[file_path.size() - 1] != '/')
+            file_path += "/";
+          file_path += serv[x]._loc[j]._index;
+        }
+        else if (serv[x]._loc[j]._autoindex == true && using_cgi == false) {
+          auto_file_name(client);
+          auto_index = true;
+          complete_file = true;
+          closedir(dir);
+          return ;
+        }
+        else
+          file_path += "/index.html";
+        closedir(dir);
+      }
+      struct stat st;
+      if (stat(file_path.c_str(), &st) == 0) {
+        found = true;
+      }
   }
   if (found == false) {
     set_error(404);
@@ -209,13 +265,13 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
     if (comp(path, "?disconnect=true") == true) {
       redirect = true;
       client._log = false;
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/html\n";
     }
     else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/user\n";
     }
     else if (auth_redirect == 2) {
-      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
+      status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + "/login\n";
     }
     else if (auth_redirect == 3) {
       if (method == "GET")
@@ -229,7 +285,8 @@ void  Request::get_response(std::map<std::string, std::string> &_mime, Client &c
       this->set_content_type(_mime);
     else {
       answer = "HTTP/1.1 200 OK\n";
-      answer += "Content-Type: text/html\n\n";
+      answer += "Content-Type: text/html\n";
+      answer += "Content-Length: " + to_string(file_content.size() + 2) + "\n\n";
       answer += file_content;
       answer += "\n\n";
       return ;

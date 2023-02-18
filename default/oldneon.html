@@ -3,8 +3,6 @@
 <style>
 html {
   height: 100%;
-    mid-width: 1300px;
-    mid-height: 600px;
 }
 body {
   margin:0;
@@ -13,13 +11,21 @@ body {
   background: linear-gradient(#141e30, #243b55);
 }
 
+div[cgi-keyword] {
+  color: white;
+}
+
+div[cgi-keyword]::before {
+  content: attr(cgi-keyword);
+  color: cyan;
+}
+
 .login-box {
   position: absolute;
   top: 50%;
-  left: var(--prog);
-  height: 500px;
-  width: 500px;
-  padding: 100px;
+  left: 50%;
+  width: 700px;
+  padding: 40px;
   transform: translate(-50%, -50%);
   background: rgba(0,0,0,.5);
   box-sizing: border-box;
@@ -80,10 +86,6 @@ body {
   transition: .5s;
   margin-top: 40px;
   letter-spacing: 4px
-}
-
-#second {
-  margin-top: 104px;
 }
 
 .login-box a:hover {
@@ -177,43 +179,14 @@ body {
 }
 </style>
   </head>
-  <div style="--prog: 30%;" class="login-box">
-    <h2>Env and query Tester</h2>
-    <form action="/cgi-bin/cgi_tester" method="POST">
-      <div class="user-box">
-        <input type="text" name="username" required="">
-        <label>Username</label>
-      </div>
-      <div class="user-box">
-        <input type="password" name="password" required="">
-        <label>Password</label>
-      </div>
-      <div>
-        <a onclick="this.closest('form').submit();return false;">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          Submit
-        </a>
-      </div>
-    </form>
-  </div>
-  <div style="--prog: 70%;" class="login-box">
-    <h2>File Tester</h2>
-    <form enctype = "multipart/form-data" action="/cgi-bin/cgi_file_tester.sh" method="POST">
-      <div class="user-box">
-        <input type="file" id="file" name="filename">
-        <label>Upload a file</label>
-      </div>
-      <a id="second" onclick="this.closest('form').submit();return false;">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        Submit
-      </a>
-    </form>
-  </div>
-  </div>
+<div class="login-box">
+  <h2>Cgi Tester</h2>
+    <a href="http://localhost:4567/cgi-bin/cgi_tester">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </a>
+    <div cgi-keyword="Hello world">how are you doing</div>
+</div>
 </html>

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <cstdio>
 
 void  swap_request(Request &a, Request &b) {
   Request tmp;
@@ -21,17 +22,18 @@ void  swap_clients(Client &a, Client &b) {
 }
 
 void  Request::set_error(int code, const char *s1, int line) {
-  if (!header_code) {
+  if (!header_code || header_code == 100) {
     header_code = code;
-    PRINT_ERR(to_string(s1) + " : " + to_string(line));
+    PRINT_ERR(to_string(s1) + " : " + to_string(code) + " : line " + to_string(line));
   }
 
 }
 
-void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
+void  Request::get_header(std::string &request, Client &parent, Client &tmp, std::vector<Server> &servs) {
 
   std::cout << "____________________________________________" << std::endl << std::endl;
 
+  //std::cout << std::endl << request << std::endl << std::endl;
   std::istringstream stream(request, std::ios_base::binary | std::ios_base::out);
   size_t  line_count = 0;
 
@@ -40,7 +42,7 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     stream >> method;
     stream >> path;
     stream >> version;
-    
+
     std::cout << method << " " << path << " " << version << std::endl;
     std::istringstream tmpstream(path, std::ios_base::binary | std::ios_base::out);
 
@@ -54,10 +56,10 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
     path_info = path;
     if (comp(path, "cgi")) {
       size_t pos = find(path, '/', 3);
-        using_cgi = true;
-        pos++;
-        path_info = path.substr(pos - 1);
-        path = path.substr(0, pos - 1);
+      using_cgi = true;
+      pos++;
+      path_info = path.substr(pos - 1);
+      path = path.substr(0, pos - 1);
     }
     else if (comp(path, "errors/style.css")) {
       path = "/errors/style.css";
@@ -101,12 +103,11 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
         std::getline(value_stream, boundary, '=');
         std::getline(value_stream, boundary);
         //if (content_lenght < 1)
-          //content_lenght = 1;
+        //content_lenght = 1;
         has_body = true;
       }
       else if (comp(key, "Host") == true) {
-        host.clear();
-        host = value;
+        host = trim(value);
       }
       else if (comp(key, "Cookie") == true && parent._fav == false) {
         auth = true;
@@ -126,21 +127,57 @@ void  Request::get_header(std::string &request, Client &parent, Client &tmp) {
           transfer_encoding = "chunked";
         }
       }
+      else if (comp(key, "Expect") == true) {
+        if (comp(value, "100-continue") == true)
+          expect_continue = true;
+      }
     }
     line_count++;
   }
-  
-  if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
-    set_error(411);
+  if (host.size()) {
+    int hcount = 0;
+    for (size_t l = 0; l < host.size(); l++) {
+      if (host[l] == ':') {
+        hcount++;
+        if (l == host.size() - 1)
+          set_error(400);
+        if (hcount > 1)
+          break;
+      }
+      else if (hcount == 0 && !isalnum(host[l]) && host[l] != '.') {
+        set_error(400);
+        break;
+      }
+      else if (hcount == 1 && !isdigit(host[l])) {
+        set_error(400);
+        break;
+      }
+    }
+    if (hcount != 1)
+      set_error(400);
+    parent._host = host;
+  }
+  else
+    set_error(400);
   if (comp(method, "delete"))
     has_body = false;
+  if (has_body && initial_lenght == 0 && transfer_encoding != "chunked")
+    set_error(411);
   if (comp(method, "post") == false && has_body == true) {
-      set_error(400);
+    set_error(400);
   }
   if (header_code != 0)
     return ;
+  if (parent._host.size() && parent._host != host) {
+    parent._log = false;
+    parent._lastname = "Each server has it's own login system, current client got disconnected";
+  }
+  parent._host = host;
   if (has_body == false)
     complete_header = true;
+  if (parent._index == -1)
+    parent._index = get_serv_from_client(parent, servs);
+  get_file(servs, parent, path_info, file_path, parent._index, 0, true);
   if (complete_header == true && has_body)
     get_body_stream(stream, parent, tmp);
 }
@@ -187,7 +224,7 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
       std::string value;
       while (std::getline(line_stream, key, '=')) {
         if (line_stream.rdbuf()->in_avail() < 1)
-            break;
+          break;
         std::getline(line_stream, value, '&');
         body[key] = value;
         if (comp(key, "fname")) {
@@ -204,45 +241,12 @@ void  Request::get_body_stream(std::istringstream &stream, Client &parent, Clien
           parent._lastname = value;
         }
       }
+      body_str.clear();
     }
   }
-  /*else {
-  PRINT_LOG("Reading Chunked body");
-  std::string tmp;
-  int         chunk_size = 0;
-
-  while ((int_bytes = read(client, buff, 1)) > 0) {
-  if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
-  PRINT_ERR("Invalid chunk size format");
-  exit(0);
+  else { //chunked
+    state_func(stream);
   }
-  tmp += buff[0];
-  if (erase(tmp, "\r\n") == true)
-  break ;
-  chunk_size++;
-  if (chunk_size > 6) {
-  PRINT_ERR("Excessive chunk size");
-  exit(0);
-  }
-  }
-  chunk_size = atoi(tmp.c_str());
-  size_t  compchunk = chunk_size;
-  if (compchunk >= sizeof(buff)) {
-  PRINT_ERR("Chunk size too big compared to buff size");
-  exit(0);
-  }
-  if ((int_bytes = read(client, buff, chunk_size)) > 0)
-  tmp = buff;
-  if (int_bytes == -1) {
-  PRINT_ERR("Couldn't read from client");
-  exit(0);
-  }
-  if (tmp == "\r\n") {
-  content_lenght = 0;
-  }
-  else
-  body_str += tmp;
-  }*/
 }
 
 void  Request::get_body(int client) {
@@ -251,6 +255,7 @@ void  Request::get_body(int client) {
   int int_bytes = 0;
   if (comp(transfer_encoding, "chunked") == false)
   {
+    PRINT_LOG("Getting body");
     if (content_lenght > 0 && has_size == true) {
       int_bytes = recv(client, &buff[0], buff_size - 1, 0);
       if (int_bytes < 1)
@@ -276,40 +281,8 @@ void  Request::get_body(int client) {
         body_str.push_back(buff[i]);
     }
   }
-  else {
-    std::string tmp;
-    int         chunk_size = 0;
-
-    while ((int_bytes = recv(client, &buff[0], 1, 0)) > 0) {
-      if (!(isdigit(buff[0]) || buff[0] == '\r' || buff[0] == '\n')) {
-        set_error(400);
-      }
-      tmp += buff[0];
-      if (erase(tmp, "\r\n") == true)
-        break ;
-      chunk_size++;
-      if (chunk_size > 6) {
-        set_error(400);
-      }
-    }
-    chunk_size = atoi(tmp.c_str());
-    size_t  compchunk = chunk_size;
-    if (compchunk >= buff_size - 1) {
-      set_error(400);
-    }
-    tmp.clear();
-    if ((int_bytes = recv(client, &buff[0], chunk_size, 0)) > 0)
-      for (size_t i = 0; i < buff.size(); i++)
-        tmp += buff[i];
-    if (int_bytes == -1) {
-      set_error(400);
-    }
-    if (tmp == "\r\n") {
-      complete_body = true;
-      content_lenght = 0;
-    }
-    else
-      body_str += tmp;
+  else { //chunked
+    state_func(client);
   }
 }
 
@@ -353,6 +326,7 @@ int Request::parse_header(void) {
 }
 
 int  Request::parse_body(Client &parent) {
+
   if (boundary.size()) {
     size_t pos;
     if ((pos = body_str.find(boundary)) != std::string::npos) {
@@ -363,6 +337,7 @@ int  Request::parse_body(Client &parent) {
       body_str.clear();
       int boundary_count = 0;
       std::ofstream file;
+      std::string server_name = host.substr(0, host.find(":"));
       while (std::getline(bodystream, cpy)) {
         int old_boundary_count = boundary_count;
         if (cpy.find("Content-Disposition") != std::string::npos) {
@@ -372,11 +347,16 @@ int  Request::parse_body(Client &parent) {
           tmpbody.filename = tmpbody.disposition.substr(found + 1);
           erase(tmpbody.filename);
           tmpbody.filename.erase(tmpbody.filename.size() - 1, 1);
+          PRINT_LOG("NAME:" + parent._name);
+          std::string file_path;
           if ( parent._name.size())
           {
-            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + parent._name);
+            if (upload_dir == "/tmp/private_webserv/")
+              file_path = upload_dir + server_name + "/" + parent._name;
+            else
+              file_path = upload_dir + parent._name;
             struct stat st;
-
+            PRINT_LOG("name.Filepath:" + file_path);
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
                 set_error(500);
@@ -386,13 +366,21 @@ int  Request::parse_body(Client &parent) {
 
             file_path += "/";
             file_path += tmpbody.filename.c_str();
+            if ( stat(file_path.c_str(), &st) == 0 ) {
+              int del = remove(file_path.c_str());
+              (void)del;
+            }
             file.open(file_path.c_str(), std::ios::binary);
           }
           else
           {
-            std::string file_path("/tmp/private_webserv/" + parent._host + "/" + "unknown");
+            if (upload_dir == "/tmp/private_webserv/")
+              file_path = upload_dir + server_name + "/" + "unknown";
+            else
+              file_path = upload_dir + "unknown";
             struct stat st;
 
+            PRINT_LOG("unknown.Filepath:" + file_path);
             if ( stat(file_path.c_str(), &st) == -1 )
               if (mkdir(file_path.c_str(), 0777) == -1) {
                 set_error(500);
@@ -401,7 +389,12 @@ int  Request::parse_body(Client &parent) {
               }
             file_path += "/";
             file_path += tmpbody.filename;
+            if ( stat(file_path.c_str(), &st) == 0 ) {
+              int del = remove(file_path.c_str());
+              (void)del;
+            }
             file.open(file_path.c_str(), std::ios::binary);
+            filename = file_path;
           }
           continue;
         }
@@ -472,6 +465,18 @@ int  Request::parse_body(Client &parent) {
       }
     }
   }
+  else if (body_str.size()) {
+    filename = upload_dir + "POST_" + generate_random_filename();
+    std::ofstream file;
+
+    file.open(filename.c_str(), std::ios::binary);
+    if (file) {
+      file << body_str;
+      file.close();
+    }
+    else
+      set_error(500);
+  }
   parsed_body = true;
   return 0;
 }
@@ -528,9 +533,21 @@ void  Request::clear(void) {
   read_count = 0;
   found_user = false;
   auto_index = false;
+  complete_chunk = false;
+  chunk_left = 0;
+  chunk_size = 0;
+  temp0.clear();
+  temp2.clear();
+  cname.clear();
+  state = 0;
+  to_skip = 0;
+  limit = 0;
+  expect_continue = false;
+  filename.clear();
+  upload_dir = "/tmp/private_webserv/";
 }
 
-int  Request::read_client(int client, Client &parent, Client &tmp) {
+int  Request::read_client(int client, Client &parent, Client &tmp, std::vector<Server> &servs) {
   std::string request;
   int int_bytes = 0;
 
@@ -556,7 +573,7 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
       return 0;
     }
     in_use = true;
-    get_header(request, parent, tmp);
+    get_header(request, parent, tmp, servs);
     if (header_code != 0) {
       in_use = false;
       complete_header = true;
@@ -570,10 +587,15 @@ int  Request::read_client(int client, Client &parent, Client &tmp) {
     get_body(client);
   if (complete_header && parsed_header == false)
     parse_header();
-  if (complete_header && has_body && content_lenght < 1 && parsed_body == false)
+  if (complete_header && has_body && content_lenght < 1 && transfer_encoding != "chunked" && parsed_body == false)
     parse_body(parent);
   if (complete_header && has_body == false)
     parsed_body = true;
+  if (complete_chunk == true) {
+    if (using_cgi)
+      query = cname;
+    parsed_body = true;
+  }
   if (parsed_body == true && parsed_header == true) {
     in_use = false;
     return 1;
@@ -646,6 +668,18 @@ Request::Request(void) {
   body_str.clear();
   multi_body.clear();
   answer.clear();
+  complete_chunk = false;
+  chunk_left = 0;
+  chunk_size = 0;
+  state = 0;
+  to_skip = 0;
+  temp0.clear();
+  temp2.clear();
+  cname.clear();
+  limit = 0;
+  expect_continue = false;
+  filename.clear();
+  upload_dir = "/tmp/private_webserv/";
 }
 
 Request::~Request(void) {

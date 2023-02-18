@@ -6,15 +6,23 @@
 char **create_env(Client &client, std::string &pwd, std::string &script, std::string &path) {
     std::set<std::string> set_env;
 
+    std::string server_name;
+    std::string server_port;
+
+    size_t spos = client.request.host.find(":");
+    if (spos != std::string::npos) {
+        server_name = client.request.host.substr(0, spos);
+        server_port = client.request.host.substr(spos + 1);
+    }
     set_env.insert("PATH=" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
     set_env.insert("PWD=" + pwd);
 
-    set_env.insert("SERVER_SOFTWARE=" "HTTP/1.1");
-    set_env.insert("SERVER_NAME=" + client._host);
+    set_env.insert("SERVER_SOFTWARE=" "Webserv/1");
+    set_env.insert("SERVER_NAME=" + server_name);
     set_env.insert("GATEWAY_INTERFACE=" "CGI/1.1");
 
-    set_env.insert("SERVER_PROTOCOL=" "Webserv/1");
-    set_env.insert("SERVER_PORT=" + client._sport);
+    set_env.insert("SERVER_PROTOCOL=" "HTTP/1.1");
+    set_env.insert("SERVER_PORT=" + server_port);
     set_env.insert("REQUEST_METHOD=" + client.request.method);
     set_env.insert("PATH_INFO=" + client.request.path_info);
     set_env.insert("PATH_TRANSLATED=" + path);
@@ -46,48 +54,42 @@ char **create_env(Client &client, std::string &pwd, std::string &script, std::st
     for (std::set<std::string>::iterator it = set_env.begin(); it != set_env.end(); it++) {
         env[i] = new char[(*it).size() + 1];
         env[i] = strcpy(env[i], (*it).c_str());
+        if (comp(script, "cgi_file_tester"))
+            PRINT_LOG(env[i]);
         i++;
     }
     env[i] = NULL;
     return env;
 }
 
-char **create_args(std::string &cgi_path, std::string &cgi_executor, int flag) {
+char **create_args(std::string &path, std::string &cgi_path, std::string &cgi_executor, int flag) {
     char **args;
 
+
     switch (flag) {
-        case 1:
-            args = new char*[4];
-            if (!args)
-                return NULL;
-            if (cgi_executor.size()) {
-                args[0] = strdup(cgi_executor.c_str());
-                args[1] = strdup(cgi_path.c_str());
-                args[2] = strdup("replace");
-                args[3] = NULL;
-            }
-            else {
-                args[0] = strdup(cgi_path.c_str());
-                args[1] = strdup("replace");
-                args[2] = NULL;
-                args[3] = NULL;
-            }
-            break;
         default:
-            args = new char*[3];
-            if (!args)
-                return NULL;
             if (cgi_executor.size()) {
+                args = new char*[4];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_executor.c_str());
                 args[1] = strdup(cgi_path.c_str());
-                args[2] = NULL;
+                args[2] = strdup(path.c_str());
+                args[3] = NULL;
             }
             else {
+                args = new char*[3];
+                if (!args)
+                    return NULL;
                 args[0] = strdup(cgi_path.c_str());
-                args[1] = NULL;
+                args[1] = strdup(path.c_str());
                 args[2] = NULL;
             }
             break;
+    }
+    if (comp(cgi_path, "file_tester")) {
+        for (size_t i = 0; args[i]; i++)
+            std::cout << args[i] << std::endl;
     }
     return args;
 }
@@ -106,12 +108,28 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
     int     ret;
 
     file_content.clear();
+
     pid = fork();
 
     if (pid < 0)
         return set_error(500);
     else if (pid == 0) {
-        char **args = create_args(cgi_path, cgi_executor, flag);
+        char **args;
+        if (client.request.complete_chunk == true) {
+            args = create_args(client.request.query, cgi_path, cgi_executor, flag);
+            if (file_path.empty())
+                file_path = client.request.query;
+        }
+        else if (client.request.filename.size()) {
+            args = create_args(client.request.filename, cgi_path, cgi_executor, flag);
+            if (file_path.empty())
+                file_path = client.request.filename;
+        }
+        else {
+            args = create_args(client.request.path_info, cgi_path, cgi_executor, flag);
+            if (file_path.empty())
+                file_path = client.request.path_info;
+        }
         if (!args)
             exit(42);
         char **env = create_env(client, pwd, cgi_path, file_path);
@@ -142,7 +160,8 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
         exit(42);
     }
     else {
-        if (waitpid(pid, &status, 0) == -1)
+        usleep(300000);
+        if (waitpid(pid, &status, WNOHANG) == -1)
             set_error(500);
         if (WIFEXITED(status)) {
             ret = WEXITSTATUS(status);
@@ -157,8 +176,17 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                     for (int i = 0; i < errBytes; i++)
                         errString += errbuff[i];
                 }
-                set_error(atoi(errString.c_str()));
+                if (errString.size())
+                    set_error(atoi(errString.c_str()));
+                else {
+                    if (header_code == 0) {
+                        PRINT_ERR("CGI exit code was different than 0 but didn't provide the error status code in stderr");
+                        PRINT_ERR("Sending 500 Internal Server Error instead");
+                    }
+                    set_error(500);
+                }
             }
+            (void)ret;
         }
         if (n == 0) {
             (void)n;
@@ -175,6 +203,8 @@ void    Request::get_cgi_read(Client &client, std::string &cgi_path, std::string
                 file_content += buff[i];
         }
     }
+    if (comp(cgi_path, "file_tester") == true)
+        std::cout << file_content << std::endl;
     fclose(inFile);
     fclose(outFile);
     fclose(errFile);
@@ -191,13 +221,13 @@ void    Request::get_cgi_answer(Client &client) {
         if (comp(query, "disconnect=true") == true) {
             redirect = true;
             client._log = false;
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/html\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/html\n";
         }
         else if (auth_redirect == 1 && auth == true && client._cookie.size()) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/user\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/user\n";
         }
         else if (auth_redirect == 2) {
-            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client._host + ":" + client._sport + "/login\n";
+            status = "HTTP/1.1 307 Temporary Redirect\nLocation: http://" + client.request.host + path + "/login\n";
         }
         answer = status;
         if (client._name.size() && comp(file_path, "/user/*.html") == true && client._fav == false) {

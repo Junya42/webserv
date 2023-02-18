@@ -6,8 +6,13 @@
 //  Client side errors
 std::string start = "<html><head><title>Webserv</title><link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\"><style>.glass-panel {color: #fff;margin: 40px auto;background-color: rgba(255,255,255,0.3);border: 1px solid rgba(255,255,255,0.1);width: 100%;border-radius: 15px;padding: 32px;backdrop-filter: blur(10px);}.glass-button {display: inline-block;padding: 24px 32px;border: 0;text-decoration: none;border-radius: 15px;background-color: rgba(255,255,255,0.1);border: 1px solid rgba(255,255,255,0.1);backdrop-filter: blur(30px);color: rgba(255,255,255,0.8);font-size: 14px;letter-spacing: 2px;cursor: pointer;text-transform: uppercase;transition: 1s;}.glass-button:hover {transform: scale(1.1);background-color: rgba(255,255,255,0.3);}html, body {margin: 0;height: 100%;}body {background: linear-gradient(45deg, rgb(62, 78, 102), rgb(192,177,184), rgb(194,152,163), rgb(170, 177, 189), rgb(135, 155, 177), rgb(107, 130, 162));background-size: 400% 400%;animation: gradient 10s ease infinite;}@keyframes gradient {  0% {    background-position: 0% 50%;  }  50% {    background-position: 100% 50%;  }  100% {    background-position: 0% 50%;  }}.glass-panel {  max-width: 600px;}.glass-button {margin: 200px;        margin-top: 40px;}h1, h1 a {  min-height: 120px;width: 90%;       max-width: 700px;       vertical-align: middle;       text-align: center;margin: 0 auto;        text-decoration: none;color: #fff;       padding-top: 60px;color: rgba(255,255,255,0.8);}p {width: 80%;margin: 0 auto;        padding-bottom: 32px;color: rgba(255,255,255,0.6);}</style></head><body><h1></h1><div class=\"glass-panel\"><h1><a>";
 
-std::string end = "</a></h1><div class=\"glass-toolbar\"><a href=\"http://localhost:8080/html?disconnect=true\" target=\"_self\" class=\"glass-button\">Back to home</a></div></div></body></html>";
+std::string end = "</a></h1><div class=\"glass-toolbar\"><a href=\"http://localhost:8080/cgi-bin/get.sh/html?disconnect=true\" target=\"_self\" class=\"glass-button\">Back to home</a></div></div></body></html>";
 
+void  expect_continue(int client) {
+  std::string error = "HTTP/1.1 100 Continue\n\n";
+
+  write(client, error.c_str(), error.size());
+}
 
 void  bad_request(int client) {
   std::string error;
@@ -25,7 +30,6 @@ void  unauthorized(int client) {
   std::string content = start + "401 Unauthorized" + end + "\n\n";
 
   error = "HTTP/1.1 401 Unauthorized\n";
-  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
@@ -37,7 +41,6 @@ void  forbidden(int client) {
   std::string content = start + "403 Forbidden" + end + "\n\n";
 
   error = "HTTP/1.1 403 Forbidden\n";
-  error += "Set-Cookie: error=400; Path=/; Expires=Fri, 5 Oct 2018 14;42;00 GMT;\n";
   error += "Content-Type: text/html\n";
   error += "Content-Lenght: " + to_string(content.size()) + "\n\n";
   error += content;
@@ -242,7 +245,7 @@ int  send_custom_error(int client, int code, std::string path) {
 void  send_error(int client, int code, Client &curr, std::string path) {
   struct stat st;
 
-  if (path.size()) {
+  if (path.size() && code != 100) {
     char  pwd[100];
     if (getcwd(pwd, 100) != NULL) {
       path = pwd + path;
@@ -256,6 +259,9 @@ void  send_error(int client, int code, Client &curr, std::string path) {
     }
   }
   switch (code) {
+    case 100:
+      expect_continue(client);
+      break;
     case 400:
       bad_request(client);
       break;

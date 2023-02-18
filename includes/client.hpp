@@ -20,8 +20,12 @@
 #include "macro.hpp"
 #include "config.hpp"
 #include "mime.hpp"
+#include <algorithm>
 
 class Client;
+
+std::string generate_random_filename(void);
+size_t	get_serv_from_client(Client &client, std::vector<Server> &serv);
 
 class Request {
   public:
@@ -30,8 +34,8 @@ class Request {
     Request(std::string &request); //parse request using get_header and get_body
     //Request &operator=(const Request &req);
     void        clear(void); //clear all request variables
-    int         read_client(int client, Client &parent, Client &tmp);
-    void        get_header(std::string &request, Client &parent, Client &tmp);
+    int         read_client(int client, Client &parent, Client &tmp, std::vector<Server> &servs);
+    void        get_header(std::string &request, Client &parent, Client &tmp, std::vector<Server> &servs);
     void        get_body_stream(std::istringstream &stream, Client &parent, Client &tmp);
     void        get_body(int client);
 
@@ -41,7 +45,7 @@ class Request {
     int         parse_body(Client &parent);
 
     void        get_request(std::vector<Server> &serv, Client &client, int index); //located at srcs/get_request.cpp
-    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag = 0);
+    void        get_file(std::vector<Server> &serv, Client &client, std::string &path_info, std::string &file_path, int index, size_t flag = 0, bool checkonly = false);
     void        get_cgi_read(Client &client, std::string &cgi_path, std::string &cgi_executor, std::string &file_path, std::string &pwd, int flag = 0, size_t n = 0);
     void        get_cgi_answer(Client &client);
     void        get_cgi(Client &client, Config &config, int flag = 0);
@@ -56,13 +60,23 @@ class Request {
     
     void        download_delete_cgi(Client &client, Server &serv, const char *path, char **env);
 
+    void        state_func(std::istringstream &stream);
+    int         state_0(std::istringstream &stream);
+    int         state_1(std::istringstream &stream);
+    int         state_2(std::istringstream &stream);
+
+    void        state_func(int client);
+    int        state_0(int client);
+    int         state_1(int client);
+    int         state_2(int client);
+
     bool  in_use;
 
-    //Default 4096
-    char                buffer[4096]; //Reading buffer
-   // static const int    buff_size = 16000;
-   static const int    buff_size = 16000;
-    size_t              bytes; //bytes read
+
+
+    char                buffer[4096];
+    static const int    buff_size = 16000;
+    size_t              bytes;
     size_t              current_bytes;
     size_t              body_size;
     size_t              linecount;
@@ -83,7 +97,10 @@ class Request {
     std::string key;
     std::string value;
     std::string boundary;
+
+    std::string upload_dir; ///////////////////////
     
+    std::string filename;
     std::string link;
 
     std::string path_info;
@@ -94,6 +111,19 @@ class Request {
     std::string name;
 
     std::string status;
+
+  
+    bool          complete_chunk;
+    bool          expect_continue;
+    int           limit;
+    int           chunk_left;
+    int           chunk_size;
+    int           state;
+    int           to_skip;
+    FILE          *cfile;
+    std::string   cname;
+    std::string   temp0;
+    std::string   temp2;
 
     bool        complete_header;
     bool        complete_body;
@@ -199,6 +229,7 @@ class Client {
     bool _fav;
     bool  _ready;
     int   _index;
+    int   _ldx;
     uint32_t _id;
     int _sock;
     unsigned short  _port;

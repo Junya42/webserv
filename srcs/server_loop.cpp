@@ -3,7 +3,7 @@
 #include <exception>
 #include <signal.h>
 
-const int MAX_EVENTS = 100;
+const int MAX_EVENTS = 300;
 int	signalcheck=0;
 std::map<int, int> csocks;
 
@@ -132,8 +132,8 @@ void	clear_server(std::vector<int> &server, int epoll_fd, Config &config) {
 
 	for (size_t x = 0; x < config._serv.size(); x++) {
 		std::cout << "\t\033[1;37m" << config._serv[x]._host << "\033[0m" << std::endl
-			<< "\t\t" << "Connection count: \033[32m" << to_string(config._serv[x]._connection) << std::endl
 			<< "\t\t" << "\033[0mRequest count: \033[32m" << to_string(config._serv[x]._requests) << std::endl
+			<< "\t\t" << "\033[0mConnection count: \033[32m" << to_string(config._serv[x]._connection) << std::endl
 			<< "\033[0m____________________________________________"
 			<< std::endl << std::endl;
 	}
@@ -166,9 +166,11 @@ void	server_handler(Config &config, char **env) {
 	int numclient = 0;
 	uint32_t	id = 1;
 	int save_index;
+	std::string continue_str = "HTTP/1.1 100 Continue\n\n";
 	tmp.clear();
 	while (1) {
-		num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		//num_events = epoll_wait(epoll_fd, events, curr_fd, 100);
+		num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, 100);
 		if (signalcheck >= 1)
 			break ;
 		for (size_t i = 0; i < num_events; i++) {
@@ -189,12 +191,11 @@ void	server_handler(Config &config, char **env) {
 				}
 
 				if (events[i].events & EPOLLIN) {
-					config.request_count++;
 					client = events[i].data.fd;
 					save_index = i;
 					i = find_client_in_vector(clientlist, client, i);
 					try {
-					status = clientlist[i].request.read_client(client, clientlist[i], tmp);
+						status = clientlist[i].request.read_client(client, clientlist[i], tmp, config._serv);
 					}
 					catch (std::exception & e) {
 						std::cerr << e.what() << std::endl;
@@ -207,6 +208,9 @@ void	server_handler(Config &config, char **env) {
 					}
 					if (status == 1) {
 						try {
+							std::cout << "*****************" << std::endl << clientlist[i] << std::endl << "****************" << std::endl;
+							clientlist[i]._request_count++;
+							config.request_count++;
 							answer_client(clientlist[i], clientlist[i].request, config, epoll_fd);
 						}
 						catch (std::exception & e) {
@@ -215,14 +219,20 @@ void	server_handler(Config &config, char **env) {
 							return clear_server(server, epoll_fd, config);
 						}
 					}
-					else if (status == 0 && clientlist[i].request.in_use == false) {
-						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+					else if (clientlist[i]._ready && clientlist[i].request.expect_continue == true) {
+						write(clientlist[i]._sock, continue_str.c_str(), continue_str.size());
+						clientlist[i].request.limit = 0;
+						clientlist[i].request.expect_continue = false;
 					}
-					else if (status == -1) {
-						remove_client(client, clientlist, i, &curr_fd, &numclient, epoll_fd);
+					if (status == 1)
+						reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
+					if (status == 1) {
+						for (size_t x = 0; x < clientlist.size(); x++) {
+							std::cout << clientlist[x] << std::endl;
+							std::cout << "\033[1;34mPath info: " << clientlist[x]._path << "\033[0m" << std::endl;
+							std::cout << "============" << std::endl;
+						}
 					}
-					reorganize_client_list(clientlist, i, &curr_fd, &numclient, epoll_fd);
-					clientlist[i]._request_count++;
 					i = save_index;
 				}
 			}
@@ -232,7 +242,7 @@ void	server_handler(Config &config, char **env) {
 			status = 0;
 			if (clientlist[j].request.in_use == true) {
 				try {
-				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp);
+				status = clientlist[j].request.read_client(clientlist[j]._sock, clientlist[j], tmp, config._serv);
 				}
 				catch (std::exception & e) {
 					std::cerr << e.what() << std::endl;
@@ -259,6 +269,11 @@ void	server_handler(Config &config, char **env) {
 					clientlist.clear();
 					return clear_server(server, epoll_fd, config);
 				}
+			}
+			else if (clientlist[j]._ready && clientlist[j].request.expect_continue == true) {
+				write(clientlist[j]._sock, continue_str.c_str(), continue_str.size());
+				clientlist[j].request.expect_continue = false;
+				clientlist[j].request.limit = 0;
 			}
 		}
 	}

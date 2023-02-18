@@ -13,6 +13,24 @@ int is_alpha(char c) {
     return 0;
 }
 
+const std::string WHITESPACE = " \n\r\t\f\v";
+
+std::string ltrim(const std::string &s)
+{
+    size_t start = s.find_first_not_of(WHITESPACE);
+    return (start == std::string::npos) ? "" : s.substr(start);
+}
+ 
+std::string rtrim(const std::string &s)
+{
+    size_t end = s.find_last_not_of(WHITESPACE);
+    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+ 
+std::string trim(const std::string &s) {
+    return rtrim(ltrim(s));
+}
+
 bool comp(std::string &s, const char *str, size_t pos = 0, size_t i = 0, size_t j = 0, char c = 0, size_t len = 0) {
   if (len == 0)
     len = strlen(str);
@@ -154,12 +172,23 @@ void erase(std::string &s) {
       s.erase(i, 1);
 }
 
-size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
+bool count(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
   while (s[i]) {
     if (s[i] == c)
       count++;
     if (count == iter)
+      return true;
+  }
+  return false;
+}
+
+size_t  find(std::string &s, char c, size_t iter = 1, size_t count = 0, size_t i = 0) {
+  while (s[i]) {
+    if (s[i] == c)
+      count++;
+    if (count == iter) {
       return i;
+    }
     i++;
   }
   return i;

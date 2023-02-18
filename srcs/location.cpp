@@ -31,13 +31,14 @@ Location &Location::operator=(const Location &src) {
   return *this;
 }
 
-void  Location::create_map(std::string & config) {
+int  Location::create_map(std::string & config) {
   _data.clear();
   method.clear();
   _root.clear();
   _path.clear();
   _link.clear();
   _index.clear();
+  _upload.clear();
   _mbsize = -1;
   _redirect = false;
    _autoindex = false;
@@ -51,8 +52,7 @@ void  Location::create_map(std::string & config) {
     std::getline(line_stream, key, ':');
     std::getline(line_stream, value);
     if (value.size()) {
-      while (value[0] == '\t' || value[0] == ' ')
-        value.erase(0, 1);
+      value = trim(value);
       _data[key] = value;
     }
     if (key.find("root") != std::string::npos) {
@@ -61,7 +61,7 @@ void  Location::create_map(std::string & config) {
     else if (key.find("set_index") != std::string::npos) {
       _index = value;
     }
-     else if (key.find("auto_index") != std::string::npos) {
+    else if (key.find("auto_index") != std::string::npos) {
       if (value == "true")
         _autoindex = true;
     }
@@ -69,7 +69,14 @@ void  Location::create_map(std::string & config) {
       _mbsize = strtoll(value.c_str(), NULL, 10);
     }
     else if (key.find("location") != std::string::npos) {
+      if (value.empty()) {
+        PRINT_ERR("Empty location");
+        return -1;
+      }
       _path = value;
+    }
+    else if (key.find("set_upload") != std::string::npos) {
+      _upload = value;
     }
     else if (key.find("method_accept") != std::string::npos) {
       std::istringstream methods(value);
@@ -81,16 +88,15 @@ void  Location::create_map(std::string & config) {
     else if (key.find("redirect") != std::string::npos) {
       _redirect = true;
       _link = value;
-      
-      while (_link.size() && (_link[0] == ' ' || _link[0] == '\t'))
-        _link.erase(0, 1);
     }
   }
+  return 0;
 }
 
 std::ostream &operator<<(std::ostream &nstream, Location &loc) {
   for (std::map<std::string, std::string>::iterator it = loc._data.begin(); it != loc._data.end(); it++) {
-    nstream << "  " << it->first << "_::::_" << it->second << std::endl;
+    if (it->first != "location")
+      nstream << "  " << it->first << " :::: " << it->second << std::endl;
   }
   return nstream;
 }

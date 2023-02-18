@@ -10,5 +10,6 @@ path = str(os.environ.get('PATH_TRANSLATED'))
 link="http://" + server + ":" + port + path
 
 #x = requests.delete(link)
-x = requests.delete('http://localhost:8080/tmp/private_webserv/Anis/mdr.sh')
-print(x.text)
+x = requests.delete(link)
+#print(x.text)
+#print(link)

@@ -14,7 +14,7 @@ class Location {
     Location(std::string &config);
     Location &operator=(const Location &src);
     ~Location(void);
-    void  create_map(std::string &config);
+    int  create_map(std::string &config);
     
     std::map<std::string, std::string> _data;
     std::map<std::string, bool> method;
@@ -22,6 +22,7 @@ class Location {
     std::string _path;
     std::string _root;
     std::string _link;
+    std::string _upload;
     long long int _mbsize;
     bool  _autoindex;
     bool  _redirect;

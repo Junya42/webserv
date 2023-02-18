@@ -31,7 +31,7 @@ if exist == 1:
         if isdir == 1:
             x += "<a href=\"http://localhost:8080/cgi-bin/download.sh" + path + val + "\" target=\"_self\" class=\"glass-button-folder\">" + val + "</a>\n"
         else:
-            y += "<a href=\"http://localhost:8080/cgi-bin/get.sh" + path + val + "\" download=\"" + val + "\" class=\"glass-button\">" + val + "</a>\n"
+            y += "<a href=\"http://localhost:8080/cgi-bin/get_no_mod.sh" + path + val + "\" download=\"" + val + "\" class=\"glass-button\">" + val + "</a>\n"
     x += "</div><div class=\"glass-toolbar\">" + y + "</div></div></body></html>"
 else:
     x += "</div></div></body></html>"

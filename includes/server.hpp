@@ -37,6 +37,8 @@ class Server {
     std::string _methods;
     std::string _ip;
     std::string _cgi;
+    std::string _upage;
+    std::string _lpage;
     bool        _large;
     bool        _valid;
     bool        _get;

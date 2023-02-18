@@ -55,7 +55,7 @@ int init_server_socket(int port, const char *ip) {
 
 int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32_t *id, int *numclient, int *curr_fd, std::string &hostname, std::string &port) {
 	Client clientinfo;
-	char	ip[INET_ADDRSTRLEN];
+	//char	ip[INET_ADDRSTRLEN];
 	struct epoll_event client_event;
 	int	client;
 
@@ -74,10 +74,14 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 		return -1;
 	}
 	csocks[client] = client;
-	clientinfo._port = clientinfo.addr.sin_port;
+	(void)clientlist;
+	(void)id;
+	(void)port;
+	(void)hostname;
+	//clientinfo._port = clientinfo.addr.sin_port;
 
 	/*********************************************/
-	struct	sockaddr_in my_addr;
+	/*struct	sockaddr_in my_addr;
 	unsigned int host_port;
 	char myIP[16];
 
@@ -88,8 +92,10 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
 
 	host_port = ntohs(my_addr.sin_port);
+	*/
 	/*********************************************/
 
+	/*
 	clientinfo._id = *id;
 	clientinfo._sock = client;
 	clientinfo._sport = port;
@@ -103,6 +109,7 @@ int add_client(int server, int epoll_fd, std::vector<Client> &clientlist, uint32
 	clientinfo._host = hostname;
 	erase(clientinfo._host, " ");
 	clientlist.push_back(clientinfo);
+	*/
 	*curr_fd = *curr_fd + 1;
 	*numclient = *numclient + 1;
 	*id = *id + 1;
@@ -159,12 +166,7 @@ int	init_epoll(std::vector<int> &server) {
 
 size_t	get_serv_from_client(Client &client, std::vector<Server> &serv) {
 	for (size_t i = 0; i < serv.size(); i++) {
-		std::string tmpname = serv[i]._name;
-		std::string	tmpport = serv[i]._sport;
-		erase(tmpname, " ");
-		erase(tmpport, " ");
-		if (client._host == tmpname && client._hostsport == tmpport) {
-			serv[i]._requests++;
+		if (client.request.host == serv[i]._host) {
 			return i;
 		}
 	}
@@ -185,15 +187,57 @@ std::string	error_path(Server &serv, int code) {
 }
 
 void	delete_file(Server &serv, Client &client) {
-	(void)serv;
+	PRINT_LOG(client.request.path_info);
+	size_t j = 0;
+	for (j = 0; j < serv._loc.size(); j++) {
+      if (comp(client.request.path_info, serv._loc[j]._path) == true) {
+		break;
+	  }
+	}
+	if (j >= serv._loc.size()) {
+		client.request.set_error(404);
+		client.request.complete_file = true;
+		return ;
+	}
+	if (serv._loc[j].method["DELETE"] == false) {
+		client.request.set_error(405);
+		client.request.complete_file = true;
+		return ;
+	}
+	if (serv._login) {
+		if (client._name.empty() || client._log == false) {
+			client.request.set_error(401);
+			client.request.complete_file = true;
+			return ;
+		}
+		else {
+			size_t skip = find(client.request.path_info, '/', 4);
+			if (skip < client.request.path_info.size() - 1 && client.request.path_info[skip] == '/') {
+				skip++;
+				std::string folder_owner = client.request.path_info.substr(skip);
+				folder_owner = folder_owner.substr(0, folder_owner.find('/'));
+				if (client._name != folder_owner) {
+					client.request.set_error(403);
+					client.request.complete_file = true;
+					return ;
+				}
+			}
+			else {
+				client.request.set_error(400);
+				client.request.complete_file = true;
+				return ;
+			}
+		}
+	}
 	if (client.request.path_info.size()) {
 		struct stat st;
 
     	if (stat(client.request.path_info.c_str(), &st) == 0) {
         	if (S_ISREG(st.st_mode) != 0) {
 				int del = remove(client.request.path_info.c_str());
-				if (!del) {
-					client.request.file_content = "<html><head><title>Webserv</title></head><body><h1>The requested file has been deleted</h1></body></html>";
+				if (del == 0) {
+					client.request.file_content = "<html><head><title>Webserv</title></head>\n";
+					client.request.file_content += "<body><h1>The requested file has been deleted</h1></body></html>\n";
 				}
 				else {
 					client.request.set_error(400);
@@ -225,6 +269,7 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 			delete_file(config._serv[client._index], client);
 	}
 	if (req.complete_file == true && client._ready == true) {
+		config._serv[client._index]._requests++;
 		std::cout << std::endl;
 		if (req.header_code != 0) {
 			send_error(client._sock, req.header_code, client, error_path(config._serv[client._index], req.header_code));
@@ -240,10 +285,15 @@ void	answer_client(Client &client, Request &req, Config &config, int epoll_fd) {
 				val &= ~flags;
 				fcntl(client._sock, F_SETFL, val);
 			}
+			if (req.method == "DELETE") {
+				std::cout << "\033[1;33m" << req.answer << "\033[0m" << std::endl;
+			}
+			//std::cout << "\033[1;33m" << req.answer << "\033[0m" << std::endl;
 			write(client._sock, req.answer.c_str(), req.answer.size());
 			PRINT_LOG("Sending answer");
 		}
 		std::cout << std::endl;
+		client._path = req.path_info;
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client._sock, NULL);
 		csocks.erase(client._sock);
 		close(client._sock);
@@ -298,25 +348,26 @@ int find_client_in_vector(std::vector<Client> &clientlist, int client, int index
 
 	host_port = ntohs(my_addr.sin_port);
 
-	int	x = -1;
+	(void)index;
 	for (size_t i = 0; i < clientlist.size(); i++) {
 		if (clientlist[i]._sock == client && clientlist[i]._hostport == host_port && clientlist[i]._hostip == to_string(myIP)) {
+			//if (clientlist[i]._name.size() && clientlist[i]._log == false)
+				//continue;
 			return i;
 		}
-		else if (clientlist[i]._sock == client) {
-			if (x == -1)
-				x = i;
-		}
 	}
-	if (x != -1) {
-		return x;
-	}
-	return index;
+	Client	newclient;
+
+	newclient._sock = client;
+	newclient._hostport = host_port;
+	newclient._hostip = to_string(myIP);
+	clientlist.push_back(newclient);
+	return (clientlist.size() - 1);
 }
 
 void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *curr_fd, int *numclient, int epoll) {
 	std::string tmp_name;
-	if (clientlist[index]._name.size() > 1) {
+	if (index < clientlist.size() && clientlist[index]._name.size() > 1) {
 		tmp_name = clientlist[index]._name;
 		for (size_t i = 0; i < clientlist.size(); i++) {
 			if (i != index){
@@ -332,6 +383,7 @@ void	reorganize_client_list(std::vector<Client> &clientlist, size_t index, int *
 			}
 		}
 	}
+
 	size_t i = 0;
 
 	while (i < clientlist.size()) {
